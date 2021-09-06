@@ -1,6 +1,10 @@
 class AuthController < ApplicationController
   wrap_parameters format: []
 
+  def generate_otp
+    UserMailer.with(email: generate_otp_params[:user_identity], otp: 1111).deliver_now
+  end
+
   def signup
     raise Errors::AuthenticationError.new(message: "Username already taken") if User.exists?(username: signup_params[:username])
     raise Errors::AuthenticationError.new(message: "Email already taken") if User.exists?(email: signup_params[:email])
@@ -9,7 +13,7 @@ class AuthController < ApplicationController
     user.save!
     access_token = create_access_token(user)
 
-    render json: { data: user.serialized_user.merge({ "token": access_token }) }
+    render json: { data: user.serialized_user.merge({ "access_token": access_token }) }
   end
 
   private
@@ -20,6 +24,10 @@ class AuthController < ApplicationController
 
   def create_refresh_token(user)
     JsonWebToken.encode({ user_id: user.id }, 1.year.from_now)
+  end
+
+  def generate_otp_params
+    params.permit(:user_identity) || ActionController::Parameters.new
   end
 
   def signup_params
