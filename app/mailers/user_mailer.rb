@@ -1,5 +1,5 @@
 class UserMailer < ApplicationMailer
-  default from: 'notifications@myulearn.com'
+  default from: 'U-Learn Verification <auth@operator.com.ng>'
 
   def verify_otp_email
     @email = params[:email]

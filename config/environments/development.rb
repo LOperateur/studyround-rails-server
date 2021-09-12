@@ -44,7 +44,7 @@ Rails.application.configure do
     port:                 587,
     domain:               'myulearn.com',
     user_name:            'apikey',
-    password:             '<password>',
+    password:             ENV["SENDGRID_API_KEY"],
     authentication:       'plain',
     enable_starttls_auto: true
   }
