@@ -3,5 +3,6 @@ Rails.application.routes.draw do
 
   post 'auth/signup'
   post '/otp/generate', to: "auth#generate_otp"
+  post '/otp/validate', to: "auth#validate_otp"
 
 end

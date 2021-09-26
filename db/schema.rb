@@ -18,6 +18,7 @@ ActiveRecord::Schema.define(version: 2021_09_25_221514) do
   create_table "otps", force: :cascade do |t|
     t.string "user_identity"
     t.string "otp"
+    t.integer "auth_type"
     t.integer "tries"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

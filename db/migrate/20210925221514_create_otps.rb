@@ -3,6 +3,7 @@ class CreateOtps < ActiveRecord::Migration[5.2]
     create_table :otps do |t|
       t.string :user_identity
       t.string :otp
+      t.integer :auth_type
       t.integer :tries
 
       t.timestamps
