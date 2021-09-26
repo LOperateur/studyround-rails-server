@@ -10,10 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_04_145553) do
+ActiveRecord::Schema.define(version: 2021_09_25_221514) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "otps", force: :cascade do |t|
+    t.string "user_identity"
+    t.string "otp"
+    t.integer "tries"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_identity"], name: "index_otps_on_user_identity", unique: true
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "username"
