@@ -3,7 +3,7 @@ module Errors
     def initialize(message: nil, action: nil, status: nil, data: {})
       super(
           message: message || "Not Authorized",
-          status: 403
+          status: status || 403
       )
     end
   end

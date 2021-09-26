@@ -10,7 +10,7 @@ module ErrorHandler
   }
 
   included do
-    # rescue_from(StandardError, with: lambda { |e| handle_error(e) })
+    rescue_from(StandardError, with: lambda { |e| handle_error(e) })
   end
 
   private

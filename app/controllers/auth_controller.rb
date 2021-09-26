@@ -20,7 +20,7 @@ class AuthController < ApplicationController
         # Do nothing really
         render json: { data: { otp_id: otp_object.id }, status: "already_sent" }, status: :ok
 
-      elsif otp_object.tries < 3
+      elsif otp_object.tries < 2
         # if it's expired, retry sending again
         otp_code = random_otp
 
@@ -37,7 +37,7 @@ class AuthController < ApplicationController
 
       else
         # If they've exceeded the tries (2 max), then inform them
-        raise Errors::AuthenticationError.new(message: "Too many tries, please attempt OTP generation later", status: 429)
+        raise Errors::AuthenticationError.new(message: "Too many tries, please attempt OTP generation later", status: :too_many_requests)
       end
 
     else # No Otp record for email, or record is older than 12 hours
