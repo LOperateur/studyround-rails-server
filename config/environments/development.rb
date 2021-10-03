@@ -34,20 +34,19 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
 
-  # Just for production but testing right now
-  config.action_mailer.perform_deliveries = true # Todo: Change back to false
+  # False for development, true in production
+  config.action_mailer.perform_deliveries = false
 
-  # Todo: Comment out later
-  config.action_mailer.delivery_method = :smtp
-  config.action_mailer.smtp_settings = {
-    address:              'smtp.sendgrid.net',
-    port:                 587,
-    domain:               'myulearn.com',
-    user_name:            'apikey',
-    password:             ENV["SENDGRID_API_KEY"],
-    authentication:       'plain',
-    enable_starttls_auto: true
-  }
+  # config.action_mailer.delivery_method = :smtp
+  # config.action_mailer.smtp_settings = {
+  #   address:              'smtp.sendgrid.net',
+  #   port:                 587,
+  #   domain:               'myulearn.com',
+  #   user_name:            'apikey',
+  #   password:             ENV["SENDGRID_API_KEY"],
+  #   authentication:       'plain',
+  #   enable_starttls_auto: true
+  # }
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
