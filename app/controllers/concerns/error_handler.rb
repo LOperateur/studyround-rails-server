@@ -3,10 +3,10 @@ module ErrorHandler
 
   ERRORS = {
       'ActiveRecord::RecordNotFound' => 'Errors::NotFoundError',
-      'ActiveRecord::RecordInvalid' => 'ActiveRecord::RecordInvalid',
+      'ActiveRecord::RecordInvalid' => 'Errors::InvalidError',
       'Errors::AuthorizationError' => 'Errors::AuthorizationError',
       'Errors::AuthenticationError' => 'Errors::AuthenticationError',
-      'Errors::BaseError' => 'Errors::BaseError',
+      'Errors::BaseError' => 'Errors::BaseError'
   }
 
   included do
@@ -21,7 +21,7 @@ module ErrorHandler
     mapped ||= Errors::BaseError.new
 
     # add a message if there's one available
-    # mapped.message = e.to_s unless e.to_s.blank?
+    mapped.message = e.message unless e.message.blank?
     render_error(mapped)
   end
 
@@ -32,6 +32,6 @@ module ErrorHandler
   end
 
   def render_error(error)
-    render json: { errors: [error.to_h] }, status: error.status
+    render json: { errors: error.to_h }, status: error.status
   end
 end

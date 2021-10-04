@@ -22,7 +22,7 @@ class AuthController < ApplicationController
 
       if token # is not yet expired
         # Do nothing really
-        render json: otp_object, meta: { message: "already sent"}, root: :data, status: :ok
+        render json: otp_object, meta: { message: "already sent" }, root: :data, status: :ok
 
       elsif otp_object.tries < 2
         # if it's expired, retry sending again
@@ -33,18 +33,19 @@ class AuthController < ApplicationController
 
         begin
           otp_object.save!
-          UserMailer.with(email: email, otp: otp_code).verify_otp_email.deliver_later
-          render json: otp_object, meta: { message: "success" }, root: :data, status: :created
-        rescue
-          raise Errors::AuthenticationError.new(message: "Unable to generate OTP")
+        rescue ActiveRecord::RecordInvalid
+          raise Errors::InvalidError.new(otp_object.errors.to_h)
         end
+        UserMailer.with(email: email, otp: otp_code).verify_otp_email.deliver_later
+        render json: otp_object, meta: { message: "success" }, root: :data, status: :created
 
       else
         # If they've exceeded the tries (2 max), then inform them
         raise Errors::AuthenticationError.new(message: "Too many tries, please attempt OTP generation later", status: :too_many_requests)
       end
 
-    else # No Otp record for email, or record is older than 12 hours
+    else
+      # No Otp record for email, or record is older than 12 hours
       # First check if an otp record is actually present
       # then delete it
       if otp_object
@@ -54,22 +55,20 @@ class AuthController < ApplicationController
       # then generate and store the new otp, and send an email
       otp_code = random_otp
       new_otp_object = Otp.new(user_identity: email, otp: JsonWebToken.encode({ otp: otp_code }, 10.minutes.from_now), auth_type: auth_type, tries: 1)
+
       begin
         new_otp_object.save!
-        UserMailer.with(email: email, otp: otp_code).verify_otp_email.deliver_later
-        render json: new_otp_object, meta: { message: "success" }, root: :data, status: :created
-      rescue
-        raise Errors::AuthenticationError.new(message: "Unable to generate OTP")
+      rescue ActiveRecord::RecordInvalid
+        raise Errors::InvalidError.new(new_otp_object.errors.to_h)
       end
+      UserMailer.with(email: email, otp: otp_code).verify_otp_email.deliver_later
+      render json: new_otp_object, meta: { message: "success" }, root: :data, status: :created
     end
   end
 
   def validate_otp
-    begin
-      otp_object = Otp.find(validate_otp_params[:otp_id])
-    rescue RecordNotFound
-      raise Errors::AuthenticationError.new(message: "No OTP record found for this user, try generating again")
-    end
+    raise Errors::NotFoundError.new(message: "No OTP record found for this user, try generating again") unless Otp.exists?(validate_otp_params[:otp_id])
+    otp_object = Otp.find(validate_otp_params[:otp_id])
 
     email = otp_object.user_identity
     entered_otp = validate_otp_params[:otp]
@@ -86,7 +85,7 @@ class AuthController < ApplicationController
     end
 
     if actual_otp == entered_otp
-      render json: { data: { pass_token: JsonWebToken.encode({otp_id: otp_object.id}, 1.hour.from_now )}, message: "success" }, status: :created
+      render json: { data: { pass_token: JsonWebToken.encode({ otp_id: otp_object.id }, 1.hour.from_now) }, message: "success" }, status: :created
     else
       raise Errors::AuthenticationError.new(message: "OTP does not match, please try again")
     end
@@ -108,7 +107,13 @@ class AuthController < ApplicationController
 
     user = User.new(signup_params.except(:pass_token))
     user.email = email
-    user.save!
+
+    begin
+      user.save!
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(user.errors.to_h)
+    end
+
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 

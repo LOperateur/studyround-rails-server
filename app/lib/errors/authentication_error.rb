@@ -1,6 +1,6 @@
 module Errors
   class AuthenticationError < BaseError
-    def initialize(message: nil, action: nil, status: nil, data: {})
+    def initialize(message: nil, action: nil, status: nil, source: {})
       super(
         message: message || "Unprocessable Entity",
         status: status || 422
