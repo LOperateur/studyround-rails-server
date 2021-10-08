@@ -12,7 +12,7 @@ class User < ApplicationRecord
 
   def downcase_fields
     self.username.downcase!
-    self.email.downcase!
+    # self.email.downcase! Not necessary anymore
   end
 
   # Used to serialize the user model on the go without having to render
