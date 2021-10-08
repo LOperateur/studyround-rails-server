@@ -2,7 +2,7 @@ class AuthController < ApplicationController
   wrap_parameters format: []
 
   def generate_otp
-    email = generate_otp_params[:user_identity]
+    email = generate_otp_params[:user_identity].downcase
     auth_type = generate_otp_params[:type].blank? ? :auth_type_verify_email : generate_otp_params[:type].to_sym
 
     puts auth_type
@@ -109,10 +109,10 @@ class AuthController < ApplicationController
       raise Errors::AuthenticationError.new(message: "Authentication has expired, please try signing up again")
     end
 
-    raise Errors::AuthenticationError.new(message: "Username already taken") if User.exists?(username: signup_params[:username])
-    # raise Errors::AuthenticationError.new(message: "Email already taken") if User.exists?(email: signup_params[:email])
+    raise Errors::AuthenticationError.new(message: "Username already taken") if User.exists?(username: signup_params[:username].downcase)
+    raise Errors::AuthenticationError.new(message: "Email already taken") if User.exists?(email: signup_params[:email])
 
-    user = User.new(signup_params.except(:pass_token))
+    user = User.new(signup_params.except(:username, :pass_token))
     user.email = email
 
     begin
@@ -130,6 +130,28 @@ class AuthController < ApplicationController
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
   end
 
+  def login
+    email_or_username = login_params[:user_identity].downcase
+    is_email = email_or_username.include? "@"
+
+    if is_email
+      raise Errors::AuthenticationError.new(message: "Email does not exist") unless User.exists?(email: email_or_username)
+    else
+      raise Errors::AuthenticationError.new(message: "User does not exist") unless User.exists?(username: email_or_username)
+    end
+
+    user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
+
+    if user && user.authenticate(login_params[:password])
+      access_token = create_access_token(user)
+      refresh_token = create_refresh_token(user)
+
+      render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+    else
+      raise Errors::AuthenticationError.new(message: "Incorrect login details")
+    end
+  end
+
   private
 
   def create_access_token(user)
@@ -137,7 +159,23 @@ class AuthController < ApplicationController
   end
 
   def create_refresh_token(user)
-    JsonWebToken.encode({ user_id: user.id }, 1.year.from_now)
+    refresh_token = ""
+    if RefreshToken.exists?(user: user)
+      refresh_token = RefreshToken.find_by(user: user).token
+    end
+
+    # Generate and save a new refresh token if there wasn't a previous one or it's expired
+    unless JsonWebToken.decode(refresh_token)
+      refresh_token = JsonWebToken.encode({ user_id: user.id }, 1.year.from_now)
+
+      begin
+        RefreshToken.create(token: refresh_token, user: user)
+      rescue ActiveRecord::RecordInvalid
+        raise Errors::InvalidError.new(refresh_token.errors.to_h)
+      end
+    end
+
+    refresh_token
   end
 
   def random_otp
@@ -154,5 +192,9 @@ class AuthController < ApplicationController
 
   def signup_params
     params.permit(:username, :password, :password_confirmation, :creator, :pass_token) || ActionController::Parameters.new
+  end
+
+  def login_params
+    params.permit(:user_identity, :password) || ActionController::Parameters.new
   end
 end
