@@ -110,7 +110,7 @@ class AuthController < ApplicationController
     end
 
     raise Errors::AuthenticationError.new(message: "Username already taken") if User.exists?(username: signup_params[:username])
-    # raise Errors::AuthenticationError.new(message: "Email already taken") if User.exists?(email: signup_params[:email])
+    raise Errors::AuthenticationError.new(message: "Email already taken") if User.exists?(email: signup_params[:email])
 
     user = User.new(signup_params.except(:pass_token))
     user.email = email
@@ -128,6 +128,27 @@ class AuthController < ApplicationController
     otp_object.delete
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+  end
+
+  def login
+    email_or_username = login_params[:user_identity]
+    is_email = email_or_username.include "@"
+
+    if is_email
+      raise Errors::AuthenticationError.new(message: "Email does not exist") unless User.exists?(email: email_or_username)
+    else
+      raise Errors::AuthenticationError.new(message: "User does not exist") unless User.exists?(username: email_or_username)
+    end
+
+    user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
+
+    if user && user.authenticate(login_params[:password])
+      access_token = create_access_token(user)
+      refresh_token = create_refresh_token(user)
+      render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+    else
+      raise Errors::AuthenticationError.new(message: "Incorrect login details")
+    end
   end
 
   private
@@ -154,5 +175,9 @@ class AuthController < ApplicationController
 
   def signup_params
     params.permit(:username, :password, :password_confirmation, :creator, :pass_token) || ActionController::Parameters.new
+  end
+
+  def login_params
+    params.permit(:user_identity, :password) || ActionController::Parameters.new
   end
 end
