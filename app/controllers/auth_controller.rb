@@ -175,12 +175,16 @@ class AuthController < ApplicationController
     raise Errors::AuthenticationError.new(message: "No existing user with email: #{email}") unless user
 
     unless user.update_attributes(password: reset_password_params[:password],
-                                  password_confirmation: :reset_password_params[:password_confirmation])
+                                  password_confirmation: reset_password_params[:password_confirmation])
       raise Errors::InvalidError.new(user.errors.to_h)
     end
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user, true )
+
+    # Delete the OTP record
+    otp_object.delete
+
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
 
   end
