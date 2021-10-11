@@ -1,7 +1,6 @@
 class User < ApplicationRecord
   before_save :downcase_fields
-  validates :username, presence: true, uniqueness: true
-  validates_format_of :username, :with => /\A[-a-z0-9_.]+\Z/i
+  validates :username, presence: true, uniqueness: true, format: { with: /\A[-a-z0-9_.]+\Z/i }
   validates :email, presence: true, uniqueness: true
 
   has_secure_password
