@@ -180,13 +180,41 @@ class AuthController < ApplicationController
     end
 
     access_token = create_access_token(user)
-    refresh_token = create_refresh_token(user, true )
+    refresh_token = create_refresh_token(user, true)
 
     # Delete the OTP record
     otp_object.delete
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
 
+  end
+
+  def refresh_token
+    refresh_token = refresh_token_params[:refresh_token]
+    decoded_refresh_token = JsonWebToken.decode(refresh_token)
+
+    # First check the refresh token
+    if decoded_refresh_token && decoded_refresh_token[:user_id]
+      user_id = decoded_refresh_token[:user_id]
+    else
+      raise Errors::AuthorizationError.new(message: "Unauthorized, refresh token invalid or expired!")
+    end
+
+    # Then get the user encoded within the token
+    user = User.find(user_id)
+    if user
+      # Only authorize if the sent token matches the one saved alongside the user in the DB
+      saved_token_object = RefreshToken.find_by(user: user)
+      saved_refresh_token = saved_token_object ? saved_token_object.token : nil
+      raise Errors::AuthorizationError.new(message: "Unauthorized, refresh token invalid!") unless saved_refresh_token == refresh_token
+
+      new_access_token = create_access_token(user)
+
+      render json: { data: { "access_token": new_access_token} }
+
+    else
+      raise Errors::AuthorizationError.new(message: "User does not exist")
+    end
   end
 
   private
@@ -203,12 +231,14 @@ class AuthController < ApplicationController
       refresh_token = RefreshToken.find_by(user: user).token
     end
 
-    # Generate and save a new refresh token if there wasn't a previous one or it's expired or is resetting
+    # Generate and save/update a new refresh token if there wasn't a previous one or it's expired or is resetting
     unless JsonWebToken.decode(refresh_token)
       refresh_token = JsonWebToken.encode({ user_id: user.id }, 1.year.from_now)
 
       begin
-        RefreshToken.create!(token: refresh_token, user: user)
+        rt = RefreshToken.where(user: user).first_or_initialize
+        rt.token = refresh_token
+        rt.save!
       rescue ActiveRecord::RecordInvalid
         raise Errors::InvalidError.new(refresh_token.errors.to_h)
       end
@@ -239,5 +269,9 @@ class AuthController < ApplicationController
 
   def reset_password_params
     params.permit(:password, :password_confirmation, :pass_token) || ActionController::Parameters.new
+  end
+
+  def refresh_token_params
+    params.permit(:refresh_token) || ActionController::Parameters.new
   end
 end
