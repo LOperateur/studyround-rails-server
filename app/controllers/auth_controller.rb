@@ -1,4 +1,6 @@
 class AuthController < ApplicationController
+  skip_before_action :authorize!
+
   wrap_parameters format: []
 
   def generate_otp
