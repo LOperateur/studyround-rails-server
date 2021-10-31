@@ -226,11 +226,12 @@ class AuthController < ApplicationController
   end
 
   def create_refresh_token(user, should_reset = false)
-    refresh_token = ""
-
     # Find existing refresh token if it exists and should not reset
     if !should_reset && RefreshToken.exists?(user: user)
       refresh_token = RefreshToken.find_by(user: user).token
+    else
+      # A reset or non-existent token
+      refresh_token = ""
     end
 
     # Generate and save/update a new refresh token if there wasn't a previous one or it's expired or is resetting

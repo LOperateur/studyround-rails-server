@@ -10,10 +10,37 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_08_135713) do
+ActiveRecord::Schema.define(version: 2021_10_31_202416) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "courses", force: :cascade do |t|
+    t.bigint "creator_id"
+    t.string "title"
+    t.integer "sale_status"
+    t.string "sub_topics"
+    t.decimal "price", precision: 10, scale: 2
+    t.integer "currency"
+    t.boolean "private"
+    t.boolean "test"
+    t.text "about"
+    t.string "image_url"
+    t.integer "version"
+    t.datetime "test_expiration"
+    t.boolean "draft"
+    t.jsonb "draft_content"
+    t.integer "course_status"
+    t.integer "next_edition"
+    t.integer "previous_edition"
+    t.integer "rating"
+    t.jsonb "instructions"
+    t.boolean "completed"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_courses_on_creator_id"
+    t.index ["title"], name: "index_courses_on_title"
+  end
 
   create_table "otps", force: :cascade do |t|
     t.string "user_identity"
@@ -56,5 +83,6 @@ ActiveRecord::Schema.define(version: 2021_10_08_135713) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  add_foreign_key "courses", "users", column: "creator_id"
   add_foreign_key "refresh_tokens", "users"
 end
