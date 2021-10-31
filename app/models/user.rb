@@ -8,6 +8,7 @@ class User < ApplicationRecord
   validates :password_confirmation, presence: true, length: { minimum: 8 }
 
   has_one :refresh_token
+  has_many :courses
 
   def downcase_fields
     self.username.downcase!
