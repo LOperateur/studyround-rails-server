@@ -1,0 +1,11 @@
+class CreateInterests < ActiveRecord::Migration[5.2]
+  def change
+    create_table :interests do |t|
+      t.references :user, foreign_key: true
+      t.references :category, foreign_key: true
+      t.integer :affinity
+
+      t.timestamps
+    end
+  end
+end

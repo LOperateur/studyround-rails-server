@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_31_221420) do
+ActiveRecord::Schema.define(version: 2021_11_14_213041) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -24,6 +24,15 @@ ActiveRecord::Schema.define(version: 2021_10_31_221420) do
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_categories_on_name", unique: true
     t.index ["parent_id"], name: "index_categories_on_parent_id"
+  end
+
+  create_table "categorizations", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "category_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_categorizations_on_category_id"
+    t.index ["course_id"], name: "index_categorizations_on_course_id"
   end
 
   create_table "courses", force: :cascade do |t|
@@ -51,6 +60,16 @@ ActiveRecord::Schema.define(version: 2021_10_31_221420) do
     t.datetime "updated_at", null: false
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
+  end
+
+  create_table "interests", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "category_id"
+    t.integer "affinity"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_interests_on_category_id"
+    t.index ["user_id"], name: "index_interests_on_user_id"
   end
 
   create_table "otps", force: :cascade do |t|
@@ -95,6 +114,10 @@ ActiveRecord::Schema.define(version: 2021_10_31_221420) do
   end
 
   add_foreign_key "categories", "categories", column: "parent_id"
+  add_foreign_key "categorizations", "categories"
+  add_foreign_key "categorizations", "courses"
   add_foreign_key "courses", "users", column: "creator_id"
+  add_foreign_key "interests", "categories"
+  add_foreign_key "interests", "users"
   add_foreign_key "refresh_tokens", "users"
 end
