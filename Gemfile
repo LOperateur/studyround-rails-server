@@ -40,6 +40,9 @@ gem 'active_model_serializers', '~> 0.10.0'
 # Use sidekiq for background jobs
 gem 'sidekiq'
 
+# Use cors
+gem 'rack-cors', :require => 'rack/cors'
+
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.1.0', require: false
 

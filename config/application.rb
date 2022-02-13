@@ -31,5 +31,16 @@ module ULearnserver
         ENV[key.to_s] = value
       end if File.exists?(env_file)
     end
+
+    if Rails.env.production?
+      # TODO: Set rails config with required origin
+    else
+      config.middleware.insert_before 0, Rack::Cors do
+        allow do
+          origins '*'
+          resource '*', :headers => :any, :methods => [:get, :post, :put, :patch, :delete, :options, :head]
+        end
+      end
+    end
   end
 end
