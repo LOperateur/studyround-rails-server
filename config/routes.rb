@@ -8,5 +8,7 @@ Rails.application.routes.draw do
   post '/otp/generate', to: "auth#generate_otp"
   post '/otp/validate', to: "auth#validate_otp"
 
-  resources :users
+  resources :users do
+    post '/interests', to: "users#interests"
+  end
 end

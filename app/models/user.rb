@@ -7,8 +7,10 @@ class User < ApplicationRecord
   validates :password, presence: true, length: { minimum: 8 }
   validates :password_confirmation, presence: true, length: { minimum: 8 }
 
-  has_one :refresh_token
-  has_many :courses
+  has_one :refresh_token, dependent: :destroy
+  has_many :courses, dependent: :destroy
+  has_many :interests, dependent: :destroy
+  has_many :categories, through: :interests
 
   def downcase_fields
     self.username.downcase!
