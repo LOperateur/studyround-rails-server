@@ -11,4 +11,6 @@ Rails.application.routes.draw do
   resources :users do
     post '/interests', to: "users#interests"
   end
+
+  resources :categories, only: [:index]
 end
