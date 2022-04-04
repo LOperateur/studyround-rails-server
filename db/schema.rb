@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_14_213041) do
+ActiveRecord::Schema.define(version: 2022_04_04_110108) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -39,9 +39,8 @@ ActiveRecord::Schema.define(version: 2021_11_14_213041) do
     t.bigint "creator_id"
     t.string "title"
     t.integer "sale_status"
-    t.string "sub_topics"
     t.decimal "price", precision: 10, scale: 2
-    t.integer "currency"
+    t.string "currency"
     t.boolean "private"
     t.boolean "test"
     t.text "about"
@@ -53,11 +52,12 @@ ActiveRecord::Schema.define(version: 2021_11_14_213041) do
     t.integer "course_status"
     t.integer "next_edition"
     t.integer "previous_edition"
-    t.integer "rating"
+    t.float "rating"
     t.jsonb "instructions"
     t.boolean "completed"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "question_tags"
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
   end
