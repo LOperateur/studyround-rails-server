@@ -122,13 +122,13 @@ unless Rails.env.production?
       },
       {
         creator: user,
-        title: "Movies of Africa",
+        title: "Movies of Nigeria",
         sale_status: :sale_status_free,
         price: 0.00,
         currency: "NGN",
         private: false,
         test: false,
-        about: "A journey through Africa's timeless classics",
+        about: "A journey through Nigeria's timeless classics",
         version: 1,
         draft: false,
         course_status: :course_status_normal,
@@ -530,6 +530,18 @@ unless Rails.env.production?
       {
         course: Course.find_by(title: "Fun with Flags"),
         category: Category.find_by(name: "General Knowledge")
+      },
+      {
+        course: Course.find_by(title: "Movies of Nigeria"),
+        category: Category.find_by(name: "Arts & Humanities")
+      },
+      {
+        course: Course.find_by(title: "Movies of Nigeria"),
+        category: Category.find_by(name: "General Knowledge")
+      },
+      {
+        course: Course.find_by(title: "Movies of Nigeria"),
+        category: Category.find_by(name: "Social Sciences")
       },
       {
         course: Course.find_by(title: "Movies of Africa"),

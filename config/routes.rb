@@ -13,4 +13,9 @@ Rails.application.routes.draw do
   end
 
   resources :categories, only: [:index]
+
+  resources :courses, only: [:index] do
+    post '/categories', to: "courses#categorised"
+    post '/interest', to: "courses#interest_categorised"
+  end
 end
