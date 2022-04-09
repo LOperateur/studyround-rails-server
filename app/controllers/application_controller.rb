@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::API
   include ErrorHandler
+  include Paginable
 
   before_action :authorize!
 

@@ -10,10 +10,67 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_10_08_135713) do
+ActiveRecord::Schema.define(version: 2022_04_04_110108) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "categories", force: :cascade do |t|
+    t.bigint "parent_id"
+    t.string "name"
+    t.integer "level"
+    t.string "image_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_categories_on_name", unique: true
+    t.index ["parent_id"], name: "index_categories_on_parent_id"
+  end
+
+  create_table "categorizations", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "category_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_categorizations_on_category_id"
+    t.index ["course_id"], name: "index_categorizations_on_course_id"
+  end
+
+  create_table "courses", force: :cascade do |t|
+    t.bigint "creator_id"
+    t.string "title"
+    t.integer "sale_status"
+    t.decimal "price", precision: 10, scale: 2
+    t.string "currency"
+    t.boolean "private"
+    t.boolean "test"
+    t.text "about"
+    t.string "image_url"
+    t.integer "version"
+    t.datetime "test_expiration"
+    t.boolean "draft"
+    t.jsonb "draft_content"
+    t.integer "course_status"
+    t.integer "next_edition"
+    t.integer "previous_edition"
+    t.float "rating"
+    t.jsonb "instructions"
+    t.boolean "completed"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "question_tags"
+    t.index ["creator_id"], name: "index_courses_on_creator_id"
+    t.index ["title"], name: "index_courses_on_title"
+  end
+
+  create_table "interests", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "category_id"
+    t.integer "affinity"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_interests_on_category_id"
+    t.index ["user_id"], name: "index_interests_on_user_id"
+  end
 
   create_table "otps", force: :cascade do |t|
     t.string "user_identity"
@@ -56,5 +113,11 @@ ActiveRecord::Schema.define(version: 2021_10_08_135713) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  add_foreign_key "categories", "categories", column: "parent_id"
+  add_foreign_key "categorizations", "categories"
+  add_foreign_key "categorizations", "courses"
+  add_foreign_key "courses", "users", column: "creator_id"
+  add_foreign_key "interests", "categories"
+  add_foreign_key "interests", "users"
   add_foreign_key "refresh_tokens", "users"
 end
