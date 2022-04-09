@@ -15,8 +15,7 @@ Rails.application.routes.draw do
 
   resources :categories, only: [:index]
 
-  resources :courses, only: [:index] do
-    post '/categories', to: "courses#categorised"
-    post '/interest', to: "courses#interest_categorised"
-  end
+  resources :courses, only: [:index]
+  get 'courses/categorised', to: "courses#categorised"
+  get 'courses/interest', to: "courses#interest_categorised"
 end
