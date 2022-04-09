@@ -8,18 +8,18 @@
 
 Category.create(
   [
-    { name: "General Knowledge", level: 1 },
-    { name: "Engineering", level: 1 },
-    { name: "Agriculture", level: 1 },
-    { name: "Earth", level: 1 },
-    { name: "Sciences", level: 1 },
-    { name: "Legal", level: 1 },
-    { name: "Arts & Humanities", level: 1 },
-    { name: "Finance", level: 1 },
-    { name: "Social Sciences", level: 1 },
-    { name: "Technology", level: 1 },
-    { name: "Sports", level: 1 },
-    { name: "International", level: 1 },
+    { name: "General Knowledge", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Engineering", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Agriculture", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Earth", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Sciences", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Legal", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Arts & Humanities", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Finance", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Social Sciences", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Technology", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "Sports", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "International", level: 1, image_url: "AfricanMaskIcon.svg" },
   ]
 )
 
@@ -746,6 +746,27 @@ unless Rails.env.production?
       {
         course: Course.find_by(title: 'The Great Depression'),
         category: Category.find_by(name: "International")
+      }
+    ]
+  )
+
+  # Interests for our User
+  Interest.create(
+    [
+      {
+        user: user,
+        category: Category.find_by(name: "Sciences"),
+        affinity: 2
+      },
+      {
+        user: user,
+        category: Category.find_by(name: "Engineering"),
+        affinity: 1
+      },
+      {
+        user: user,
+        category: Category.find_by(name: "Finance"),
+        affinity: 0
       }
     ]
   )

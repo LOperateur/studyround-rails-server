@@ -5,7 +5,15 @@ class UsersController < ApplicationController
     render json: User.find(params[:id]), root: :data
   end
 
-  def interests
+  def profile
+    render json: current_user, root: :data
+  end
+
+  def interested_categories
+    render json: current_user.categories.order(affinity: :desc), root: :data
+  end
+
+  def create_interests
     user = User.find(params[:user_id])
 
     categories = create_interests_params[:categories]
