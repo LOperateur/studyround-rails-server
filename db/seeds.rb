@@ -770,4 +770,250 @@ unless Rails.env.production?
       }
     ]
   )
+
+  # Create Results
+  Result.create(
+    [
+      {
+        user: user,
+        course: Course.find_by(title: "A Brief History of Time"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "A Brief History of Time"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "All about Archeology"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "All about Archeology"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Mathematics for Dummies"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Mathematics for Dummies"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Countries and Capitals"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Countries and Capitals"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Countries and Capitals"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Fun with Flags"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Fun with Flags"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Movies of Nigeria"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Movies of Nigeria"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Movies of Nigeria"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Movies of Africa"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Movies of Africa"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Movies of Africa"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "History of Football"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "History of Football"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Landlord and Tenant"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Landlord and Tenant"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Web 3.0"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Web 3.0"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Web 3.0"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Web 3.0"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Graphic Design"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Sub-Saharan Irrigation"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Sub-Saharan Irrigation"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "Sub-Saharan Irrigation"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      },
+      {
+        user: user,
+        course: Course.find_by(title: "A History of Amateur Wrestling"),
+        score: rand(51),
+        total: rand(51..100),
+        duration: 3600,
+        mode: :course_mode_practice
+      }
+    ]
+  )
 end

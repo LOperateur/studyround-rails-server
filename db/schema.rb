@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_04_04_110108) do
+ActiveRecord::Schema.define(version: 2022_04_10_111715) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -90,6 +90,21 @@ ActiveRecord::Schema.define(version: 2022_04_04_110108) do
     t.index ["user_id"], name: "index_refresh_tokens_on_user_id", unique: true
   end
 
+  create_table "results", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "course_id"
+    t.integer "score"
+    t.integer "total"
+    t.bigint "duration"
+    t.integer "mode"
+    t.string "extra_id"
+    t.jsonb "session_items"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_results_on_course_id"
+    t.index ["user_id"], name: "index_results_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "username"
     t.string "password_digest"
@@ -120,4 +135,6 @@ ActiveRecord::Schema.define(version: 2022_04_04_110108) do
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
   add_foreign_key "refresh_tokens", "users"
+  add_foreign_key "results", "courses"
+  add_foreign_key "results", "users"
 end

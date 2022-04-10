@@ -8,7 +8,6 @@ class CreateResults < ActiveRecord::Migration[5.2]
       t.bigint :duration
       t.integer :mode
       t.string :extra_id
-      t.string :string
       t.jsonb :session_items
 
       t.timestamps

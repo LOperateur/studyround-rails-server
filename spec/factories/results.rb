@@ -7,7 +7,6 @@ FactoryBot.define do
     duration { "" }
     mode { 1 }
     extra_id { "MyString" }
-    string { "MyString" }
     session_items { "" }
   end
 end

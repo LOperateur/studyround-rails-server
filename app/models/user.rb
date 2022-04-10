@@ -11,6 +11,7 @@ class User < ApplicationRecord
   has_many :courses, dependent: :destroy
   has_many :interests, dependent: :destroy
   has_many :categories, through: :interests
+  has_many :results
 
   def downcase_fields
     self.username.downcase!
