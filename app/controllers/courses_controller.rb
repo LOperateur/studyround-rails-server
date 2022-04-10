@@ -23,4 +23,8 @@ class CoursesController < ApplicationController
       end
     }
   end
+
+  def top
+
+  end
 end
