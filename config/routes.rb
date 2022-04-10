@@ -13,10 +13,12 @@ Rails.application.routes.draw do
   get '/user/categories', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
 
-  resources :categories, only: [:index]
+  resources :categories, only: [:index] do
+    get '/courses', to: "courses#per_category"
+  end
 
   resources :courses, only: [:index]
   get 'courses/categorised', to: "courses#categorised"
   get 'courses/interest', to: "courses#interest_categorised"
-  get 'courses/top', to: "courses#top"
+  get 'courses/top', to: "courses#top_courses"
 end

@@ -1,5 +1,5 @@
 class CoursesController < ApplicationController
-  skip_before_action :authorize!, only: [:index, :categorised]
+  skip_before_action :authorize!, only: [:index, :categorised, :top_courses]
 
   def index
     courses = paginate(Course.all, params)
@@ -24,7 +24,19 @@ class CoursesController < ApplicationController
     }
   end
 
-  def top
+  def per_category
+    category = Category.find(params[:category_id])
+    courses = paginate(category.courses, params)
+    render json: courses, root: :data, meta: paginated_meta(courses)
+  end
 
+  def top_courses
+    # Firstly, get non-test course results created over the past 120 days
+    results = Result.created_after(120.days.ago).where.not(mode: :mode_test).limit(200)
+
+    # Group the results by their courses then sort based on the number of results per course
+    grouped_courses = results.group(:course).count.sort{|a, b| b.last <=> a.last}.take(12).to_h.keys
+
+    render json: grouped_courses, root: :data
   end
 end

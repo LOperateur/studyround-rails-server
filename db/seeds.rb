@@ -780,7 +780,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -788,7 +788,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -796,7 +796,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -804,7 +804,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -812,7 +812,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -820,7 +820,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -828,7 +828,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -836,7 +836,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -844,7 +844,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -852,7 +852,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -860,7 +860,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -868,7 +868,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -876,7 +876,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -884,7 +884,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -892,7 +892,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -900,7 +900,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -908,7 +908,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -916,7 +916,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -924,7 +924,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -932,7 +932,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -940,7 +940,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -948,7 +948,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -956,7 +956,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -964,7 +964,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -972,7 +972,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -980,7 +980,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -988,7 +988,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -996,7 +996,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -1004,7 +1004,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       },
       {
         user: user,
@@ -1012,7 +1012,7 @@ unless Rails.env.production?
         score: rand(51),
         total: rand(51..100),
         duration: 3600,
-        mode: :course_mode_practice
+        mode: :mode_practice
       }
     ]
   )
