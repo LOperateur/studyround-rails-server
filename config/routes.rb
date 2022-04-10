@@ -21,4 +21,6 @@ Rails.application.routes.draw do
   get 'courses/categorised', to: "courses#categorised"
   get 'courses/interest', to: "courses#interest_categorised"
   get 'courses/top', to: "courses#top_courses"
+
+  get 'dashboard/carousel'
 end

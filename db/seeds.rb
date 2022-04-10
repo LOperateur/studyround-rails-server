@@ -8,18 +8,18 @@
 
 Category.create(
   [
-    { name: "General Knowledge", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Engineering", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Agriculture", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Earth", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Sciences", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Legal", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Arts & Humanities", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Finance", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Social Sciences", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Technology", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "Sports", level: 1, image_url: "AfricanMaskIcon.svg" },
-    { name: "International", level: 1, image_url: "AfricanMaskIcon.svg" },
+    { name: "General Knowledge", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Engineering", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Agriculture", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Earth", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Sciences", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Legal", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Arts & Humanities", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Finance", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Social Sciences", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Technology", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "Sports", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
+    { name: "International", level: 1, image_url: "categories/AfricanMaskIcon.svg" },
   ]
 )
 
