@@ -3,7 +3,7 @@ FactoryBot.define do
     creator { nil }
     title { "MyString" }
     sale_status { 1 }
-    sub_topics { "MyString" }
+    question_tags { "MyString" }
     price { "9.99" }
     currency { 1 }
     private { false }

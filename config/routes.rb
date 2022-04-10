@@ -13,10 +13,14 @@ Rails.application.routes.draw do
   get '/user/categories', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
 
-  resources :categories, only: [:index]
-
-  resources :courses, only: [:index] do
-    post '/categories', to: "courses#categorised"
-    post '/interest', to: "courses#interest_categorised"
+  resources :categories, only: [:index] do
+    get '/courses', to: "courses#per_category"
   end
+
+  resources :courses, only: [:index]
+  get 'courses/categorised', to: "courses#categorised"
+  get 'courses/interest', to: "courses#interest_categorised"
+  get 'courses/top', to: "courses#top_courses"
+
+  get 'dashboard/carousel'
 end

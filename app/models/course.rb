@@ -1,6 +1,8 @@
 class Course < ApplicationRecord
   belongs_to :creator, class_name: 'User'
 
+  has_many :results
+
   enum sale_status: {
     sale_status_free: 1,
     sale_status_explanations: 2,
