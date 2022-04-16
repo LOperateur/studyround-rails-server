@@ -4,6 +4,7 @@ class Course < ApplicationRecord
   has_many :categorizations, dependent: :destroy
   has_many :categories, through: :categorizations
   has_many :results
+  has_many :questions
 
   enum sale_status: {
     sale_status_free: 1,

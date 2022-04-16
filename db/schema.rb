@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_04_10_111715) do
+ActiveRecord::Schema.define(version: 2022_04_16_183553) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -45,7 +45,7 @@ ActiveRecord::Schema.define(version: 2022_04_10_111715) do
     t.boolean "test"
     t.text "about"
     t.string "image_url"
-    t.integer "version"
+    t.integer "version", default: 1
     t.datetime "test_expiration"
     t.boolean "draft"
     t.jsonb "draft_content"
@@ -80,6 +80,26 @@ ActiveRecord::Schema.define(version: 2022_04_10_111715) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_identity"], name: "index_otps_on_user_identity", unique: true
+  end
+
+  create_table "questions", force: :cascade do |t|
+    t.bigint "course_id"
+    t.integer "question_number"
+    t.string "question"
+    t.jsonb "tags"
+    t.string "question_image_url"
+    t.jsonb "options"
+    t.string "answer"
+    t.string "answer_image_url"
+    t.boolean "multi_answer"
+    t.integer "multiplier"
+    t.string "explanation"
+    t.string "explanation_image_url"
+    t.integer "version", default: 1
+    t.integer "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_questions_on_course_id"
   end
 
   create_table "refresh_tokens", force: :cascade do |t|
@@ -134,6 +154,7 @@ ActiveRecord::Schema.define(version: 2022_04_10_111715) do
   add_foreign_key "courses", "users", column: "creator_id"
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
+  add_foreign_key "questions", "courses"
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "results", "courses"
   add_foreign_key "results", "users"
