@@ -25,4 +25,9 @@ class DashboardController < ApplicationController
       ]
     }
   end
+
+  def recent
+    results = paginate(current_user.results, params)
+    render json: results, root: :data, meta: paginated_meta(results), each_serializer: ResultCourseSerializer
+  end
 end

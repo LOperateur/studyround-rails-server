@@ -9,7 +9,7 @@ class CoursesController < ApplicationController
   end
 
   def categorised
-    categories = Category.all.take(5)
+    categories = Category.take(5)
     render json: {
       data: categories.map do |category|
         category.serialized_categorised_course[:category]
