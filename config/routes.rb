@@ -23,4 +23,5 @@ Rails.application.routes.draw do
   get 'courses/top', to: "courses#top_courses"
 
   get 'dashboard/carousel'
+  get 'dashboard/recent'
 end

@@ -1,6 +1,8 @@
 class Course < ApplicationRecord
   belongs_to :creator, class_name: 'User'
 
+  has_many :categorizations, dependent: :destroy
+  has_many :categories, through: :categorizations
   has_many :results
 
   enum sale_status: {
