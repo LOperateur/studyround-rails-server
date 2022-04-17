@@ -30,7 +30,7 @@ unless Rails.env.production?
         answer_image_url: "https://play-lh.googleusercontent.com/rNgpb_TlfsoaKOqFwf8CFDpVjWymv8Zdh8a3EEz8UjEEhND-oWWpIxbeQSoN7akz-nE",
         explanation: "Who really knows?",
         explanation_image_url: "https://play-lh.googleusercontent.com/rNgpb_TlfsoaKOqFwf8CFDpVjWymv8Zdh8a3EEz8UjEEhND-oWWpIxbeQSoN7akz-nE",
-        status: :status_active
+        status: :status_published
       }
     ]
   )

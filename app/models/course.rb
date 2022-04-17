@@ -7,6 +7,8 @@ class Course < ApplicationRecord
   has_many :questions
   has_many :course_reviews
 
+  scope :published_active_courses, -> { where(draft: false, course_status: :course_status_active) }
+
   enum sale_status: {
     sale_status_free: 1,
     sale_status_explanations: 2,
@@ -14,7 +16,7 @@ class Course < ApplicationRecord
   }
 
   enum course_status: {
-    course_status_normal: 1,
+    course_status_active: 1,
     course_status_suspended: 2,
   }
 end

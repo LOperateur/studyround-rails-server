@@ -3,6 +3,6 @@ class Question < ApplicationRecord
 
   enum status: {
     status_draft: 1,
-    status_active: 2,
+    status_published: 2,
   }
 end
