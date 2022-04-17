@@ -37,8 +37,17 @@ class CoursesController < ApplicationController
     results = Result.created_after(120.days.ago).where.not(mode: :mode_test).limit(200)
 
     # Group the results by their courses then sort based on the number of results per course
-    grouped_courses = results.group(:course).count.sort{|a, b| b.last <=> a.last}.take(12).to_h.keys
+    grouped_courses = results.group(:course).count.sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
 
     render json: grouped_courses, root: :data
+  end
+
+  def recent_courses
+    results = current_user.results.limit(100)
+
+    # Group courses ordering them by date created in descending order
+    courses = results.group(:course).count.sort { |a, b| b.first.created_at <=> a.first.created_at }.take(10).to_h.keys
+
+    render json: courses, root: :data
   end
 end
