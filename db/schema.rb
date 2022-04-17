@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_04_16_183553) do
+ActiveRecord::Schema.define(version: 2022_04_17_143125) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,6 +33,17 @@ ActiveRecord::Schema.define(version: 2022_04_16_183553) do
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_categorizations_on_category_id"
     t.index ["course_id"], name: "index_categorizations_on_course_id"
+  end
+
+  create_table "course_reviews", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "user_id"
+    t.integer "rating"
+    t.text "review"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_course_reviews_on_course_id"
+    t.index ["user_id"], name: "index_course_reviews_on_user_id"
   end
 
   create_table "courses", force: :cascade do |t|
@@ -85,7 +96,7 @@ ActiveRecord::Schema.define(version: 2022_04_16_183553) do
   create_table "questions", force: :cascade do |t|
     t.bigint "course_id"
     t.integer "question_number"
-    t.string "question"
+    t.text "question"
     t.jsonb "tags"
     t.string "question_image_url"
     t.jsonb "options"
@@ -93,7 +104,7 @@ ActiveRecord::Schema.define(version: 2022_04_16_183553) do
     t.string "answer_image_url"
     t.boolean "multi_answer"
     t.integer "multiplier"
-    t.string "explanation"
+    t.text "explanation"
     t.string "explanation_image_url"
     t.integer "version", default: 1
     t.integer "status"
@@ -151,6 +162,8 @@ ActiveRecord::Schema.define(version: 2022_04_16_183553) do
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
+  add_foreign_key "course_reviews", "courses"
+  add_foreign_key "course_reviews", "users"
   add_foreign_key "courses", "users", column: "creator_id"
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
