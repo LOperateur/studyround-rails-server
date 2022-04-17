@@ -10,7 +10,7 @@ Rails.application.routes.draw do
 
   resources :users, only: [:show]
   get '/user', to: "users#profile"
-  get '/user/categories', to: "users#interested_categories"
+  get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
 
   resources :categories, only: [:index] do
@@ -21,7 +21,9 @@ Rails.application.routes.draw do
   get 'courses/categorised', to: "courses#categorised"
   get 'courses/interest', to: "courses#interest_categorised"
   get 'courses/top', to: "courses#top_courses"
+  get 'courses/recent', to: "courses#recent_courses"
 
   get 'dashboard/carousel'
-  get 'dashboard/recent'
+
+  get '/user/results', to: "results#recent"
 end
