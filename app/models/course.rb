@@ -7,7 +7,7 @@ class Course < ApplicationRecord
   has_many :questions
   has_many :course_reviews
 
-  scope :published_active_courses, -> { where(draft: false, course_status: :course_status_active) }
+  scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active) }
 
   enum sale_status: {
     sale_status_free: 1,
@@ -18,5 +18,11 @@ class Course < ApplicationRecord
   enum course_status: {
     course_status_active: 1,
     course_status_suspended: 2,
+  }
+
+  # Don't change the order of 1 and 2, referenced in migrations
+  enum publish_status: {
+    publish_status_draft: 1,
+    publish_status_published: 2,
   }
 end

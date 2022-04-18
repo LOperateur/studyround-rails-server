@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_04_17_172704) do
+ActiveRecord::Schema.define(version: 2022_04_18_100048) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -58,7 +58,7 @@ ActiveRecord::Schema.define(version: 2022_04_17_172704) do
     t.string "image_url"
     t.integer "version", default: 1
     t.datetime "test_expiration"
-    t.boolean "draft"
+    t.integer "publish_status"
     t.jsonb "draft_content"
     t.integer "course_status"
     t.integer "next_edition"
@@ -107,7 +107,7 @@ ActiveRecord::Schema.define(version: 2022_04_17_172704) do
     t.text "explanation"
     t.string "explanation_image_url"
     t.integer "version", default: 1
-    t.integer "status"
+    t.integer "publish_status"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["course_id"], name: "index_questions_on_course_id"
