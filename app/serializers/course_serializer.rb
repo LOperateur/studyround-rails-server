@@ -6,6 +6,6 @@ class CourseSerializer < ActiveModel::Serializer
   end
 
   def num_questions
-    0
+    object.questions.count
   end
 end
