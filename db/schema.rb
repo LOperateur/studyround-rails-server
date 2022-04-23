@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_04_18_120531) do
+ActiveRecord::Schema.define(version: 2022_04_23_185459) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,17 +33,6 @@ ActiveRecord::Schema.define(version: 2022_04_18_120531) do
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_categorizations_on_category_id"
     t.index ["course_id"], name: "index_categorizations_on_course_id"
-  end
-
-  create_table "course_reviews", force: :cascade do |t|
-    t.bigint "course_id"
-    t.bigint "user_id"
-    t.integer "rating"
-    t.text "review"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["course_id"], name: "index_course_reviews_on_course_id"
-    t.index ["user_id"], name: "index_course_reviews_on_user_id"
   end
 
   create_table "courses", force: :cascade do |t|
@@ -136,6 +125,17 @@ ActiveRecord::Schema.define(version: 2022_04_18_120531) do
     t.index ["user_id"], name: "index_results_on_user_id"
   end
 
+  create_table "reviews", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "user_id"
+    t.integer "rating"
+    t.text "review"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_reviews_on_course_id"
+    t.index ["user_id"], name: "index_reviews_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "username"
     t.string "password_digest"
@@ -162,8 +162,6 @@ ActiveRecord::Schema.define(version: 2022_04_18_120531) do
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
-  add_foreign_key "course_reviews", "courses"
-  add_foreign_key "course_reviews", "users"
   add_foreign_key "courses", "users", column: "creator_id"
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
@@ -171,4 +169,6 @@ ActiveRecord::Schema.define(version: 2022_04_18_120531) do
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "results", "courses"
   add_foreign_key "results", "users"
+  add_foreign_key "reviews", "courses"
+  add_foreign_key "reviews", "users"
 end
