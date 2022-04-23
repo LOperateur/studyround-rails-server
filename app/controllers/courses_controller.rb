@@ -1,5 +1,5 @@
 class CoursesController < ApplicationController
-  skip_before_action :authorize!, only: [:index, :categorised, :top_courses]
+  skip_before_action :authorize!, only: [:index, :categorised, :top_courses, :search]
 
   wrap_parameters format: []
 
@@ -51,5 +51,18 @@ class CoursesController < ApplicationController
     courses = results.group(:course).count.sort { |a, b| b.first.created_at <=> a.first.created_at }.take(10).to_h.keys
 
     render json: courses, root: :data
+  end
+
+  def search
+    search_query = params[:q]
+    if search_query.blank?
+      found_courses = Course.none
+    else
+      found_courses = Course.published_active_courses.order(created_at: :desc)
+                      .where("lower(title) LIKE ? ", "%#{search_query.downcase}%")
+    end
+
+    courses = paginate(found_courses, params)
+    render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
 end

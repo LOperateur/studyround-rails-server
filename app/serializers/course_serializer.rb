@@ -1,11 +1,15 @@
 class CourseSerializer < ActiveModel::Serializer
-  attributes :id, :title, :creator_id, :creator_username, :rating, :image_url, :num_questions, :currency, :price, :sale_status
+  attributes :id, :title, :rating, :image_url, :num_questions, :currency, :price, :sale_status, :creator
 
-  def creator_username
-    object.creator.username
+  def creator
+    creator = object.creator
+    {
+      id: creator.id,
+      username: creator.username
+    }
   end
 
   def num_questions
-    object.questions.count
+    object.questions.publish_status_published.count
   end
 end
