@@ -22,7 +22,6 @@ class ReviewsController < ApplicationController
       save_and_calculate existing_review
       render json: existing_review, root: :data, status: :ok
     end
-
   end
 
   def show
