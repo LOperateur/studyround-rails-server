@@ -7,7 +7,7 @@ class Course < ApplicationRecord
   has_many :questions
   has_many :reviews
 
-  scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active) }
+  scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
 
   enum sale_status: {
     sale_status_free: 1,
