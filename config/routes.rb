@@ -17,7 +17,9 @@ Rails.application.routes.draw do
     get '/courses', to: "courses#per_category"
   end
 
-  resources :courses, only: [:index]
+  resources :courses, only: [:index] do
+    resources :reviews
+  end
   get 'courses/categorised', to: "courses#categorised"
   get 'courses/interest', to: "courses#interest_categorised"
   get 'courses/top', to: "courses#top_courses"

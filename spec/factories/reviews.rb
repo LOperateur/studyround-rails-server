@@ -1,5 +1,5 @@
 FactoryBot.define do
-  factory :course_review do
+  factory :review do
     course { nil }
     user { nil }
     rating { 1 }

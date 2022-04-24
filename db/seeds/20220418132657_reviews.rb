@@ -1,8 +1,8 @@
 unless Rails.env.production?
   user = User.first
 
-  if CourseReview.count == 0
-    CourseReview.create(
+  if Review.count == 0
+    Review.create(
       [
         {
           course: Course.find_by(title: "A Brief History of Time"),
