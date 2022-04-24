@@ -17,14 +17,13 @@ Rails.application.routes.draw do
     get '/courses', to: "courses#per_category"
   end
 
-  resources :courses, only: [:index] do
+  get '/courses/categorised', to: "courses#categorised"
+  get '/courses/top', to: "courses#top_courses"
+  get '/courses/recent', to: "courses#recent_courses"
+  get '/search', to: "courses#search"
+  resources :courses, only: [:index, :show] do
     resources :reviews
   end
-  get 'courses/categorised', to: "courses#categorised"
-  get 'courses/interest', to: "courses#interest_categorised"
-  get 'courses/top', to: "courses#top_courses"
-  get 'courses/recent', to: "courses#recent_courses"
-  get '/search', to: "courses#search"
 
   get 'dashboard/carousel'
 

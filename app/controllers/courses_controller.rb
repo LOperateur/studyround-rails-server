@@ -1,5 +1,5 @@
 class CoursesController < ApplicationController
-  skip_before_action :authorize!, only: [:index, :categorised, :top_courses, :search]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
 
   wrap_parameters format: []
 
@@ -8,17 +8,20 @@ class CoursesController < ApplicationController
     render json: courses, root: :data, meta: paginated_meta(courses)
   end
 
-  def categorised
-    categories = Category.take(5)
-    render json: {
-      data: categories.map do |category|
-        category.serialized_categorised_course[:category]
-      end
-    }
+  def show
+    course = Course.find(params[:id])
+    render json: course, root: :data, serializer: FullCourseSerializer
   end
 
-  def interest_categorised
-    categories = current_user.categories.order(affinity: :desc).take(5)
+  def categorised
+    if current_user.nil?
+      # Use left_joins for when you want Categories with 0 courses. Not want we want here, so we use joins
+      # Answer gotten from: https://stackoverflow.com/questions/16996618/rails-order-by-results-count-of-has-many-association
+      categories = Category.where(level: 1).joins(:courses).group(:id).order('COUNT(courses.id) DESC').take(5)
+    else
+      categories = current_user.categories.order(affinity: :desc).take(5)
+    end
+
     render json: {
       data: categories.map do |category|
         category.serialized_categorised_course[:category]
@@ -59,7 +62,7 @@ class CoursesController < ApplicationController
       found_courses = Course.none
     else
       found_courses = Course.published_active_courses.order(created_at: :desc)
-                      .where("lower(title) LIKE ? ", "%#{search_query.downcase}%")
+                            .where("lower(title) LIKE ? ", "%#{search_query.downcase}%")
     end
 
     courses = paginate(found_courses, params)
