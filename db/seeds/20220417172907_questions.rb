@@ -306,11 +306,11 @@ unless Rails.env.production?
         {
           course: web3_course,
           question_number: 12,
-          question: "Which of these don't highlight the importance of Web 3.0?",
+          question: "Which of these highlight the importance of Web 3.0?",
           options: [
             {
               id: 1,
-              text: "Ownership"
+              text: "Apes"
             },
             {
               id: 2,
@@ -325,7 +325,8 @@ unless Rails.env.production?
               text: "User likeability"
             }
           ],
-          answer: "4",
+          multi_answer: true,
+          answer: "2|3",
           multiplier: 2,
           explanation: "You really fell for that?",
           publish_status: :publish_status_published
