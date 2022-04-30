@@ -2,6 +2,8 @@ class CourseSerializer < ActiveModel::Serializer
   attributes :id, :title, :rating, :image_url, :num_questions, :num_explanations,
              :currency, :price, :sale_status, :version, :test
 
+  belongs_to :creator, serializer: ProfileSerializer
+
   def num_questions
     object.questions.publish_status_published.count
   end
