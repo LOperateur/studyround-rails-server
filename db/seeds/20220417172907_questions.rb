@@ -446,7 +446,7 @@ unless Rails.env.production?
               text: "False"
             }
           ],
-          answer: [3],
+          answer: [2],
           multiplier: 2,
           explanation: "Who really knows?",
           publish_status: :publish_status_published

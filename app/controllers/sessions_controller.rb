@@ -1,20 +1,25 @@
 class SessionsController < ApplicationController
+  include SessionHelper
+
   skip_before_action :authorize!, only: [:start]
   before_action :load_course
 
   wrap_parameters format: []
 
   def start
-    num_questions = params[:questions]
     session = course_based_session
 
-    case params[:session_type].to_sym
+    case session_type(params[:session_type])
     when :study
-      questions = @course.questions
-    else
+      questions = @course.questions.publish_status_published
+    when :quiz, :practice
+      # TODO: Query quiz differently for only single answer OBJ and return error if numbers are less
+      num_questions = params[:questions]
       session_id = session[:id]
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
-      questions = @course.questions.order(Arel.sql("RANDOM()")).limit(num_questions)
+      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
+    else
+      raise Errors::BaseError.new(message: "Invalid session type")
     end
 
     paginated_questions = paginate(questions, { page: 1 })
@@ -35,15 +40,6 @@ class SessionsController < ApplicationController
   end
 
   private
-
-  def session_id_to_seed(id)
-    # If the id is nil or it doesn't contains only numbers
-    if id.nil? || !id.to_s.scan(/\D/).empty?
-      SecureRandom.random_number
-    else
-      ("0." + id.to_s).to_f
-    end
-  end
 
   def course_based_session
     {

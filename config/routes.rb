@@ -22,7 +22,7 @@ Rails.application.routes.draw do
   get '/courses/recent', to: "courses#recent_courses"
   get '/search', to: "courses#search"
   resources :courses, only: [:index, :show] do
-    resources :questions, only: [:index, :show]
+    resources :questions, only: [:index]
     resources :reviews
   end
 
