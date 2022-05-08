@@ -19,10 +19,10 @@ module Paginable
   private
 
   def per_page(params = {}, total: 0, default_per_page: 10)
-    if params[:page_size].present?
-      params[:page_size].to_i > 0 ? params[:page_size] : total
+    if params[:page_size].present? && params[:page_size].to_i > 0
+       params[:page_size]
     else
-      default_per_page
+      [default_per_page, total].min
     end
   end
 
