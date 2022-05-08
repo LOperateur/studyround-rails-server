@@ -22,10 +22,15 @@ Rails.application.routes.draw do
   get '/courses/recent', to: "courses#recent_courses"
   get '/search', to: "courses#search"
   resources :courses, only: [:index, :show] do
+    resources :questions, only: [:index]
     resources :reviews
   end
 
   get 'dashboard/carousel'
 
   get '/user/results', to: "results#recent"
+
+  post '/sessions/:course_id/start', to: "sessions#start"
+  post '/tests/:course_id/start', to: "sessions#start_test"
+
 end

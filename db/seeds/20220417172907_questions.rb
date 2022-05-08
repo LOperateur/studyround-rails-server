@@ -8,7 +8,7 @@ unless Rails.env.production?
       [
         {
           course: web3_course,
-          question_number: 1,
+          order: 1,
           question: "What is Web 3.0?",
           question_image_url: u_learn_logo_url,
           options: [
@@ -37,7 +37,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 2,
+          order: 2,
           question: "What is the Blockchain",
           options: [
             {
@@ -63,7 +63,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 3,
+          order: 3,
           question: "What decade did Web 2.0 start getting popular?",
           options: [
             {
@@ -89,7 +89,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 4,
+          order: 4,
           question: "What is the most popular Crypto Currency",
           options: [
             {
@@ -115,7 +115,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 5,
+          order: 5,
           question: "What is Bitcoins acronym?",
           options: [
             {
@@ -146,7 +146,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 6,
+          order: 6,
           question: "Which popular meme crypto did Elon Musk promote?",
           options: [
             {
@@ -171,7 +171,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 7,
+          order: 7,
           question: "Who founded Ether and PolkaDOT?",
           options: [
             {
@@ -198,7 +198,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 8,
+          order: 8,
           question: "Who founded Bitcoin?",
           options: [
             {
@@ -224,7 +224,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 9,
+          order: 9,
           question: "What's the relationship between Web 3.0 and Crypto?",
           options: [
             {
@@ -250,7 +250,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 10,
+          order: 10,
           question: "Which is not a key feature of Web 3.0?",
           options: [
             {
@@ -277,7 +277,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 11,
+          order: 11,
           question: "Why is Web 3.0 still limited?",
           options: [
             {
@@ -304,7 +304,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 12,
+          order: 12,
           question: "Which of these highlight the importance of Web 3.0?",
           options: [
             {
@@ -332,7 +332,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 13,
+          order: 13,
           question: "What does NFT stand for?",
           options: [
             {
@@ -358,7 +358,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 14,
+          order: 14,
           question: "What makes an NFT valuable?",
           options: [
             {
@@ -384,7 +384,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 15,
+          order: 15,
           question: "Which of these is not a popular NFT platform?",
           options: [
             {
@@ -411,7 +411,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 16,
+          order: 16,
           question: "Are NFTs the future of art and collectibles?",
           options: [
             {
@@ -434,7 +434,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 17,
+          order: 17,
           question: "Web 2.0 will be phased out by 2022 end",
           options: [
             {
@@ -446,14 +446,14 @@ unless Rails.env.production?
               text: "False"
             }
           ],
-          answer: [3],
+          answer: [2],
           multiplier: 2,
           explanation: "Who really knows?",
           publish_status: :publish_status_published
         },
         {
           course: web3_course,
-          question_number: 18,
+          order: 18,
           question: "Will Web 3.0 ever be the new standard",
           options: [
             {
@@ -484,7 +484,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 19,
+          order: 19,
           question: "The current Web standard right now is __________",
           answer: ["Web 2.0", "Web 2", "2.0", "2"],
           multiplier: 3,
@@ -493,7 +493,7 @@ unless Rails.env.production?
         },
         {
           course: web3_course,
-          question_number: 20,
+          order: 20,
           question: "Terra Nullius, the first NFT on the Ethereum blockchain was minted in what year?",
           answer: ["2015", "August 2015", "August 7, 2015"],
           multiplier: 4,
