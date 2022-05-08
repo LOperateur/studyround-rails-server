@@ -4,7 +4,7 @@ class CoursesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    courses = paginate(Course.all, params)
+    courses = paginate(Course.published_active_courses, params)
     render json: courses, root: :data, meta: paginated_meta(courses)
   end
 
