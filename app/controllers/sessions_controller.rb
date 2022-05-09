@@ -69,13 +69,13 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
 
-    result = Result.new(course: @course, user: current_user, score: score,
+    result = Result.create!(course: @course, user: current_user, score: score,
                         total: total, duration: params[:duration],
                         elapsed_time: params[:elapsed_time],
                         session_type: "session_type_#{params[:session_type]}".to_sym,
                         session_items: answers)
 
-    render json: result, root: :data
+    render json: result, root: :data, status: :created
   end
 
   def end_test
@@ -109,6 +109,6 @@ class SessionsController < ApplicationController
 
   def end_course_session_params
     params.permit(:session_type, :elapsed_time, :duration,
-                  :answers => [:question_id, :multiplier, :user_answer => [], :correct_answer => []])
+                  :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 end
