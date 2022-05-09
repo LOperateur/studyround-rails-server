@@ -40,8 +40,9 @@ class SessionsController < ApplicationController
   end
 
   def end
-    if end_course_session_params[:session_type].to_sym == :study
-      raise Errors::BaseError.new(message: "You cannot end a study session")
+    type = end_course_session_params[:session_type]
+    if type.nil? || type.to_sym == :study || type.to_sym == :test
+      raise Errors::BaseError.new(message: "Invalid session type")
     end
 
     answers = end_course_session_params[:answers]
@@ -70,8 +71,8 @@ class SessionsController < ApplicationController
 
     result = Result.new(course: @course, user: current_user, score: score,
                         total: total, duration: params[:duration],
-                        #elapsed_time: params[:elapsed_time],
-                        mode: "mode_#{params[:session_type]}".to_sym,
+                        elapsed_time: params[:elapsed_time],
+                        session_type: "session_type_#{params[:session_type]}".to_sym,
                         session_items: answers)
 
     render json: result, root: :data
