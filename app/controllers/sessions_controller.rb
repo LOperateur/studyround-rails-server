@@ -12,8 +12,14 @@ class SessionsController < ApplicationController
     case session_type(params[:session_type])
     when :study
       questions = @course.questions.publish_status_published
-    when :quiz, :practice
-      # TODO: Query quiz differently for only single answer OBJ and return error if numbers are less
+    when :quiz
+      # TODO: Return error if numbers are less
+      num_questions = params[:questions]
+      session_id = session[:id]
+      Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
+      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
+    when :practice
+      # TODO: Return error if numbers are less
       num_questions = params[:questions]
       session_id = session[:id]
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")

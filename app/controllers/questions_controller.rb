@@ -10,7 +10,11 @@ class QuestionsController < ApplicationController
     case session_type(params[:session_type])
     when :study
       questions = @course.questions.publish_status_published
-    when :quiz, :practice
+    when :quiz
+      max_num_questions = 50
+      Course.connection.execute("SELECT SETSEED(#{seed})")
+      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(max_num_questions)
+    when :practice
       max_num_questions = 50
       Course.connection.execute("SELECT SETSEED(#{seed})")
       questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(max_num_questions)
