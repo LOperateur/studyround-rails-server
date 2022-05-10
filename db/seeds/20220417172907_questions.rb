@@ -119,22 +119,22 @@ unless Rails.env.production?
           question: "What is Bitcoins acronym?",
           options: [
             {
-              id: 1,
+              order: 1,
               text: "ETH",
               image_url: u_learn_logo_url
             },
             {
-              id: 2,
+              order: 2,
               text: "BTC",
               image_url: u_learn_logo_url
             },
             {
-              id: 3,
+              order: 3,
               text: "BITC",
               image_url: u_learn_logo_url
             },
             {
-              id: 4,
+              order: 4,
               text: "BTN",
               image_url: u_learn_logo_url
             }
