@@ -9,7 +9,7 @@ class QuestionsController < ApplicationController
   def index
     case session_type(params[:session_type])
     when :study
-      questions = @course.questions.publish_status_published
+      questions = @course.questions.publish_status_published.order(order: :asc)
     when :quiz
       num_questions = params[:questions].to_i
       Course.connection.execute("SELECT SETSEED(#{seed})")
