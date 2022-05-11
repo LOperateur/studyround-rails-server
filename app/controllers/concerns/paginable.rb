@@ -1,18 +1,19 @@
 module Paginable
   extend ActiveSupport::Concern
 
-  def paginate(record = ApplicationRecord, params)
+  def paginate(record, params = {}, entries = record.count)
     record.paginate(
       page: params[:page],
-      per_page: per_page(params, total: record.count)
+      per_page: per_page(params, total: entries),
+      total_entries: entries,
     )
   end
 
   def paginated_meta(relation)
     {
-        page: relation.current_page,
-        page_size: relation.per_page,
-        total: relation.count
+      page: relation.current_page,
+      page_size: relation.per_page,
+      total: relation.total_entries
     }
   end
 
@@ -20,7 +21,7 @@ module Paginable
 
   def per_page(params = {}, total: 0, default_per_page: 10)
     if params[:page_size].present? && params[:page_size].to_i > 0
-       params[:page_size]
+      params[:page_size]
     else
       [default_per_page, total].min
     end

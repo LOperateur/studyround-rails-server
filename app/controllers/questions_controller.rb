@@ -11,18 +11,19 @@ class QuestionsController < ApplicationController
     when :study
       questions = @course.questions.publish_status_published
     when :quiz
-      max_num_questions = 50
+      num_questions = params[:questions].to_i
       Course.connection.execute("SELECT SETSEED(#{seed})")
-      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(max_num_questions)
+      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
     when :practice
-      max_num_questions = 50
+      num_questions = params[:questions].to_i
       Course.connection.execute("SELECT SETSEED(#{seed})")
-      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(max_num_questions)
+      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
     else
       raise Errors::BaseError.new(message: "Invalid session type")
     end
 
-    paginated_questions = paginate(questions, params)
+    # Converting to array to calculate the offset page data w.r.t num_questions
+    paginated_questions = paginate(questions.to_a, params)
     render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
   end
 

@@ -11,7 +11,7 @@ class SessionsController < ApplicationController
 
     case session_type(params[:session_type])
     when :study
-      questions = @course.questions.publish_status_published
+      questions = @course.questions.publish_status_published.order(order: :asc)
     when :quiz
       num_questions = params[:questions]
       check_course_session_limits(num_questions)
@@ -28,7 +28,8 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid session type")
     end
 
-    paginated_questions = paginate(questions, { page: 1 })
+    # Converting to array to calculate the offset page data w.r.t num_questions
+    paginated_questions = paginate(questions.to_a)
     render json: {
       data: {
         session: session,
