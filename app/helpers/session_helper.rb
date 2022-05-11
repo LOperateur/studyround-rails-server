@@ -18,4 +18,13 @@ module SessionHelper
   def session_types
     [:quiz, :practice, :study]
   end
+
+  def check_course_session_limits(num_questions)
+    if num_questions < 10
+      raise Errors::BaseError.new(message: "Number of questions should be at least 10")
+    end
+    if num_questions > 50
+      raise Errors::BaseError.new(message: "Number of questions should not exceed 50")
+    end
+  end
 end

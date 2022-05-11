@@ -13,14 +13,14 @@ class SessionsController < ApplicationController
     when :study
       questions = @course.questions.publish_status_published
     when :quiz
-      # TODO: Return error if numbers are less
       num_questions = params[:questions]
+      check_course_session_limits(num_questions)
       session_id = session[:id]
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
       questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
     when :practice
-      # TODO: Return error if numbers are less
       num_questions = params[:questions]
+      check_course_session_limits(num_questions)
       session_id = session[:id]
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
       questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
@@ -76,10 +76,10 @@ class SessionsController < ApplicationController
     end
 
     result = Result.create!(course: @course, user: current_user, score: score,
-                        total: total, duration: params[:duration],
-                        elapsed_time: params[:elapsed_time],
-                        session_type: "session_type_#{params[:session_type]}".to_sym,
-                        session_items: answers)
+                            total: total, duration: params[:duration],
+                            elapsed_time: params[:elapsed_time],
+                            session_type: "session_type_#{params[:session_type]}".to_sym,
+                            session_items: answers)
 
     render json: result, root: :data, status: :created
   end
