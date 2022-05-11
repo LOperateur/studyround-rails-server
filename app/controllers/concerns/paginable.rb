@@ -1,3 +1,5 @@
+require 'will_paginate/array'
+
 module Paginable
   extend ActiveSupport::Concern
 
