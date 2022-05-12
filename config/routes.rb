@@ -29,6 +29,7 @@ Rails.application.routes.draw do
   get 'dashboard/carousel'
 
   get '/user/results', to: "results#recent"
+  resources :results, only: [:show]
 
   post '/sessions/:course_id/start', to: "sessions#start"
   post '/tests/:course_id/start', to: "sessions#start_test"
