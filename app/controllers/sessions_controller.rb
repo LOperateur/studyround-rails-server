@@ -82,7 +82,7 @@ class SessionsController < ApplicationController
                             session_type: "session_type_#{params[:session_type]}".to_sym,
                             session_items: answers)
 
-    render json: result, root: :data, status: :created
+    render json: result, root: :data, serializer: SessionResultSerializer, status: :created
   end
 
   def end_test
@@ -93,6 +93,7 @@ class SessionsController < ApplicationController
 
   def course_based_session
     {
+      # Remove the 0.xxxx decimal prefix
       id: SecureRandom.random_number.to_s[2..-1].to_i,
       current_question_number: 1,
       server_time: Time.now,
