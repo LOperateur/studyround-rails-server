@@ -77,17 +77,22 @@ class SessionsController < ApplicationController
     end
 
     # Ensure result submissions are spaced by at least a minute
-    if !current_user.results.empty? && current_user.results.last.created_at > 1.minute.ago
-      raise Errors::BaseError.new(message: "Rapid submission detected! Please wait a minute before trying again")
+    if params[:session_id].nil?
+      raise Errors::BaseError.new(message: "Unknown session!")
     end
 
-    result = Result.create!(course: @course, user: current_user, score: score,
-                            total: total, duration: params[:duration],
-                            elapsed_time: params[:elapsed_time],
-                            session_type: params[:session_type],
-                            session_items: answers)
+    # Idempotency check to prevent double submissions
+    result = Result.find_by(session_id: params[:session_id]) ||
+      Result.create!(
+        course: @course, user: current_user, score: score,
+        total: total, duration: params[:duration],
+        elapsed_time: params[:elapsed_time],
+        session_type: params[:session_type],
+        session_id: params[:session_id],
+        session_items: answers
+      )
 
-    render json: result, root: :data, serializer: SessionResultSerializer, status: :created
+    render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
   end
 
   def end_test

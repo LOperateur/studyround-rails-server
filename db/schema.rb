@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_05_12_102733) do
+ActiveRecord::Schema.define(version: 2022_05_14_184411) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -123,7 +123,9 @@ ActiveRecord::Schema.define(version: 2022_05_12_102733) do
     t.datetime "updated_at", null: false
     t.bigint "elapsed_time"
     t.jsonb "tags"
+    t.bigint "session_id"
     t.index ["course_id"], name: "index_results_on_course_id"
+    t.index ["session_id"], name: "index_results_on_session_id", unique: true
     t.index ["user_id"], name: "index_results_on_user_id"
   end
 
