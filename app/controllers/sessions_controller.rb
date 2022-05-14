@@ -76,6 +76,11 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
 
+    # Ensure result submissions are spaced by at least a minute
+    if !current_user.results.empty? && current_user.results.last.created_at > 1.minute.ago
+      raise Errors::BaseError.new(message: "Rapid submission detected! Please wait a minute before trying again")
+    end
+
     result = Result.create!(course: @course, user: current_user, score: score,
                             total: total, duration: params[:duration],
                             elapsed_time: params[:elapsed_time],
