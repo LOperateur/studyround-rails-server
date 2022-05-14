@@ -486,7 +486,7 @@ unless Rails.env.production?
           course: web3_course,
           order: 19,
           question: "The current Web standard right now is __________",
-          answer: ["Web 2.0", "Web 2", "2.0", "2"],
+          answer: ["Web 2.0", "Web 2", "Web2", "2.0", "2"],
           multiplier: 3,
           explanation: "Who really knows?",
           publish_status: :publish_status_published

@@ -7,17 +7,19 @@ class QuestionsController < ApplicationController
   wrap_parameters format: []
 
   def index
-    case session_type(params[:session_type])
+    session_type = session_type(params[:session_type])
+
+    case session_type
     when :study
       questions = @course.questions.publish_status_published.order(order: :asc)
-    when :quiz
+    when :quiz, :practice
       num_questions = params[:questions].to_i
       Course.connection.execute("SELECT SETSEED(#{seed})")
-      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
-    when :practice
-      num_questions = params[:questions].to_i
-      Course.connection.execute("SELECT SETSEED(#{seed})")
-      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
+      if session_type == :quiz
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
+      else
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
+      end
     else
       raise Errors::BaseError.new(message: "Invalid session type")
     end

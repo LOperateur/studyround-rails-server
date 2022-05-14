@@ -9,13 +9,13 @@ module SessionHelper
   end
 
   def session_type(session_type)
-    if session_type.nil? || !session_types.include?(session_type.to_sym)
+    if session_type.nil? || !course_session_types.include?(session_type.to_sym)
       raise Errors::BaseError.new(message: "Invalid session type")
     end
     session_type.to_sym
   end
 
-  def session_types
+  def course_session_types
     [:quiz, :practice, :study]
   end
 
@@ -25,6 +25,12 @@ module SessionHelper
     end
     if num_questions > 50
       raise Errors::BaseError.new(message: "Number of questions should not exceed 50")
+    end
+  end
+
+  def check_min_available_questions(num_questions)
+    if num_questions < 10
+      raise Errors::BaseError.new(message: "There aren't enough questions to take this course. Please try another course")
     end
   end
 end

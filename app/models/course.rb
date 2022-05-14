@@ -20,7 +20,9 @@ class Course < ApplicationRecord
     course_status_suspended: 2,
   }
 
-  # Don't change the order of 1 and 2, referenced in migrations
+  # Don't change the order of 1 and 2, referenced in migration
+  # 20220418091257_change_course_draft_to_integer.rb
+  # 20220418100048_rename_question_course_status.rb
   enum publish_status: {
     publish_status_draft: 1,
     publish_status_published: 2,
