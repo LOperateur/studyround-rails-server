@@ -8,22 +8,22 @@ class SessionsController < ApplicationController
 
   def start
     session = course_based_session
+    session_type = session_type(params[:session_type])
 
-    case session_type(params[:session_type])
+    case session_type
     when :study
       questions = @course.questions.publish_status_published.order(order: :asc)
-    when :quiz
+    when :quiz, :practice
       num_questions = params[:questions]
       check_course_session_limits(num_questions)
       session_id = session[:id]
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
-      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
-    when :practice
-      num_questions = params[:questions]
-      check_course_session_limits(num_questions)
-      session_id = session[:id]
-      Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
-      questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
+      if session_type == :quiz
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
+      else
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
+      end
+      check_min_available_questions(questions.length)
     else
       raise Errors::BaseError.new(message: "Invalid session type")
     end
@@ -79,7 +79,7 @@ class SessionsController < ApplicationController
     result = Result.create!(course: @course, user: current_user, score: score,
                             total: total, duration: params[:duration],
                             elapsed_time: params[:elapsed_time],
-                            session_type: "session_type_#{params[:session_type]}".to_sym,
+                            session_type: params[:session_type],
                             session_items: answers)
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :created

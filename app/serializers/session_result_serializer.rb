@@ -6,7 +6,7 @@ class SessionResultSerializer < ResultSerializer
     {
       num_questions: object.session_items.length,
       duration: object.duration,
-      session_type: object.session_type.to_s.gsub("session_type_", ""),
+      session_type: object.session_type,
       tags: object.tags
     }
   end

@@ -790,7 +790,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -799,7 +799,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :quiz
         },
         {
           user: user,
@@ -808,7 +808,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -817,7 +817,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :quiz
         },
         {
           user: user,
@@ -826,7 +826,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -835,7 +835,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -844,7 +844,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -853,7 +853,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -862,7 +862,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -871,7 +871,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -880,7 +880,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -889,7 +889,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -898,7 +898,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -907,7 +907,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -916,7 +916,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -925,7 +925,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -934,7 +934,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -943,7 +943,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -952,7 +952,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -961,7 +961,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -970,7 +970,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -979,7 +979,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -988,7 +988,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -997,7 +997,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -1006,7 +1006,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -1015,7 +1015,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -1024,7 +1024,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -1033,7 +1033,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -1042,7 +1042,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         },
         {
           user: user,
@@ -1051,7 +1051,7 @@ unless Rails.env.production?
           total: rand(51..100),
           elapsed_time: 3540,
           duration: 3600,
-          session_type: :session_type_practice
+          session_type: :practice
         }
       ]
     )
