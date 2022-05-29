@@ -2,7 +2,7 @@ class QuestionsController < ApplicationController
   include SessionHelper
 
   skip_before_action :authorize!, only: [:index]
-  before_action :load_course
+  before_action :load_course, only: [:index]
 
   wrap_parameters format: []
 
@@ -27,6 +27,17 @@ class QuestionsController < ApplicationController
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a, params)
     render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
+  end
+
+  def explanation
+    question = Question.find(params[:question_id])
+    render json: {
+      data: {
+        question_id: question.id,
+        explanation: question.explanation,
+        explanation_image_url: question.explanation_image_url,
+      }
+    }
   end
 
   private

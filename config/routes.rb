@@ -26,6 +26,10 @@ Rails.application.routes.draw do
     resources :reviews
   end
 
+  resources :questions do
+    get '/explanation', to: "questions#explanation"
+  end
+
   get 'dashboard/carousel'
 
   get '/user/results', to: "results#recent"
