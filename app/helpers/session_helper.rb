@@ -33,4 +33,13 @@ module SessionHelper
       raise Errors::BaseError.new(message: "There aren't enough questions to take this course. Please try another course")
     end
   end
+
+  # Returns a uuid that comes from a random seed generated from a deterministic
+  # pseudorandom transformation of the user id, session id and session type.
+  def idempotent_session_key(user_id, session_id, session_type)
+    input = "#{user_id}:#{session_id}:#{session_type.to_s}"
+    hash = Digest::MurmurHash64A.rawdigest(input) # Returns an integer
+    rnd = Random.new(hash) # Use that integer to seed a new random uuid
+    rnd.uuid
+  end
 end

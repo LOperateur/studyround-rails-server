@@ -16,7 +16,7 @@ class QuestionsController < ApplicationController
       num_questions = params[:questions].to_i
       Course.connection.execute("SELECT SETSEED(#{seed})")
       if session_type == :quiz
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
       else
         questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
       end
