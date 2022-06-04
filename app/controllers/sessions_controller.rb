@@ -19,7 +19,8 @@ class SessionsController < ApplicationController
       session_id = session[:id]
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
       if session_type == :quiz
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not(options: nil).where("JSONB_ARRAY_LENGTH(answer) = 1").limit(num_questions)
+        # where("JSONB_ARRAY_LENGTH(answer) = 1")
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
       else
         questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
       end
@@ -82,13 +83,13 @@ class SessionsController < ApplicationController
     end
 
     # Idempotency check to prevent double submissions
-    session_key = idempotent_session_key(current_user.id, params[:session_id], type)
+    session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
     result = Result.find_by(session_key: session_key) ||
       Result.create!(
         course: @course, user: current_user, score: score,
-        total: total, duration: params[:duration],
-        elapsed_time: params[:elapsed_time],
-        session_type: params[:session_type],
+        total: total, duration: end_course_session_params[:duration],
+        elapsed_time: end_course_session_params[:elapsed_time],
+        session_type: end_course_session_params[:session_type],
         session_key: session_key,
         session_items: answers
       )
@@ -127,7 +128,7 @@ class SessionsController < ApplicationController
   end
 
   def end_course_session_params
-    params.permit(:session_type, :elapsed_time, :duration,
+    params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :tags => [],
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 end

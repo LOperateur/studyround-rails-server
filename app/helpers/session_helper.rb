@@ -39,7 +39,7 @@ module SessionHelper
   def idempotent_session_key(user_id, session_id, session_type)
     input = "#{user_id}:#{session_id}:#{session_type.to_s}"
     hash = Digest::MurmurHash64A.rawdigest(input) # Returns an integer
-    rnd = Random.new(hash)
+    rnd = Random.new(hash) # Use that integer to seed a new random uuid
     rnd.uuid
   end
 end
