@@ -48,6 +48,9 @@ gem 'rack-cors', :require => 'rack/cors'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.1.0', require: false
 
+# Generating Idempotent keys
+gem 'digest-murmurhash'
+
 group :development, :test do
   gem 'rspec-rails', '~> 4.0.2'
   gem 'factory_bot_rails'

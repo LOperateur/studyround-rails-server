@@ -4,6 +4,6 @@ class ChangeResultSessionIdToString < ActiveRecord::Migration[5.2]
   end
 
   def down
-    change_column :results, :session_id, :integer, using: "#{SecureRandom.uuid}"
+    change_column :results, :session_id, :bigint, using: "NULL"
   end
 end

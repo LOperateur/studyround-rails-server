@@ -82,13 +82,14 @@ class SessionsController < ApplicationController
     end
 
     # Idempotency check to prevent double submissions
-    result = Result.find_by(session_id: params[:session_id]) ||
+    session_key = idempotent_session_key(current_user.id, params[:session_id], type)
+    result = Result.find_by(session_key: session_key) ||
       Result.create!(
         course: @course, user: current_user, score: score,
         total: total, duration: params[:duration],
         elapsed_time: params[:elapsed_time],
         session_type: params[:session_type],
-        session_id: params[:session_id],
+        session_key: session_key,
         session_items: answers
       )
 
