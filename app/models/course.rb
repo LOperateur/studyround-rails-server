@@ -18,6 +18,8 @@ class Course < ApplicationRecord
   enum course_status: {
     course_status_active: 1,
     course_status_suspended: 2,
+    course_status_expired: 3, # For tests
+    course_status_closed: 4, # For tests
   }
 
   # Don't change the order of 1 and 2, referenced in migration

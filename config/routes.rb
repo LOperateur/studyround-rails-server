@@ -35,6 +35,8 @@ Rails.application.routes.draw do
   get '/user/results', to: "results#recent"
   resources :results, only: [:show]
 
+  get '/tests/:course_id/instructions', to: "sessions#test_instructions"
+
   post '/sessions/:course_id/start', to: "sessions#start"
   post '/tests/:course_id/start', to: "sessions#start_test"
   post '/sessions/:course_id/end', to: "sessions#end"

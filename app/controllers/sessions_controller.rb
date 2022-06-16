@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   include SessionHelper
+  include TestHelper
 
   skip_before_action :authorize!, only: [:start]
   before_action :load_course
@@ -20,7 +21,7 @@ class SessionsController < ApplicationController
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
       if session_type == :quiz
         # where("JSONB_ARRAY_LENGTH(answer) = 1")
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
       else
         questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
       end
@@ -43,7 +44,27 @@ class SessionsController < ApplicationController
     }
   end
 
+  def test_instructions
+    # TODO: Invitation key to work later
+
+    # instructions_array = instr_json_to_text_array(@course.instructions)
+    instructions_array = init_test(current_user, @course, {
+      max_trials: 1,
+      reveal_answers: true,
+      time: 7200,
+      extra_id_title: "Mat Number",
+      user_limit: 100,
+      graded: true,
+      pause_on_quit: false,
+    })
+
+    render json: instructions_array
+
+  end
+
   def start_test
+    session = test_based_session
+    session_type = :test
 
   end
 
@@ -77,8 +98,7 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
 
-    # Ensure result submissions are spaced by at least a minute
-    if params[:session_id].nil?
+    if end_course_session_params[:session_id].nil?
       raise Errors::BaseError.new(message: "Unknown session!")
     end
 
@@ -113,6 +133,10 @@ class SessionsController < ApplicationController
       course_name: @course.title,
       session_items: [],
     }
+  end
+
+  def test_based_session
+
   end
 
   def load_course
