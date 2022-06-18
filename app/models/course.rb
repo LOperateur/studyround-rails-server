@@ -29,4 +29,9 @@ class Course < ApplicationRecord
     publish_status_draft: 1,
     publish_status_published: 2,
   }
+
+  # Used to serialize the course mini-model on the go without having to render
+  def serialized_mini_course
+    ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
+  end
 end

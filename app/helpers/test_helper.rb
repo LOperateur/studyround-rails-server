@@ -1,8 +1,16 @@
 module TestHelper
-  def init_test(user, course, instructions)
+  def init_test_instructions(user, course)
     @user = user
     @course = course
-    @instructions = instructions
+    @instructions = instructions = {
+      max_trials: 1,
+      reveal_answers: true,
+      time: 7200,
+      extra_id_title: "Mat Number",
+      user_limit: 100,
+      graded: true,
+      pause_on_quit: false,
+    }
 
     instructions_array = [
       instructions_map[:private],
@@ -14,18 +22,39 @@ module TestHelper
       instructions_array << map_instructions(k)
     end
 
-    instructions_array.compact
+    course.serialized_mini_course.merge(
+      {
+        resuming: is_user_resuming,
+        time_left: get_time_left(instructions[:time]),
+        start_time: nil, # Todo: From session
+        duration: instructions[:time],
+        attempts_left: get_max_trials_left(instructions[:max_trials]),
+        extra_id_title: instructions[:extra_id_title],
+        instructions: is_closed ? ["This test has been ended"] : instructions_array.compact
+      }
+    )
+
+  end
+
+  def start_test(user, course)
+    @user = user
+    @course = course
+    @instructions = instructions = {
+      max_trials: 1,
+      reveal_answers: true,
+      time: 7200,
+      extra_id_title: "Mat Number",
+      user_limit: 100,
+      graded: true,
+      pause_on_quit: false,
+    }
+
+
   end
 
   private
 
   # region Basic private functions
-
-  def is_resuming
-    #TODO: Change to sessions
-    # @user.results.where(course: @course).count > 0
-    true
-  end
 
   def map_instructions(key)
     instructions_map[key]
@@ -53,16 +82,14 @@ module TestHelper
 
   # endregion
 
-
-
   # region Instruction Mapping
 
   def privacy_instruction
     invited_text = "You have been invited by #{@course.creator.username} to take this test"
-    uninvited_text = "This test is private, you need an invitation to partake"
+    uninvited_text = "This test is private, you need a valid invitation to partake"
 
     if @course.private
-      check_valid_invitation ? invited_text : uninvited_text
+      has_valid_invitation ? invited_text : uninvited_text
     else
       nil
     end
@@ -73,19 +100,19 @@ module TestHelper
   end
 
   def expiration_instruction
-    expiration = @course.test_expiration || DateTime.now.utc
+    expiration = @course.test_expiration || DateTime.now
 
     if is_expired(expiration)
       total_time = @instructions[:time]
       resumption_addendum = ""
 
-      if is_resuming && get_time_left(total_time) > 0
+      if can_resume(total_time)
         resumption_addendum = ", you are still allowed to resume."
       end
 
-      "This test expired on #{expiration}#{resumption_addendum}"
+      "This test expired on #{expiration.to_formatted_s(:long_ordinal)}#{resumption_addendum}"
     else
-      "This test will expire on #{expiration}"
+      "This test will expire on #{expiration.to_formatted_s(:long_ordinal)}"
     end
   end
 
@@ -94,13 +121,17 @@ module TestHelper
 
     max_trials_left = get_max_trials_left(max_trials)
 
-    "You have #{max_trials_left} attempts left to take this test"
+    "You have #{max_trials_left} chances left to take and submit this test"
   end
 
   def map_user_limit_instruction
     user_limit = @instructions[:user_limit]
 
     available_test_slots = get_available_test_slots(user_limit)
+
+    if available_test_slots.nil?
+      return nil
+    end
 
     "There are #{available_test_slots} more candidate slots left for this test"
   end
@@ -125,6 +156,10 @@ module TestHelper
   def map_extra_id_instruction
     extra_id_title = @instructions[:extra_id_title]
 
+    if extra_id_title.nil?
+      return nil
+    end
+
     "Your '#{extra_id_title}' has been requested before starting the test"
   end
 
@@ -139,14 +174,18 @@ module TestHelper
 
   # endregion
 
-
-
   # region Validation Getters
 
   def get_time_left(total_time)
-    # Todo: check if session exists and use (start time + total time) - time now
+    # Todo: check if user is resuming and use (start time + total time) - time now
     #  If session does not exist, use total_time instead
-    time_left = total_time
+    if is_user_resuming
+      time_left = total_time
+      # time_left = (start time + total time) - time now
+    else
+      time_left = total_time
+    end
+
     return time_left
   end
 
@@ -156,28 +195,35 @@ module TestHelper
   end
 
   def get_available_test_slots(user_limit)
-    used_sessions = Result.where(course: @course).count # TODO: Change to sessions
-    used_results = Result.where(course: @course).count
+    # No need to check for test slots if it's unlimited (zero), user is resuming or user already has a result
+    return nil if user_limit == 0 || is_user_resuming || @user.results.where(course: @course).count > 0
+
+    used_sessions = Result.where(course: @course).distinct.count(:user_id) # TODO: Change to sessions
+    used_results = Result.where(course: @course).distinct.count(:user_id)
 
     return user_limit - used_sessions - used_results
   end
 
   # endregion
 
-
-
   # region Validation Checks
 
   # Check if it's a private test and if the user was invited
-  def check_valid_invitation
+  def has_valid_invitation
     # Todo: Validate Invitation properly
-    !!params[:invite_key]
+    return !!params[:invite_key]
+  end
+
+  def is_user_resuming
+    #TODO: Change to sessions
+    # @user.results.where(course: @course).count > 0
+    return false
   end
 
   # Check if the test has been closed by the creator
   # The user cannot start or resume a closed test
-  def check_if_closed
-
+  def is_closed
+    return @course.course_status_closed?
   end
 
   # Check if the test has expired
@@ -195,26 +241,20 @@ module TestHelper
     return expired
   end
 
-  # Check if the user can resume this expired test
-  def check_expiry_resumption
-
+  # Check if the user can resume this test (even if expired)
+  def can_resume(total_time)
+    return is_user_resuming && get_time_left(total_time) > 0
   end
 
   # Check the amount of times this user has to take this test
   # If a resuming user has 0 trials left, they can still resume
-  def check_trials_left
-
-  end
-
-  # Check if the user is resuming this test
-  # and also if they still have time to resume
-  def check_if_resuming
-
+  def has_trials_left(max_trials)
+    return get_max_trials_left(max_trials) > 0
   end
 
   # Check if candidacy has been exceeded
-  def check_available_test_slots
-
+  def has_available_test_slots(test_slots)
+    return get_available_test_slots(test_slots).nil? || get_available_test_slots(test_slots) > 0
   end
 
   # endregion

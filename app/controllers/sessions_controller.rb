@@ -47,24 +47,21 @@ class SessionsController < ApplicationController
   def test_instructions
     # TODO: Invitation key to work later
 
-    # instructions_array = instr_json_to_text_array(@course.instructions)
-    instructions_array = init_test(current_user, @course, {
-      max_trials: 1,
-      reveal_answers: true,
-      time: 7200,
-      extra_id_title: "Mat Number",
-      user_limit: 100,
-      graded: true,
-      pause_on_quit: false,
-    })
 
-    render json: instructions_array
+
+    response = init_test_instructions(current_user, @course)
+
+    render json: {
+      data: response
+    }
 
   end
 
   def start_test
     session = test_based_session
     session_type = :test
+
+
 
   end
 
