@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   include SessionHelper
+  include TestHelper
 
   skip_before_action :authorize!, only: [:start]
   before_action :load_course
@@ -7,6 +8,10 @@ class SessionsController < ApplicationController
   wrap_parameters format: []
 
   def start
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+    end
+
     session = course_based_session
     session_type = session_type(params[:session_type])
 
@@ -20,7 +25,7 @@ class SessionsController < ApplicationController
       Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
       if session_type == :quiz
         # where("JSONB_ARRAY_LENGTH(answer) = 1")
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
       else
         questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
       end
@@ -43,11 +48,35 @@ class SessionsController < ApplicationController
     }
   end
 
+  def test_instructions
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test")
+    end
+
+    response = init_test_instructions(current_user, @course)
+
+    render json: {
+      data: response
+    }
+
+  end
+
   def start_test
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test")
+    end
+
+    # Todo
+    session = test_based_session
+    session_type = :test
 
   end
 
   def end
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+    end
+
     type = end_course_session_params[:session_type]
     if type.nil? || type.to_sym == :study || type.to_sym == :test
       raise Errors::BaseError.new(message: "Invalid session type")
@@ -77,8 +106,7 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
 
-    # Ensure result submissions are spaced by at least a minute
-    if params[:session_id].nil?
+    if end_course_session_params[:session_id].nil?
       raise Errors::BaseError.new(message: "Unknown session!")
     end
 
@@ -113,6 +141,10 @@ class SessionsController < ApplicationController
       course_name: @course.title,
       session_items: [],
     }
+  end
+
+  def test_based_session
+    # Todo
   end
 
   def load_course

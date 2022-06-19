@@ -6,6 +6,7 @@ class Course < ApplicationRecord
   has_many :results
   has_many :questions
   has_many :reviews
+  has_many :sessions
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
 
@@ -18,6 +19,8 @@ class Course < ApplicationRecord
   enum course_status: {
     course_status_active: 1,
     course_status_suspended: 2,
+    course_status_expired: 3, # For tests
+    course_status_closed: 4, # For tests
   }
 
   # Don't change the order of 1 and 2, referenced in migration
@@ -27,4 +30,9 @@ class Course < ApplicationRecord
     publish_status_draft: 1,
     publish_status_published: 2,
   }
+
+  # Used to serialize the course mini-model on the go without having to render
+  def serialized_mini_course
+    ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
+  end
 end
