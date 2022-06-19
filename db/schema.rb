@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_05_29_195457) do
+ActiveRecord::Schema.define(version: 2022_06_18_184644) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -140,6 +140,22 @@ ActiveRecord::Schema.define(version: 2022_05_29_195457) do
     t.index ["user_id"], name: "index_reviews_on_user_id"
   end
 
+  create_table "sessions", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "course_id"
+    t.string "extra_id"
+    t.bigint "duration"
+    t.integer "current_question_number", default: 1
+    t.integer "session_type"
+    t.string "device_id"
+    t.string "web_tab_id"
+    t.jsonb "session_items"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_sessions_on_course_id"
+    t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "username"
     t.string "password_digest"
@@ -175,4 +191,6 @@ ActiveRecord::Schema.define(version: 2022_05_29_195457) do
   add_foreign_key "results", "users"
   add_foreign_key "reviews", "courses"
   add_foreign_key "reviews", "users"
+  add_foreign_key "sessions", "courses"
+  add_foreign_key "sessions", "users"
 end

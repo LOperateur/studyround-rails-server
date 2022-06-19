@@ -7,6 +7,10 @@ class QuestionsController < ApplicationController
   wrap_parameters format: []
 
   def index
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+    end
+
     session_type = session_type(params[:session_type])
 
     case session_type

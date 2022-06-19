@@ -2,6 +2,7 @@ module TestHelper
   def init_test_instructions(user, course)
     @user = user
     @course = course
+    # Todo: Get from course
     @instructions = instructions = {
       max_trials: 1,
       reveal_answers: true,
@@ -11,6 +12,8 @@ module TestHelper
       graded: true,
       pause_on_quit: false,
     }
+
+    @current_session = user.sessions.find_by(course: course)
 
     instructions_array = [
       instructions_map[:private],
@@ -25,20 +28,21 @@ module TestHelper
     course.serialized_mini_course.merge(
       {
         resuming: is_user_resuming,
+        server_time: DateTime.now.utc,
         time_left: get_time_left(instructions[:time]),
-        start_time: nil, # Todo: From session
+        start_time: if is_user_resuming then @current_session.created_at else nil end,
         duration: instructions[:time],
         attempts_left: get_max_trials_left(instructions[:max_trials]),
         extra_id_title: instructions[:extra_id_title],
         instructions: is_closed ? ["This test has been ended"] : instructions_array.compact
       }
     )
-
   end
 
   def start_test(user, course)
     @user = user
     @course = course
+    # Todo: Get from course
     @instructions = instructions = {
       max_trials: 1,
       reveal_answers: true,
@@ -49,6 +53,7 @@ module TestHelper
       pause_on_quit: false,
     }
 
+    @current_session = user.sessions.find_by(course: course)
 
   end
 
@@ -67,7 +72,6 @@ module TestHelper
       num_questions: num_questions_instruction,
 
       # Restrictive instructions
-      time: map_time_instruction,
       expiration: expiration_instruction,
       max_trials: map_max_trials_instruction,
       user_limit: map_user_limit_instruction,
@@ -100,7 +104,8 @@ module TestHelper
   end
 
   def expiration_instruction
-    expiration = @course.test_expiration || DateTime.now
+    # Default expiration is 30 days from creation
+    expiration = @course.test_expiration || @course.created_at + 30.days
 
     if is_expired(expiration)
       total_time = @instructions[:time]
@@ -145,14 +150,6 @@ module TestHelper
     reveal_answers ? reveal_answers_text : hidden_answers_text
   end
 
-  def map_time_instruction
-    total_time = @instructions[:time]
-
-    time_left = get_time_left(total_time)
-
-    "You have #{(time_left / 60).to_i} minutes left to take this test"
-  end
-
   def map_extra_id_instruction
     extra_id_title = @instructions[:extra_id_title]
 
@@ -177,16 +174,14 @@ module TestHelper
   # region Validation Getters
 
   def get_time_left(total_time)
-    # Todo: check if user is resuming and use (start time + total time) - time now
-    #  If session does not exist, use total_time instead
     if is_user_resuming
-      time_left = total_time
-      # time_left = (start time + total time) - time now
+      time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now
     else
+      # If session does not exist, use total_time instead
       time_left = total_time
     end
 
-    return time_left
+    return time_left.floor
   end
 
   def get_max_trials_left(max_trials)
@@ -196,9 +191,9 @@ module TestHelper
 
   def get_available_test_slots(user_limit)
     # No need to check for test slots if it's unlimited (zero), user is resuming or user already has a result
-    return nil if user_limit == 0 || is_user_resuming || @user.results.where(course: @course).count > 0
+    return nil if user_limit == 0 || is_user_resuming || @user.results.exists?(course: @course)
 
-    used_sessions = Result.where(course: @course).distinct.count(:user_id) # TODO: Change to sessions
+    used_sessions = Session.where(course: @course).distinct.count(:user_id)
     used_results = Result.where(course: @course).distinct.count(:user_id)
 
     return user_limit - used_sessions - used_results
@@ -215,9 +210,7 @@ module TestHelper
   end
 
   def is_user_resuming
-    #TODO: Change to sessions
-    # @user.results.where(course: @course).count > 0
-    return false
+    return !@current_session.nil?
   end
 
   # Check if the test has been closed by the creator
@@ -234,8 +227,7 @@ module TestHelper
     # If the time indicates it's expired but the course doesn't
     # have an expired or closed status, then expire the course.
     if expired && !(@course.course_status_expired? || @course.course_status_closed?)
-      # TODO: Uncomment later
-      # @course.course_status_expired!
+      @course.course_status_expired!
     end
 
     return expired

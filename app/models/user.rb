@@ -13,6 +13,7 @@ class User < ApplicationRecord
   has_many :categories, through: :interests
   has_many :results
   has_many :reviews
+  has_many :sessions
 
   def downcase_fields
     self.username.downcase!

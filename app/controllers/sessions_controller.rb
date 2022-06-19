@@ -8,6 +8,10 @@ class SessionsController < ApplicationController
   wrap_parameters format: []
 
   def start
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+    end
+
     session = course_based_session
     session_type = session_type(params[:session_type])
 
@@ -45,9 +49,9 @@ class SessionsController < ApplicationController
   end
 
   def test_instructions
-    # TODO: Invitation key to work later
-
-
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test")
+    end
 
     response = init_test_instructions(current_user, @course)
 
@@ -58,14 +62,21 @@ class SessionsController < ApplicationController
   end
 
   def start_test
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test")
+    end
+
+    # Todo
     session = test_based_session
     session_type = :test
-
-
 
   end
 
   def end
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+    end
+
     type = end_course_session_params[:session_type]
     if type.nil? || type.to_sym == :study || type.to_sym == :test
       raise Errors::BaseError.new(message: "Invalid session type")
@@ -133,7 +144,7 @@ class SessionsController < ApplicationController
   end
 
   def test_based_session
-
+    # Todo
   end
 
   def load_course

@@ -6,6 +6,7 @@ class Course < ApplicationRecord
   has_many :results
   has_many :questions
   has_many :reviews
+  has_many :sessions
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
 
