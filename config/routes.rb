@@ -33,6 +33,7 @@ Rails.application.routes.draw do
   get 'dashboard/carousel'
 
   get '/user/results', to: "results#recent"
+  get 'results/grouped', to: "results#grouped"
   resources :results, only: [:show]
 
   get '/tests/:course_id/instructions', to: "sessions#test_instructions"
