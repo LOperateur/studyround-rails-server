@@ -27,6 +27,5 @@ module Errors
     end
 
     attr_accessor :status, :message, :action, :source, :data
-    # attr_accessor :message
   end
 end

@@ -4,9 +4,11 @@ module ErrorHandler
   ERRORS = {
       'ActiveRecord::RecordNotFound' => 'Errors::NotFoundError',
       'ActiveRecord::RecordInvalid' => 'Errors::InvalidError',
-      'Errors::AuthorizationError' => 'Errors::AuthorizationError',
+
       'Errors::AuthenticationError' => 'Errors::AuthenticationError',
-      'Errors::BaseError' => 'Errors::BaseError'
+      'Errors::AuthorizationError' => 'Errors::AuthorizationError',
+      'Errors::BaseError' => 'Errors::BaseError',
+      'Errors::ForbiddenError' => 'Errors::ForbiddenError',
   }
 
   included do
