@@ -51,7 +51,7 @@ module TestHelper
     if is_user_resuming
 
       # If there's still time to submit (usually less than the lag time), let them resume
-      if get_time_left(@instructions[:time]) < 0
+      if get_time_left(@instructions[:time]) > 0
         # Todo: Resume test
         return @current_session
 

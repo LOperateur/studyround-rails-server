@@ -36,16 +36,8 @@ class SessionsController < ApplicationController
 
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a)
-    render json: {
-      data: {
-        session: session,
-        questions: {
-          data: paginated_questions.map do |question|
-            question.serialized_question[:question]
-          end
-        }.merge(paginated_meta(paginated_questions))
-      }
-    }
+
+    render_session_data(session, paginated_questions)
   end
 
   def test_instructions
@@ -70,8 +62,11 @@ class SessionsController < ApplicationController
     # If session_param already has an id, return the existing session, otherwise, create a new one
     session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
 
-    # TODO Add paginated questions to this response
-    render json: session, root: :data, status: :created
+    questions = @course.questions.publish_status_published.order(order: :asc)
+
+    paginated_questions = paginate(questions)
+
+    render_session_data(session.serialized_session[:session], paginated_questions)
   end
 
   def end
@@ -138,7 +133,7 @@ class SessionsController < ApplicationController
       # Remove the 0.xxxx decimal prefix
       id: SecureRandom.random_number.to_s[2..-1].to_i,
       current_question_number: 1,
-      server_time: Time.now,
+      server_time: DateTime.now.utc,
       course_id: @course.id,
       course_name: @course.title,
       session_items: [],
