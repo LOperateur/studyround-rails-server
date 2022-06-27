@@ -53,12 +53,11 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - must be a test")
     end
 
-    response = init_test_instructions(current_user, @course)
+    instructions_response = init_test_instructions(current_user, @course)
 
     render json: {
-      data: response
+      data: instructions_response
     }
-
   end
 
   def start_test
@@ -66,10 +65,13 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - must be a test")
     end
 
-    # Todo
-    session = test_based_session
-    session_type = :test
+    session_param = get_start_test_session(current_user, @course)
 
+    # If session_param already has an id, return the existing session, otherwise, create a new one
+    session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
+
+    # TODO Add paginated questions to this response
+    render json: session, root: :data, status: :created
   end
 
   def end
@@ -143,8 +145,14 @@ class SessionsController < ApplicationController
     }
   end
 
-  def test_based_session
-    # Todo
+  def create_test_based_session(params)
+    session = Session.create(params.merge(start_test_session_params))
+
+    if !session
+      raise Errors::BaseError.new(message: "Unable to start or resume test")
+    end
+
+    return session
   end
 
   def load_course
@@ -156,7 +164,8 @@ class SessionsController < ApplicationController
   end
 
   def start_test_session_params
-    params.permit(:extra_id, :device_id, :web_tab_id)
+    # If using the path param (course_id) for constructing a model, you have to permit it too
+    params.permit(:course_id, :extra_id, :device_id, :web_tab_id)
   end
 
   def end_course_session_params

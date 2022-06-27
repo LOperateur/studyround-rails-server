@@ -2,16 +2,7 @@ module TestHelper
   def init_test_instructions(user, course)
     @user = user
     @course = course
-    # Todo: Get from course
-    @instructions = instructions = {
-      max_trials: 1,
-      reveal_answers: true,
-      time: 7200,
-      extra_id_title: "Mat Number",
-      user_limit: 100,
-      graded: true,
-      pause_on_quit: false,
-    }
+    @instructions = course.instructions.symbolize_keys
 
     @current_session = user.sessions.find_by(course: course)
 
@@ -21,40 +12,83 @@ module TestHelper
       instructions_map[:expiration],
     ]
 
-    instructions.each do |k, v|
+    @instructions.each do |k, v|
       instructions_array << map_instructions(k)
     end
 
     course.serialized_mini_course.merge(
       {
         resuming: is_user_resuming,
-        server_time: DateTime.now.utc,
-        time_left: get_time_left(instructions[:time]),
+        server_time: DateTime.now.utc, # Send server time to API in UTC T..Z format
+        time_left: get_time_left(@instructions[:time]),
         start_time: if is_user_resuming then @current_session.created_at else nil end,
-        duration: instructions[:time],
-        attempts_left: get_max_trials_left(instructions[:max_trials]),
-        extra_id_title: instructions[:extra_id_title],
+        duration: @instructions[:time],
+        attempts_left: get_max_trials_left(@instructions[:max_trials]),
+        extra_id_title: @instructions[:extra_id_title],
         instructions: is_closed ? ["This test has been ended"] : instructions_array.compact
       }
     )
   end
 
-  def start_test(user, course)
+  def get_start_test_session(user, course)
     @user = user
     @course = course
-    # Todo: Get from course
-    @instructions = instructions = {
-      max_trials: 1,
-      reveal_answers: true,
-      time: 7200,
-      extra_id_title: "Mat Number",
-      user_limit: 100,
-      graded: true,
-      pause_on_quit: false,
-    }
+    @instructions = course.instructions.symbolize_keys
 
     @current_session = user.sessions.find_by(course: course)
 
+    # Check privacy and invitation key
+    if @course.private && !has_valid_invitation
+        raise Errors::ForbiddenError.new(message: "Invalid invitation key")
+    end
+
+    # Check if it has been closed by the creator
+    if is_closed
+      raise Errors::ForbiddenError.new(message: "This test has been ended")
+    end
+
+    # Check if the user is resuming
+    if is_user_resuming
+
+      # If there's still time to submit (usually less than the lag time), let them resume
+      if get_time_left(@instructions[:time]) < 0
+        # Todo: Resume test
+        return @current_session
+
+      else
+        # Todo: Calculate and return result
+        raise Errors::ForbiddenError.new(
+          message: "Time up! Submitting session...",
+          action: :submit,
+          data: {}
+        )
+      end
+
+    else
+
+      if is_expired(course.test_expiration)
+        raise Errors::ForbiddenError.new(message: "This test is expired")
+      end
+
+      if !has_trials_left(@instructions[:max_trials])
+        raise Errors::ForbiddenError.new(message: "You have exhausted your available trials to take this test")
+      end
+
+      if !has_available_test_slots(@instructions[:user_limit])
+        raise Errors::ForbiddenError.new(message: "This test is no longer accepting new candidates")
+      end
+
+      # Todo: Start test
+      new_session = {
+        user: current_user,
+        course: @course,
+        duration: @instructions[:time],
+        session_type: :test,
+        session_items: [],
+      }
+
+      return new_session
+    end
   end
 
   private
@@ -104,8 +138,8 @@ module TestHelper
   end
 
   def expiration_instruction
-    # Default expiration is 30 days from creation
-    expiration = @course.test_expiration || @course.created_at + 30.days
+    # Default expiration is 30 days from publishing
+    expiration = @course.test_expiration
 
     if is_expired(expiration)
       total_time = @instructions[:time]
@@ -203,7 +237,7 @@ module TestHelper
 
   # region Validation Checks
 
-  # Check if it's a private test and if the user was invited
+  # Check if the user was invited for the private test
   def has_valid_invitation
     # Todo: Validate Invitation properly
     return !!params[:invite_key]
@@ -245,8 +279,8 @@ module TestHelper
   end
 
   # Check if candidacy has been exceeded
-  def has_available_test_slots(test_slots)
-    return get_available_test_slots(test_slots).nil? || get_available_test_slots(test_slots) > 0
+  def has_available_test_slots(user_limit)
+    return get_available_test_slots(user_limit).nil? || get_available_test_slots(user_limit) > 0
   end
 
   # endregion
