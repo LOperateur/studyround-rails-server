@@ -4,7 +4,7 @@ class ResultsController < ApplicationController
   def show
     result = Result.find(params[:id])
     if result.user_id != current_user.id
-      raise Errors::AuthorizationError.new(message: "You cannot view this result")
+      raise Errors::ForbiddenError.new(message: "You cannot view this result")
     end
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
@@ -13,7 +13,7 @@ class ResultsController < ApplicationController
   def session_items
     result = Result.find(params[:result_id])
     if result.user_id != current_user.id
-      raise Errors::AuthorizationError.new(message: "You cannot view this result session")
+      raise Errors::ForbiddenError.new(message: "You cannot view this result session")
     end
 
     # Doing our own pagination here due to the nature of the query

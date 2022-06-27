@@ -33,7 +33,7 @@ class ReviewsController < ApplicationController
     review.assign_attributes(create_update_review_params)
 
     if review.user.id != current_user.id
-      raise Errors::AuthorizationError(message: "You don't have the authority to update this review!")
+      raise Errors::ForbiddenError(message: "You don't have the authority to update this review!")
     end
 
     save_and_calculate review
@@ -42,7 +42,7 @@ class ReviewsController < ApplicationController
 
   def destroy
     if @review.user.id != current_user.id
-      raise Errors::AuthorizationError(message: "You don't have the authority to delete this review!")
+      raise Errors::ForbiddenError(message: "You don't have the authority to delete this review!")
     end
 
     @review.destroy
