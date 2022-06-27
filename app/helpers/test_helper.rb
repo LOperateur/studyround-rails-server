@@ -149,9 +149,9 @@ module TestHelper
         resumption_addendum = ", you are still allowed to resume."
       end
 
-      "This test expired on #{expiration.to_formatted_s(:long_ordinal)}#{resumption_addendum}"
+      "This test expired on #{expiration.to_formatted_s(:long_ordinal)}#{resumption_addendum} GMT"
     else
-      "This test will expire on #{expiration.to_formatted_s(:long_ordinal)}"
+      "This test will expire by #{expiration.to_formatted_s(:long_ordinal)} GMT"
     end
   end
 

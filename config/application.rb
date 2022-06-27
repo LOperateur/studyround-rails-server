@@ -20,6 +20,10 @@ module ULearnserver
     config.generators.assets = false
     config.generators.helper = false
 
+    # Set Time.zone default to the specified zone and make Active Record auto-convert to this zone.
+    # Default is UTC. To see all, run rake time:zones:all
+    config.time_zone = 'UTC'
+
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration can go into files in config/initializers
     # -- all .rb files in that directory are automatically loaded after loading
