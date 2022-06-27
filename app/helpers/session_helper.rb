@@ -42,4 +42,17 @@ module SessionHelper
     rnd = Random.new(hash) # Use that integer to seed a new random uuid
     rnd.uuid
   end
+
+  def render_session_data(session, paginated_questions)
+    render json: {
+      data: {
+        session: session,
+        questions: {
+          data: paginated_questions.map do |question|
+            question.serialized_question[:question]
+          end
+        }.merge(paginated_meta(paginated_questions))
+      }
+    }
+  end
 end

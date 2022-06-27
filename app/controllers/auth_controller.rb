@@ -198,7 +198,7 @@ class AuthController < ApplicationController
     if decoded_refresh_token && decoded_refresh_token[:user_id]
       user_id = decoded_refresh_token[:user_id]
     else
-      raise Errors::AuthorizationError.new(message: "Unauthorized, refresh token invalid or expired!")
+      raise Errors::ForbiddenError.new(message: "Unauthorized, refresh token invalid or expired!")
     end
 
     # Then get the user encoded within the token
@@ -207,14 +207,14 @@ class AuthController < ApplicationController
       # Only authorize if the sent token matches the one saved alongside the user in the DB
       saved_token_object = RefreshToken.find_by(user: user)
       saved_refresh_token = saved_token_object ? saved_token_object.token : nil
-      raise Errors::AuthorizationError.new(message: "Unauthorized, refresh token invalid!") unless saved_refresh_token == refresh_token
+      raise Errors::ForbiddenError.new(message: "Unauthorized, refresh token invalid!") unless saved_refresh_token == refresh_token
 
       new_access_token = create_access_token(user)
 
       render json: { data: { "access_token": new_access_token} }
 
     else
-      raise Errors::AuthorizationError.new(message: "User does not exist")
+      raise Errors::ForbiddenError.new(message: "User does not exist")
     end
   end
 

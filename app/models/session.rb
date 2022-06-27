@@ -8,4 +8,9 @@ class Session < ApplicationRecord
     study: 3,
     test: 4,
   }, _prefix: true
+
+  # Used to serialize the session model on the go without having to render
+  def serialized_session
+    ActiveModelSerializers::SerializableResource.new(self, serializer: SessionSerializer).as_json
+  end
 end

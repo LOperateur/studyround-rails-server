@@ -1,9 +1,9 @@
 module Errors
-  class AuthenticationError < BaseError
+  class ForbiddenError < BaseError
     def initialize(message: nil, action: nil, status: nil, source: nil, data: nil)
       super(
-        message: message || "Unprocessable Entity",
-        status: status || 422,
+        message: message || "Not Authorized",
+        status: status || 403,
         source: source,
         data: data,
       )
