@@ -46,7 +46,7 @@ class QuestionsController < ApplicationController
       num_questions = params[:questions].to_i
       Course.connection.execute("SELECT SETSEED(#{seed})")
       if session_type == :quiz
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
       else
         questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
       end
@@ -56,7 +56,7 @@ class QuestionsController < ApplicationController
 
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a, params)
-    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
+    render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
   end
 
   def handle_test_index

@@ -43,13 +43,17 @@ module SessionHelper
     rnd.uuid
   end
 
-  def render_session_data(session, paginated_questions)
+  def render_session_data(session, paginated_questions, is_test)
     render json: {
       data: {
         session: session,
         questions: {
           data: paginated_questions.map do |question|
-            question.serialized_question[:question]
+            if is_test
+              question.serialized_question[:question]
+            else
+              question.serialized_question_with_answer[:question]
+            end
           end
         }.merge(paginated_meta(paginated_questions))
       }

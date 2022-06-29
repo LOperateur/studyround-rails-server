@@ -37,7 +37,7 @@ class SessionsController < ApplicationController
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a)
 
-    render_session_data(session, paginated_questions)
+    render_session_data(session, paginated_questions, false)
   end
 
   def test_instructions
@@ -66,7 +66,7 @@ class SessionsController < ApplicationController
 
     paginated_questions = paginate(questions)
 
-    render_session_data(session.serialized_session[:session], paginated_questions)
+    render_session_data(session.serialized_session[:session], paginated_questions, true)
   end
 
   def end
