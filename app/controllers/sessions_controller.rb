@@ -37,7 +37,7 @@ class SessionsController < ApplicationController
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a)
 
-    render_session_data(session, paginated_questions)
+    render_session_data(session, paginated_questions, false)
   end
 
   def test_instructions
@@ -66,7 +66,7 @@ class SessionsController < ApplicationController
 
     paginated_questions = paginate(questions)
 
-    render_session_data(session.serialized_session[:session], paginated_questions)
+    render_session_data(session.serialized_session[:session], paginated_questions, true)
   end
 
   def end
@@ -80,6 +80,7 @@ class SessionsController < ApplicationController
     end
 
     answers = end_course_session_params[:answers]
+    num_questions = end_course_session_params[:questions]
 
     score = 0
     total = 0
@@ -99,6 +100,13 @@ class SessionsController < ApplicationController
           end
         end
       end
+
+      # User's session items didn't get to paginate through the total number of questions
+      if answers.length < num_questions
+        # Assume the remaining questions were 1-point questions and add that to the total
+        total += num_questions - answers.length
+      end
+
     rescue
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
@@ -113,6 +121,7 @@ class SessionsController < ApplicationController
       Result.create!(
         course: @course, user: current_user, score: score,
         total: total, duration: end_course_session_params[:duration],
+        num_questions: num_questions,
         elapsed_time: end_course_session_params[:elapsed_time],
         session_type: end_course_session_params[:session_type],
         session_key: session_key,
@@ -164,7 +173,8 @@ class SessionsController < ApplicationController
   end
 
   def end_course_session_params
-    params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :tags => [],
+    params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :questions,
+                  :tags => [],
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 end

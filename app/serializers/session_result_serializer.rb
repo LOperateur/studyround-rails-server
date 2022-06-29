@@ -4,7 +4,8 @@ class SessionResultSerializer < ResultSerializer
 
   def session
     {
-      num_questions: object.session_items.length,
+      # Todo: session items length check is temporary, remove later
+      num_questions: object.num_questions || object.session_items.length,
       duration: object.duration,
       session_type: object.session_type,
       tags: object.tags

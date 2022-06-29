@@ -10,4 +10,8 @@ class Question < ApplicationRecord
   def serialized_question
     ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionSerializer).as_json
   end
+
+  def serialized_question_with_answer
+    ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionAnswerSerializer).as_json
+  end
 end
