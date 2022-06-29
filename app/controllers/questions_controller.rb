@@ -1,36 +1,17 @@
 class QuestionsController < ApplicationController
   include SessionHelper
+  include TestHelper
 
-  skip_before_action :authorize!, only: [:index]
   before_action :load_course, only: [:index]
 
   wrap_parameters format: []
 
   def index
     if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
-    end
-
-    session_type = session_type(params[:session_type])
-
-    case session_type
-    when :study
-      questions = @course.questions.publish_status_published.order(order: :asc)
-    when :quiz, :practice
-      num_questions = params[:questions].to_i
-      Course.connection.execute("SELECT SETSEED(#{seed})")
-      if session_type == :quiz
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
-      else
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
-      end
+      handle_test_index
     else
-      raise Errors::BaseError.new(message: "Invalid session type")
+      handle_course_index
     end
-
-    # Converting to array to calculate the offset page data w.r.t num_questions
-    paginated_questions = paginate(questions.to_a, params)
-    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
   end
 
   def explanation
@@ -53,5 +34,42 @@ class QuestionsController < ApplicationController
   def seed
     session_id = params[:session_id]
     session_id_to_seed(session_id)
+  end
+
+  def handle_course_index
+    session_type = session_type(params[:session_type])
+
+    case session_type
+    when :study
+      questions = @course.questions.publish_status_published.order(order: :asc)
+    when :quiz, :practice
+      num_questions = params[:questions].to_i
+      Course.connection.execute("SELECT SETSEED(#{seed})")
+      if session_type == :quiz
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({options: nil, multi_answer: true}).limit(num_questions)
+      else
+        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
+      end
+    else
+      raise Errors::BaseError.new(message: "Invalid session type")
+    end
+
+    # Converting to array to calculate the offset page data w.r.t num_questions
+    paginated_questions = paginate(questions.to_a, params)
+    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
+  end
+
+  def handle_test_index
+    session = get_start_test_session(current_user, @course)
+
+    # If session doesn't have an id, then it doesn't exist in the DB yet.
+    if !session[:id].present?
+      raise Errors::BaseError.new(message: "No existing session for this user. Please refresh")
+    end
+
+    questions = @course.questions.publish_status_published.order(order: :asc)
+
+    paginated_questions = paginate(questions, params)
+    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
   end
 end
