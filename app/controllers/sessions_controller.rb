@@ -3,13 +3,13 @@ class SessionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:start]
-  before_action :load_course
+  before_action :load_course, except: [:update]
 
   wrap_parameters format: []
 
   def start
     if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
 
     session = course_based_session
@@ -31,7 +31,7 @@ class SessionsController < ApplicationController
       end
       check_min_available_questions(questions.length)
     else
-      raise Errors::BaseError.new(message: "Invalid session type")
+      raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
     # Converting to array to calculate the offset page data w.r.t num_questions
@@ -42,7 +42,7 @@ class SessionsController < ApplicationController
 
   def test_instructions
     if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test")
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
     end
 
     instructions_response = init_test_instructions(current_user, @course)
@@ -54,7 +54,7 @@ class SessionsController < ApplicationController
 
   def start_test
     if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test")
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
     end
 
     session_param = get_start_test_session(current_user, @course)
@@ -71,12 +71,12 @@ class SessionsController < ApplicationController
 
   def end
     if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test")
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
 
     type = end_course_session_params[:session_type]
     if type.nil? || type.to_sym == :study || type.to_sym == :test
-      raise Errors::BaseError.new(message: "Invalid session type")
+      raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
     answers = end_course_session_params[:answers]
@@ -112,7 +112,7 @@ class SessionsController < ApplicationController
     end
 
     if end_course_session_params[:session_id].nil?
-      raise Errors::BaseError.new(message: "Unknown session!")
+      raise Errors::BaseError.new(message: "Unknown session!", status: 400)
     end
 
     # Idempotency check to prevent double submissions
@@ -135,6 +135,17 @@ class SessionsController < ApplicationController
 
   end
 
+  def update
+    session = Session.find(params[:id])
+
+    if check_session_for_valid_update(session)
+      # Update session
+      session.update_attributes!(update_session_params)
+    end
+
+    render json: {}, status: :ok
+  end
+
   private
 
   def course_based_session
@@ -153,7 +164,7 @@ class SessionsController < ApplicationController
     session = Session.create(params.merge(start_test_session_params))
 
     if !session
-      raise Errors::BaseError.new(message: "Unable to start or resume test")
+      raise Errors::BaseError.new(message: "Unable to start or resume test", status: 400)
     end
 
     return session
@@ -176,5 +187,11 @@ class SessionsController < ApplicationController
     params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :questions,
                   :tags => [],
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
+  end
+
+  def update_session_params
+    # If using the path param (id) for updating a model, you have to permit it too
+    params.permit(:id, :current_question_number, :device_id, :web_tab_id,
+                  :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
   end
 end

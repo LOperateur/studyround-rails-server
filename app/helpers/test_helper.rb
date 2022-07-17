@@ -22,6 +22,7 @@ module TestHelper
         server_time: DateTime.now.utc, # Send server time to API in UTC T..Z format
         time_left: get_time_left(@instructions[:time]),
         start_time: if is_user_resuming then @current_session.created_at else nil end,
+        expiration: @course.test_expiration,
         duration: @instructions[:time],
         attempts_left: get_max_trials_left(@instructions[:max_trials]),
         extra_id_title: @instructions[:extra_id_title],
@@ -52,11 +53,11 @@ module TestHelper
 
       # If there's still time to submit (usually less than the lag time), let them resume
       if get_time_left(@instructions[:time]) > 0
-        # Todo: Resume test
+        # Resume test session
         return @current_session
 
       else
-        # Todo: Calculate and return result
+        # Todo: Calculate and return result in data
         raise Errors::ForbiddenError.new(
           message: "Time up! Submitting session...",
           action: :submit,
@@ -78,7 +79,7 @@ module TestHelper
         raise Errors::ForbiddenError.new(message: "This test is no longer accepting new candidates")
       end
 
-      # Todo: Start test
+      # Start test session
       new_session = {
         user: current_user,
         course: @course,
@@ -88,6 +89,33 @@ module TestHelper
       }
 
       return new_session
+    end
+  end
+
+  def check_session_for_valid_update(session)
+    @user = session.user
+    @course = session.course
+    @instructions = @course.instructions.symbolize_keys
+
+    @current_session = session
+
+    # Check if it has been closed by the creator
+    if is_closed
+      raise Errors::ForbiddenError.new(message: "This test has been ended")
+    end
+
+    # If there's still time to submit (usually less than the lag time)
+    if get_time_left(@instructions[:time]) > 0
+      # Do nothing, just indicate that it can still be updated
+      return true
+
+    else
+      # Todo: Calculate and return result
+      raise Errors::ForbiddenError.new(
+        message: "Time up! Submitting session...",
+        action: :submit,
+        data: {}
+      )
     end
   end
 
@@ -239,7 +267,7 @@ module TestHelper
 
   # Check if the user was invited for the private test
   def has_valid_invitation
-    # Todo: Validate Invitation properly
+    # Todo: Validate Invitation properly and pass the key through method parameters
     return !!params[:invite_key]
   end
 

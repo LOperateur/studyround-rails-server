@@ -4,6 +4,7 @@ module Errors
       super(
         message: message || "Not Authorized",
         status: status || 403,
+        action: action,
         source: source,
         data: data,
       )
