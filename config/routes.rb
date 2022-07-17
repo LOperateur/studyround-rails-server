@@ -44,5 +44,6 @@ Rails.application.routes.draw do
   post '/tests/:course_id/start', to: "sessions#start_test"
   post '/sessions/:course_id/end', to: "sessions#end"
   post '/tests/:course_id/end', to: "sessions#end_test"
+  resources :sessions, only: [:update]
 
 end
