@@ -4,6 +4,7 @@ module Errors
       super(
         message: message || "You need to sign in",
         status: status || 401,
+        action: action,
         source: source,
         data: data,
       )

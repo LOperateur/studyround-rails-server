@@ -4,6 +4,7 @@ module Errors
       super(
         message: message || "Unprocessable Entity",
         status: status || 422,
+        action: action,
         source: source,
         data: data,
       )
