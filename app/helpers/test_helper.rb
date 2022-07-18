@@ -234,10 +234,11 @@ module TestHelper
   # endregion
 
   # region Validation Getters
-
+  ActiveSupport::TimeWithZone
   def get_time_left(total_time)
     if is_user_resuming
-      time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now
+      # to_time is more compatible when calculating with DB's ActiveSupport::TimeWithZone
+      time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now.to_time
     else
       # If session does not exist, use total_time instead
       time_left = total_time

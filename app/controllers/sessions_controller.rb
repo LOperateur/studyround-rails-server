@@ -79,32 +79,16 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
-    answers = end_course_session_params[:answers]
+    session_items_with_answers = end_course_session_params[:answers]
     num_questions = end_course_session_params[:questions]
 
-    score = 0
-    total = 0
-
     begin
-      answers.each do |answer|
-        is_german_obj = answer[:correct_answer][0].instance_of? String
-        total += answer[:multiplier]
-
-        if is_german_obj
-          if !answer[:user_answer].empty? && answer[:correct_answer].map(&:downcase).include?(answer[:user_answer][0].downcase)
-            score += answer[:multiplier]
-          end
-        else
-          if answer[:user_answer].sort == answer[:correct_answer].sort
-            score += answer[:multiplier]
-          end
-        end
-      end
+      score, total = mark(session_items_with_answers)
 
       # User's session items didn't get to paginate through the total number of questions
-      if answers.length < num_questions
+      if session_items_with_answers.length < num_questions
         # Assume the remaining questions were 1-point questions and add that to the total
-        total += num_questions - answers.length
+        total += num_questions - session_items_with_answers.length
       end
 
     rescue
@@ -119,20 +103,81 @@ class SessionsController < ApplicationController
     session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
     result = Result.find_by(session_key: session_key) ||
       Result.create!(
-        course: @course, user: current_user, score: score,
-        total: total, duration: end_course_session_params[:duration],
+        course: @course,
+        user: current_user,
+        score: score,
+        total: total,
+        duration: end_course_session_params[:duration],
         num_questions: num_questions,
         elapsed_time: end_course_session_params[:elapsed_time],
         session_type: end_course_session_params[:session_type],
         session_key: session_key,
-        session_items: answers
+        session_items: session_items_with_answers
       )
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
   end
 
   def end_test
+    questions = @course.questions.order(order: :asc)
+    session_items = end_test_session_params[:session_items]
+    session_items_with_answers = []
 
+    # Merge session items and correct answers to form an answers marking scheme array
+    questions.each_with_index do |question, index|
+      user_answer = []
+      if session_items[index]
+        user_answer = session_items[index][:user_answer]
+      end
+
+      session_items_with_answers << {
+        question_id: question.id,
+        question_version: question.version,
+        multiplier: question.multiplier,
+        user_answer: user_answer,
+        correct_answer: question.answer
+      }
+    end
+
+    begin
+      score, total = mark(session_items_with_answers)
+    rescue
+      raise Errors::BaseError.new(message: "Unable to calculate result")
+    end
+
+    # Find the session and use it to create a Result
+    session = current_user.sessions.find_by(course: @course)
+    if session
+      duration = @course.instructions["time"]
+      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+
+      # Idempotency check to prevent double submissions
+      session_key = idempotent_session_key(current_user.id, session.id, :test)
+      result = Result.find_by(session_key: session_key) ||
+        Result.create!(
+          course: @course,
+          user: current_user,
+          score: score,
+          total: total,
+          duration: duration,
+          num_questions: session_items_with_answers.size,
+          elapsed_time: elapsed_time,
+          session_type: :test,
+          session_key: session_key,
+          session_items: session_items_with_answers
+        )
+
+      # Delete the session after all is done
+      session.destroy
+
+    else
+      # If for some reason, the session no longer exists or has been destroyed
+      # Use the id passed in the params to find the session's result
+      session_key = idempotent_session_key(current_user.id, end_test_session_params[:session_id], :test)
+      result = Result.find_by!(session_key: session_key)
+    end
+
+    render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
   end
 
   def update
@@ -187,6 +232,11 @@ class SessionsController < ApplicationController
     params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :questions,
                   :tags => [],
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
+  end
+
+  def end_test_session_params
+    params.permit(:session_id, :device_id, :web_tab_id,
+                  :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
   end
 
   def update_session_params
