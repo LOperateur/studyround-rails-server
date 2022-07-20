@@ -81,8 +81,4 @@ module SessionHelper
       }
     }
   end
-
-  def convert_session_to_result
-
-  end
 end

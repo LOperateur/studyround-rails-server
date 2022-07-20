@@ -60,7 +60,14 @@ class QuestionsController < ApplicationController
   end
 
   def handle_test_index
-    session = get_start_test_session(current_user, @course)
+    session_param = get_start_test_session(current_user, @course)
+
+    if session_param.nil?
+      handle_ended_test(@course)
+    end
+
+    # Existing session, simply assign it
+    session = session_param
 
     # If session doesn't have an id, then it doesn't exist in the DB yet.
     if !session[:id].present?
@@ -71,5 +78,21 @@ class QuestionsController < ApplicationController
 
     paginated_questions = paginate(questions, params)
     render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
+  end
+
+  def handle_ended_test(course, params_session_items = nil, params_session_id = nil)
+    # Calculate and return result in the data of the surfaced error
+    result = get_end_test_result(
+      current_user,
+      course,
+      params_session_items,
+      params_session_id,
+    ).serialized_result
+
+    raise Errors::ForbiddenError.new(
+      message: "Time up! Submitting session...",
+      action: :submit,
+      data: result[:result]
+    )
   end
 end
