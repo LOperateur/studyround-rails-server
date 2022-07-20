@@ -70,7 +70,7 @@ class ReviewsController < ApplicationController
 
   def save_and_calculate(review)
     unless (1..5).include?(review.rating)
-      raise Errors::BaseError.new(message: "Invalid rating value")
+      raise Errors::BaseError.new(message: "Invalid rating value", status: 400)
     end
     review.save!
     calculate_average_rating

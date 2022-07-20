@@ -113,7 +113,7 @@ module TestHelper
     end
   end
 
-  def get_end_test_result(user, course, params_session_items=nil, params_session_id=nil)
+  def get_end_test_result(user, course, params_session_items = nil, params_session_id = nil)
     session = user.sessions.find_by(course: course)
     questions = course.questions.order(order: :asc)
 
@@ -123,7 +123,7 @@ module TestHelper
       if session
         session_items = session.session_items
       else
-        raise Errors::BaseError.new(message: "Unable to obtain session")
+        raise Errors::BaseError.new(message: "Unable to obtain session, please check your results", status: 400)
       end
     end
     session_items_with_answers = []
@@ -181,7 +181,7 @@ module TestHelper
       result = Result.find_by!(session_key: session_key)
 
     else
-      raise Errors::BaseError.new(message: "Unable to obtain session")
+      raise Errors::BaseError.new(message: "Unable to obtain session, please check your results", status: 400)
     end
 
     return result

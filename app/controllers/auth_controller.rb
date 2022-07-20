@@ -8,7 +8,7 @@ class AuthController < ApplicationController
     auth_type = generate_otp_params[:type].blank? ? :auth_type_verify_email : generate_otp_params[:type].to_sym
 
     if auth_type != :auth_type_verify_email && auth_type != :auth_type_forgot_password
-      raise Errors::BaseError.new(message: "Unknown authentication type")
+      raise Errors::BaseError.new(message: "Unknown authentication type", status: 400)
     end
 
     if auth_type == :auth_type_verify_email # Sign up
