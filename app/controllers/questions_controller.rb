@@ -51,7 +51,7 @@ class QuestionsController < ApplicationController
         questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
       end
     else
-      raise Errors::BaseError.new(message: "Invalid session type")
+      raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
     # Converting to array to calculate the offset page data w.r.t num_questions
@@ -71,7 +71,7 @@ class QuestionsController < ApplicationController
 
     # If session doesn't have an id, then it doesn't exist in the DB yet.
     if !session[:id].present?
-      raise Errors::BaseError.new(message: "No existing session for this user. Please refresh")
+      raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
     questions = @course.questions.publish_status_published.order(order: :asc)
