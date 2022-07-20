@@ -1,4 +1,6 @@
 module TestHelper
+  include SessionHelper
+
   def init_test_instructions(user, course)
     @user = user
     @course = course
@@ -40,7 +42,7 @@ module TestHelper
 
     # Check privacy and invitation key
     if @course.private && !has_valid_invitation
-        raise Errors::ForbiddenError.new(message: "Invalid invitation key")
+      raise Errors::ForbiddenError.new(message: "Invalid invitation key")
     end
 
     # Check if it has been closed by the creator
@@ -57,12 +59,8 @@ module TestHelper
         return @current_session
 
       else
-        # Todo: Calculate and return result in data
-        raise Errors::ForbiddenError.new(
-          message: "Time up! Submitting session...",
-          action: :submit,
-          data: {}
-        )
+        # Indicate that the session is over and results should be calculated
+        return nil
       end
 
     else
@@ -110,13 +108,83 @@ module TestHelper
       return true
 
     else
-      # Todo: Calculate and return result
-      raise Errors::ForbiddenError.new(
-        message: "Time up! Submitting session...",
-        action: :submit,
-        data: {}
-      )
+      # Indicate that the session is over and results should be calculated
+      return nil
     end
+  end
+
+  def get_end_test_result(user, course, params_session_items=nil, params_session_id=nil)
+    session = user.sessions.find_by(course: course)
+    questions = course.questions.order(order: :asc)
+
+    if params_session_items.present?
+      session_items = params_session_items
+    else
+      if session
+        session_items = session.session_items
+      else
+        raise Errors::BaseError.new(message: "Unable to obtain session")
+      end
+    end
+    session_items_with_answers = []
+
+    # Merge session items and correct answers to form an answers marking scheme array
+    questions.each_with_index do |question, index|
+      user_answer = []
+      if session_items[index]
+        user_answer = session_items[index]["user_answer"]
+      end
+
+      session_items_with_answers << {
+        question_id: question.id,
+        question_version: question.version,
+        multiplier: question.multiplier,
+        user_answer: user_answer,
+        correct_answer: question.answer
+      }
+    end
+
+    begin
+      score, total = mark(session_items_with_answers)
+    rescue
+      raise Errors::BaseError.new(message: "Unable to calculate result")
+    end
+
+    # Use the obtained session to create a Result
+    if session
+      duration = course.instructions["time"]
+      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+
+      # Idempotency check to prevent double submissions
+      session_key = idempotent_session_key(user.id, session.id, :test)
+      result = Result.find_by(session_key: session_key) ||
+        Result.create!(
+          course: course,
+          user: user,
+          score: score,
+          total: total,
+          duration: duration,
+          num_questions: session_items_with_answers.size,
+          elapsed_time: elapsed_time,
+          session_type: :test,
+          session_key: session_key,
+          session_items: session_items_with_answers
+        )
+
+      # Delete the session after all is done
+      session.destroy
+
+    elsif params_session_id.present?
+      # If for some reason, the session no longer exists or has been destroyed
+      # Use the id passed in the params to find the session's result
+      session_key = idempotent_session_key(current_user.id, params_session_id, :test)
+      result = Result.find_by!(session_key: session_key)
+
+    else
+      raise Errors::BaseError.new(message: "Unable to obtain session")
+    end
+
+    return result
   end
 
   private
@@ -234,10 +302,12 @@ module TestHelper
   # endregion
 
   # region Validation Getters
+  ActiveSupport::TimeWithZone
 
   def get_time_left(total_time)
     if is_user_resuming
-      time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now
+      # to_time is more compatible when calculating with DB's ActiveSupport::TimeWithZone
+      time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now.to_time
     else
       # If session does not exist, use total_time instead
       time_left = total_time

@@ -17,4 +17,9 @@ class Result < ApplicationRecord
     study: 3,
     test: 4,
   }, _prefix: true
+
+  # Used to serialize the result model on the go without having to render
+  def serialized_result
+    ActiveModelSerializers::SerializableResource.new(self, serializer: SessionResultSerializer).as_json
+  end
 end
