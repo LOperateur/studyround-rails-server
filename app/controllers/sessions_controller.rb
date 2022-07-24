@@ -57,7 +57,7 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
     end
 
-    session_param = get_start_test_session(current_user, @course)
+    session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
 
     if session_param.nil?
       handle_ended_test(@course)

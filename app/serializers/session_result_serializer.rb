@@ -1,6 +1,6 @@
 class SessionResultSerializer < ResultSerializer
   type :result
-  attributes :session
+  attributes :extra_id, :session
 
   def session
     {

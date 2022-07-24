@@ -33,7 +33,7 @@ module TestHelper
     )
   end
 
-  def get_start_test_session(user, course)
+  def get_start_test_session(user, course, extra_id = nil)
     @user = user
     @course = course
     @instructions = course.instructions.symbolize_keys
@@ -64,6 +64,7 @@ module TestHelper
       end
 
     else
+      # User is starting a fresh new session
 
       if is_expired(course.test_expiration)
         raise Errors::ForbiddenError.new(message: "This test is expired")
@@ -75,6 +76,11 @@ module TestHelper
 
       if !has_available_test_slots(@instructions[:user_limit])
         raise Errors::ForbiddenError.new(message: "This test is no longer accepting new candidates")
+      end
+
+      # Confirm the user enters the required ID if requested
+      if !@instructions[:extra_id_title].nil? && extra_id.nil?
+        raise Errors::BaseError.new(message: "Your #{@instructions[:extra_id_title]} is required", status: 400)
       end
 
       # Start test session
@@ -168,6 +174,7 @@ module TestHelper
           elapsed_time: elapsed_time,
           session_type: :test,
           session_key: session_key,
+          extra_id: session.extra_id,
           session_items: session_items_with_answers
         )
 

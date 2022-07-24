@@ -1,5 +1,5 @@
 class SessionSerializer < ActiveModel::Serializer
-  attributes :id, :current_question_number, :server_time, :start_time, :course_id, :course_name, :session_items
+  attributes :id, :current_question_number, :server_time, :start_time, :course_id, :course_name, :extra_id, :session_items
 
   def start_time
     object.created_at
