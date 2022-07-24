@@ -3,7 +3,7 @@ class ResultsController < ApplicationController
 
   def show
     result = Result.find(params[:id])
-    if result.user_id != current_user.id
+    if result.user != current_user
       raise Errors::ForbiddenError.new(message: "You cannot view this result")
     end
 
@@ -12,7 +12,7 @@ class ResultsController < ApplicationController
 
   def session_items
     result = Result.find(params[:result_id])
-    if result.user_id != current_user.id
+    if result.user != current_user
       raise Errors::ForbiddenError.new(message: "You cannot view this result session")
     end
 
@@ -65,5 +65,21 @@ class ResultsController < ApplicationController
 
     paginated_results = paginate(grouped_latest_results, params, count)
     render json: paginated_results, root: :data, meta: paginated_meta(paginated_results), each_serializer: GroupedResultsSerializer, status: :ok
+  end
+
+  def test_submissions
+    course = Course.find(params[:course_id])
+    if !course.test
+      raise Errors::ForbiddenError.new(message: "Course must be a Test!")
+    end
+
+    if course.creator != current_user
+      raise Errors::ForbiddenError.new(message: "You don't have authority to view these test submissions")
+    end
+
+    submissions = course.results.order(created_at: :desc)
+    paginated_submissions = paginate(submissions)
+
+    render json: paginated_submissions, root: :data, meta: paginated_meta(paginated_submissions), each_serializer: ProfileResultSerializer, status: :ok
   end
 end

@@ -34,6 +34,7 @@ Rails.application.routes.draw do
 
   get '/user/results', to: "results#recent"
   get 'results/grouped', to: "results#grouped"
+  get '/tests/:course_id/submissions', to: "results#test_submissions"
   resources :results, only: [:show] do
     get '/session-items', to: "results#session_items"
   end
