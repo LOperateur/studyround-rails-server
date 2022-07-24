@@ -1,5 +1,5 @@
 class ResultSerializer < ActiveModel::Serializer
-  attributes :id, :score, :total, :percent, :elapsed_time, :created_at, :course
+  attributes :id, :score, :total, :percent, :elapsed_time, :created_at
 
   belongs_to :course, serializer: MiniCourseSerializer
 
