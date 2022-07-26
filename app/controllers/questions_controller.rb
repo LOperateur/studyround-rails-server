@@ -63,7 +63,7 @@ class QuestionsController < ApplicationController
     session_param = get_start_test_session(current_user, @course)
 
     if session_param.nil?
-      handle_ended_test(@course)
+      raise_ended_test_error(@course)
     end
 
     # Existing session, simply assign it
@@ -80,13 +80,11 @@ class QuestionsController < ApplicationController
     render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
   end
 
-  def handle_ended_test(course, params_session_items = nil, params_session_id = nil)
+  def raise_ended_test_error(course)
     # Calculate and return result in the data of the surfaced error
     result = get_end_test_result(
       current_user,
       course,
-      params_session_items,
-      params_session_id,
     ).serialized_result
 
     raise Errors::ForbiddenError.new(

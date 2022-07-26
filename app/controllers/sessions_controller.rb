@@ -113,7 +113,7 @@ class SessionsController < ApplicationController
     session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
 
     if session_param.nil?
-      handle_ended_test(@course)
+      raise_ended_test_error(@course)
     end
 
     # If session_param already has an id, return the existing session, otherwise, create a new one
@@ -145,10 +145,42 @@ class SessionsController < ApplicationController
       # Update session
       session.update_attributes!(update_session_params)
     else
-      handle_ended_test(session.course)
+      raise_ended_test_error(session.course)
     end
 
     render json: {}, status: :ok
+  end
+
+  # Verify if a resuming test can resume or should start a new one/render it's last result.
+  # IMPORTANT: Should ideally be called only when the user is resuming a test.
+  def verify_active_test
+    # Confirm the presence of the latest session
+    last_session = current_user.sessions.recent.find_by(course: @course)
+
+    if last_session.nil?
+      # Check for any result if there's no session
+      latest_result = current_user.results.recent.find_by(course: @course)
+
+      # Ideally, latest result should not be nil if this endpoint is called when resuming a test
+      if latest_result.nil?
+        # Both Session and Result are non-existent, `/start` will be called to start a new one
+        render json: { data: nil }, status: :ok
+      else
+        # Result available, render that for the user to see
+        render json: latest_result, root: :data, serializer: SessionResultSerializer, status: :ok
+      end
+
+      return
+    end
+
+    if check_session_for_valid_update(last_session)
+      # Session still valid, `/start` will be called to resume it
+      render json: { data: nil }, status: :ok
+    else
+      # Session is stale, convert it to a result
+      result = get_end_test_result(current_user, last_session.course)
+      render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+    end
   end
 
   def submit_stale_sessions
@@ -158,7 +190,7 @@ class SessionsController < ApplicationController
       begin
         # Sessions that cannot be updated are considered stale
         if check_session_for_valid_update(session).nil?
-          handle_ended_test(session.course, session.user)
+          get_end_test_result(session.user, session.course)
         end
       rescue Errors::BaseError
         # Ignored
@@ -191,13 +223,11 @@ class SessionsController < ApplicationController
     return session
   end
 
-  def handle_ended_test(course, user = current_user, params_session_items = nil, params_session_id = nil)
+  def raise_ended_test_error(course)
     # Calculate and return result in the data of the surfaced error
     result = get_end_test_result(
-      user,
+      current_user,
       course,
-      params_session_items,
-      params_session_id,
     ).serialized_result
 
     raise Errors::ForbiddenError.new(
