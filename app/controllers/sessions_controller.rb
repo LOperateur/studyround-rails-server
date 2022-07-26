@@ -127,6 +127,9 @@ class SessionsController < ApplicationController
   end
 
   def end_test
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
+    end
 
     result = get_end_test_result(
       current_user,
@@ -135,7 +138,7 @@ class SessionsController < ApplicationController
       end_test_session_params[:session_id]
     )
 
-    render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+    render json: result, root: :data, serializer: SessionResultSerializer, status: :created
   end
 
   def update
@@ -154,6 +157,10 @@ class SessionsController < ApplicationController
   # Verify if a resuming test can resume or should start a new one/render it's last result.
   # IMPORTANT: Should ideally be called only when the user is resuming a test.
   def verify_active_test
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
+    end
+
     # Confirm the presence of the latest session
     last_session = current_user.sessions.recent.find_by(course: @course)
 
@@ -179,7 +186,7 @@ class SessionsController < ApplicationController
     else
       # Session is stale, convert it to a result
       result = get_end_test_result(current_user, last_session.course)
-      render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+      render json: result, root: :data, serializer: SessionResultSerializer, status: :created
     end
   end
 
