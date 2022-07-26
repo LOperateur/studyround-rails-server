@@ -41,6 +41,7 @@ Rails.application.routes.draw do
 
   get '/tests/:course_id/instructions', to: "sessions#test_instructions"
 
+  get '/sessions/consolidate', to: "sessions#submit_stale_sessions"
   post '/sessions/:course_id/start', to: "sessions#start"
   post '/tests/:course_id/start', to: "sessions#start_test"
   post '/sessions/:course_id/end', to: "sessions#end"
