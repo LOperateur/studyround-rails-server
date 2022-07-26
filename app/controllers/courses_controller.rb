@@ -63,7 +63,7 @@ class CoursesController < ApplicationController
     if search_query.blank?
       found_courses = Course.none
     else
-      found_courses = Course.published_active_courses.order(created_at: :desc)
+      found_courses = Course.visible_courses.order(created_at: :desc)
                             .where("lower(title) LIKE ? ", "%#{search_query.downcase}%")
     end
 

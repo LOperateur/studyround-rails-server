@@ -2,10 +2,12 @@ class SessionsController < ApplicationController
   include SessionHelper
   include TestHelper
 
-  skip_before_action :authorize!, only: [:start]
-  before_action :load_course, except: [:update]
+  skip_before_action :authorize!, only: [:start, :submit_stale_sessions]
+  before_action :load_course, except: [:update, :submit_stale_sessions]
 
   wrap_parameters format: []
+
+  # Courses
 
   def start
     if @course.test?
@@ -38,39 +40,6 @@ class SessionsController < ApplicationController
     paginated_questions = paginate(questions.to_a)
 
     render_session_data(session, paginated_questions, false)
-  end
-
-  def test_instructions
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
-    instructions_response = init_test_instructions(current_user, @course)
-
-    render json: {
-      data: instructions_response
-    }
-  end
-
-  def start_test
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
-    session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
-
-    if session_param.nil?
-      handle_ended_test(@course)
-    end
-
-    # If session_param already has an id, return the existing session, otherwise, create a new one
-    session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
-
-    questions = @course.questions.publish_status_published.order(order: :asc)
-
-    paginated_questions = paginate(questions)
-
-    render_session_data(session.serialized_session[:session], paginated_questions, true)
   end
 
   def end
@@ -122,6 +91,41 @@ class SessionsController < ApplicationController
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
   end
 
+  # Tests
+
+  def test_instructions
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
+    end
+
+    instructions_response = init_test_instructions(current_user, @course)
+
+    render json: {
+      data: instructions_response
+    }
+  end
+
+  def start_test
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
+    end
+
+    session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
+
+    if session_param.nil?
+      raise_ended_test_error(@course)
+    end
+
+    # If session_param already has an id, return the existing session, otherwise, create a new one
+    session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
+
+    questions = @course.questions.publish_status_published.order(order: :asc)
+
+    paginated_questions = paginate(questions)
+
+    render_session_data(session.serialized_session[:session], paginated_questions, true)
+  end
+
   def end_test
 
     result = get_end_test_result(
@@ -141,10 +145,57 @@ class SessionsController < ApplicationController
       # Update session
       session.update_attributes!(update_session_params)
     else
-      handle_ended_test(session.course)
+      raise_ended_test_error(session.course)
     end
 
     render json: {}, status: :ok
+  end
+
+  # Verify if a resuming test can resume or should start a new one/render it's last result.
+  # IMPORTANT: Should ideally be called only when the user is resuming a test.
+  def verify_active_test
+    # Confirm the presence of the latest session
+    last_session = current_user.sessions.recent.find_by(course: @course)
+
+    if last_session.nil?
+      # Check for any result if there's no session
+      latest_result = current_user.results.recent.find_by(course: @course)
+
+      # Ideally, latest result should not be nil if this endpoint is called when resuming a test
+      if latest_result.nil?
+        # Both Session and Result are non-existent, `/start` will be called to start a new one
+        render json: { data: nil }, status: :ok
+      else
+        # Result available, render that for the user to see
+        render json: latest_result, root: :data, serializer: SessionResultSerializer, status: :ok
+      end
+
+      return
+    end
+
+    if check_session_for_valid_update(last_session)
+      # Session still valid, `/start` will be called to resume it
+      render json: { data: nil }, status: :ok
+    else
+      # Session is stale, convert it to a result
+      result = get_end_test_result(current_user, last_session.course)
+      render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+    end
+  end
+
+  def submit_stale_sessions
+    recent_sessions = Session.where({ session_type: :test }).created_after(36.hours.ago)
+
+    recent_sessions.each do |session|
+      begin
+        # Sessions that cannot be updated are considered stale
+        if check_session_for_valid_update(session).nil?
+          get_end_test_result(session.user, session.course)
+        end
+      rescue Errors::BaseError
+        # Ignored
+      end
+    end
   end
 
   private
@@ -152,9 +203,10 @@ class SessionsController < ApplicationController
   def course_based_session
     {
       # Remove the 0.xxxx decimal prefix
-      id: SecureRandom.random_number.to_s[2..-1].to_i,
+      id: SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
       current_question_number: 1,
       server_time: DateTime.now.utc,
+      start_time: DateTime.now.utc,
       course_id: @course.id,
       course_name: @course.title,
       session_items: [],
@@ -171,13 +223,11 @@ class SessionsController < ApplicationController
     return session
   end
 
-  def handle_ended_test(course, params_session_items = nil, params_session_id = nil)
+  def raise_ended_test_error(course)
     # Calculate and return result in the data of the surfaced error
     result = get_end_test_result(
       current_user,
       course,
-      params_session_items,
-      params_session_id,
     ).serialized_result
 
     raise Errors::ForbiddenError.new(
@@ -196,14 +246,14 @@ class SessionsController < ApplicationController
                   :tags => [])
   end
 
-  def start_test_session_params
-    params.permit(:extra_id, :device_id, :web_tab_id)
-  end
-
   def end_course_session_params
     params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :questions,
                   :tags => [],
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
+  end
+
+  def start_test_session_params
+    params.permit(:extra_id, :device_id, :web_tab_id)
   end
 
   def end_test_session_params

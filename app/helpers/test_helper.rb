@@ -97,7 +97,6 @@ module TestHelper
   end
 
   def check_session_for_valid_update(session)
-    @user = session.user
     @course = session.course
     @instructions = @course.instructions.symbolize_keys
 
@@ -309,11 +308,10 @@ module TestHelper
   # endregion
 
   # region Validation Getters
-  ActiveSupport::TimeWithZone
 
   def get_time_left(total_time)
     if is_user_resuming
-      # to_time is more compatible when calculating with DB's ActiveSupport::TimeWithZone
+      # to_time (or Time.now) is more compatible when calculating with DB's ActiveSupport::TimeWithZone
       time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now.to_time
     else
       # If session does not exist, use total_time instead
