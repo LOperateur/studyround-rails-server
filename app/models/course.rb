@@ -9,7 +9,7 @@ class Course < ApplicationRecord
   has_many :sessions
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
-  scope :visible_courses, -> { where(publish_status: [:publish_status_published, :publish_status_expired], course_status: :course_status_active, private: false) }
+  scope :visible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired], private: false) }
 
   enum sale_status: {
     sale_status_free: 1,
