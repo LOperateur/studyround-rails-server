@@ -3,7 +3,7 @@ class SessionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:start, :submit_stale_sessions]
-  before_action :load_course, except: [:update, :submit_stale_sessions]
+  before_action :load_course, except: [:update, :verify_active_session, :submit_stale_sessions]
 
   wrap_parameters format: []
 
@@ -190,11 +190,9 @@ class SessionsController < ApplicationController
     end
   end
 
+  # Returns nil if the session is active indicating it can be resumed
+  # Or creates/returns a result if the session is over.
   def verify_active_session
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
     session_id = params[:id]
 
     if session_id.nil?
@@ -202,18 +200,19 @@ class SessionsController < ApplicationController
     end
 
     # Confirm the presence of the session
-    session = Session.find(session_id)
+    # Using find_by to prevent throwing an error
+    session = Session.find_by(id: session_id)
 
     if session.nil?
       # Check for the result if there's no session
       result = current_user.results.find_by(
-        session_key: idempotent_session_key(user.id, session_id, :test)
+        session_key: idempotent_session_key(current_user.id, session_id, :test)
       )
 
       # Ideally, the result should not be nil if this endpoint is called when resuming a test
       if result.nil?
         # Both Session and Result are non-existent, throw an error
-        raise Errors::NotFoundError.new(message: "Cannot find result. Please refresh this page")
+        raise Errors::NotFoundError.new(message: "Cannot find session or result. Please refresh this page")
       else
         # Result available, render that for the user to see
         render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
