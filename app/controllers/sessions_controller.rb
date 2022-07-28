@@ -190,6 +190,52 @@ class SessionsController < ApplicationController
     end
   end
 
+  def verify_active_session
+    if !@course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
+    end
+
+    session_id = params[:id]
+
+    if session_id.nil?
+      raise Errors::BaseError.new(message: "No session ID provided", status: 400)
+    end
+
+    # Confirm the presence of the session
+    session = Session.find(session_id)
+
+    if session.nil?
+      # Check for the result if there's no session
+      result = current_user.results.find_by(
+        session_key: idempotent_session_key(user.id, session_id, :test)
+      )
+
+      # Ideally, the result should not be nil if this endpoint is called when resuming a test
+      if result.nil?
+        # Both Session and Result are non-existent, throw an error
+        raise Errors::NotFoundError.new(message: "Cannot find result. Please refresh this page")
+      else
+        # Result available, render that for the user to see
+        render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+      end
+
+      return
+    end
+
+    if session.user != current_user
+      raise Errors::ForbiddenError.new(message: "This is not your session to resume!")
+    end
+
+    if check_session_for_valid_update(session)
+      # Session still valid, `/start` will be called to resume it
+      render json: { data: nil }, status: :ok
+    else
+      # Session is stale, convert it to a result
+      result = get_end_test_result(current_user, session.course)
+      render json: result, root: :data, serializer: SessionResultSerializer, status: :created
+    end
+  end
+
   def submit_stale_sessions
     recent_sessions = Session.where({ session_type: :test }).created_after(36.hours.ago)
 
