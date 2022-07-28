@@ -3,7 +3,7 @@ class SessionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:start, :submit_stale_sessions]
-  before_action :load_course, except: [:update, :submit_stale_sessions]
+  before_action :load_course, except: [:update, :verify_active_session, :submit_stale_sessions]
 
   wrap_parameters format: []
 
@@ -186,6 +186,51 @@ class SessionsController < ApplicationController
     else
       # Session is stale, convert it to a result
       result = get_end_test_result(current_user, last_session.course)
+      render json: result, root: :data, serializer: SessionResultSerializer, status: :created
+    end
+  end
+
+  # Returns nil if the session is active indicating it can be resumed
+  # Or creates/returns a result if the session is over.
+  def verify_active_session
+    session_id = params[:id]
+
+    if session_id.nil?
+      raise Errors::BaseError.new(message: "No session ID provided", status: 400)
+    end
+
+    # Confirm the presence of the session
+    # Using find_by to prevent throwing an error
+    session = Session.find_by(id: session_id)
+
+    if session.nil?
+      # Check for the result if there's no session
+      result = current_user.results.find_by(
+        session_key: idempotent_session_key(current_user.id, session_id, :test)
+      )
+
+      # Ideally, the result should not be nil if this endpoint is called when resuming a test
+      if result.nil?
+        # Both Session and Result are non-existent, throw an error
+        raise Errors::NotFoundError.new(message: "Cannot find session or result. Please refresh this page")
+      else
+        # Result available, render that for the user to see
+        render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+      end
+
+      return
+    end
+
+    if session.user != current_user
+      raise Errors::ForbiddenError.new(message: "This is not your session to resume!")
+    end
+
+    if check_session_for_valid_update(session)
+      # Session still valid, `/start` will be called to resume it
+      render json: { data: nil }, status: :ok
+    else
+      # Session is stale, convert it to a result
+      result = get_end_test_result(current_user, session.course)
       render json: result, root: :data, serializer: SessionResultSerializer, status: :created
     end
   end

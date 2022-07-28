@@ -21,6 +21,7 @@ module TestHelper
     course.serialized_mini_course.merge(
       {
         resuming: is_user_resuming,
+        session_id: if is_user_resuming then @current_session.id else nil end,
         server_time: DateTime.now.utc, # Send server time to API in UTC T..Z format
         time_left: get_time_left(@instructions[:time]),
         start_time: if is_user_resuming then @current_session.created_at else nil end,
