@@ -20,6 +20,7 @@ Rails.application.routes.draw do
   get '/courses/categorised', to: "courses#categorised"
   get '/courses/top', to: "courses#top_courses"
   get '/courses/recent', to: "courses#recent_courses"
+  get 'courses/expire-tests', to: "courses#expire_tests"
   get '/search', to: "courses#search"
   resources :courses, only: [:index, :show] do
     resources :questions, only: [:index]
