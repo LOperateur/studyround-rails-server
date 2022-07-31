@@ -15,6 +15,12 @@ module ULearnserver
     config.load_defaults 5.2
     config.active_job.queue_adapter = :sidekiq
 
+    # Tip from https://github.com/mperham/sidekiq/wiki/Active+Job#queues
+    # Disable the standard Rails queues
+    # Using nil will use the "default" queue instead of the rails defaults
+    # Fixed in Rails 6.1
+    config.action_mailer.deliver_later_queue_name = :mailers
+
     # Prevent some default files from being auto-generated
     config.generators.template_engine = false
     config.generators.assets = false

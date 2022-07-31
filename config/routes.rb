@@ -20,7 +20,6 @@ Rails.application.routes.draw do
   get '/courses/categorised', to: "courses#categorised"
   get '/courses/top', to: "courses#top_courses"
   get '/courses/recent', to: "courses#recent_courses"
-  get 'courses/expire-tests', to: "courses#expire_tests"
   get '/search', to: "courses#search"
   resources :courses, only: [:index, :show] do
     resources :questions, only: [:index]
@@ -40,10 +39,8 @@ Rails.application.routes.draw do
     get '/session-items', to: "results#session_items"
   end
 
-  get '/sessions/consolidate', to: "sessions#submit_stale_sessions"
   get '/tests/:course_id/instructions', to: "sessions#test_instructions"
   get '/sessions/:id/verify', to: "sessions#verify_active_session"
-  get '/tests/:course_id/verify', to: "sessions#verify_active_test"
 
   post '/sessions/:course_id/start', to: "sessions#start"
   post '/tests/:course_id/start', to: "sessions#start_test"

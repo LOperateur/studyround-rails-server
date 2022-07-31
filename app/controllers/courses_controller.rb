@@ -1,5 +1,5 @@
 class CoursesController < ApplicationController
-  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search, :expire_tests]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
 
   wrap_parameters format: []
 
@@ -69,18 +69,5 @@ class CoursesController < ApplicationController
 
     courses = paginate(found_courses, params)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
-  end
-
-  def expire_tests
-    expired_tests = Course.where({ test: true, course_status: :course_status_active }).where("test_expiration < ?", Time.now)
-
-    expired_tests.each do |tests|
-      begin
-        # Expire all these tests that their expiration dates have passed
-        tests.course_status_expired!
-      rescue Errors::BaseError
-        # Ignored
-      end
-    end
   end
 end

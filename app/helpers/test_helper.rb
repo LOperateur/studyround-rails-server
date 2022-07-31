@@ -365,6 +365,7 @@ module TestHelper
     # If the time indicates it's expired but the course doesn't
     # have an expired or closed status, then expire the course.
     if expired && !(@course.course_status_expired? || @course.course_status_closed?)
+      # TODO: Also send a notification to the creator
       @course.course_status_expired!
     end
 

@@ -2,8 +2,8 @@ class SessionsController < ApplicationController
   include SessionHelper
   include TestHelper
 
-  skip_before_action :authorize!, only: [:start, :submit_stale_sessions]
-  before_action :load_course, except: [:update, :verify_active_session, :submit_stale_sessions]
+  skip_before_action :authorize!, only: [:start]
+  before_action :load_course, except: [:update, :verify_active_session]
 
   wrap_parameters format: []
 
@@ -154,42 +154,6 @@ class SessionsController < ApplicationController
     render json: {}, status: :ok
   end
 
-  # Verify if a resuming test can resume or should start a new one/render it's last result.
-  # IMPORTANT: Should ideally be called only when the user is resuming a test.
-  def verify_active_test
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
-    # Confirm the presence of the latest session
-    last_session = current_user.sessions.recent.find_by(course: @course)
-
-    if last_session.nil?
-      # Check for any result if there's no session
-      latest_result = current_user.results.recent.find_by(course: @course)
-
-      # Ideally, latest result should not be nil if this endpoint is called when resuming a test
-      if latest_result.nil?
-        # Both Session and Result are non-existent, `/start` will be called to start a new one
-        render json: { data: nil }, status: :ok
-      else
-        # Result available, render that for the user to see
-        render json: latest_result, root: :data, serializer: SessionResultSerializer, status: :ok
-      end
-
-      return
-    end
-
-    if check_session_for_valid_update(last_session)
-      # Session still valid, `/start` will be called to resume it
-      render json: { data: nil }, status: :ok
-    else
-      # Session is stale, convert it to a result
-      result = get_end_test_result(current_user, last_session.course)
-      render json: result, root: :data, serializer: SessionResultSerializer, status: :created
-    end
-  end
-
   # Returns nil if the session is active indicating it can be resumed
   # Or creates/returns a result if the session is over.
   def verify_active_session
@@ -232,21 +196,6 @@ class SessionsController < ApplicationController
       # Session is stale, convert it to a result
       result = get_end_test_result(current_user, session.course)
       render json: result, root: :data, serializer: SessionResultSerializer, status: :created
-    end
-  end
-
-  def submit_stale_sessions
-    recent_sessions = Session.where({ session_type: :test }).created_after(36.hours.ago)
-
-    recent_sessions.each do |session|
-      begin
-        # Sessions that cannot be updated are considered stale
-        if check_session_for_valid_update(session).nil?
-          get_end_test_result(session.user, session.course)
-        end
-      rescue Errors::BaseError
-        # Ignored
-      end
     end
   end
 
