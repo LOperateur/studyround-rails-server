@@ -41,6 +41,7 @@ Rails.application.routes.draw do
 
   get '/tests/:course_id/instructions', to: "sessions#test_instructions"
   get '/sessions/:id/verify', to: "sessions#verify_active_session"
+  get '/tests/:course_id/complete', to: "courses#close_test"
 
   post '/sessions/:course_id/start', to: "sessions#start"
   post '/tests/:course_id/start', to: "sessions#start_test"

@@ -10,7 +10,11 @@ class CoursesController < ApplicationController
 
   def show
     course = Course.find(params[:id])
-    render json: course, root: :data, serializer: FullCourseSerializer
+    if current_user.nil? || course.creator != current_user
+      render json: course, root: :data, serializer: DetailedCourseSerializer
+    else
+      render json: course, root: :data, serializer: FullCourseSerializer
+    end
   end
 
   def categorised
@@ -69,5 +73,9 @@ class CoursesController < ApplicationController
 
     courses = paginate(found_courses, params)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
+  end
+
+  def close_test
+
   end
 end
