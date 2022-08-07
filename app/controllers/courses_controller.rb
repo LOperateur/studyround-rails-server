@@ -1,4 +1,9 @@
 class CoursesController < ApplicationController
+  require 'action_view'
+  require 'action_view/helpers'
+  include ActionView::Helpers::DateHelper
+  include TestHelper
+
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
 
   wrap_parameters format: []
@@ -10,7 +15,11 @@ class CoursesController < ApplicationController
 
   def show
     course = Course.find(params[:id])
-    render json: course, root: :data, serializer: FullCourseSerializer
+    if current_user.nil? || course.creator != current_user
+      render json: course, root: :data, serializer: DetailedCourseSerializer
+    else
+      render json: course, root: :data, serializer: FullCourseSerializer
+    end
   end
 
   def categorised
@@ -69,5 +78,31 @@ class CoursesController < ApplicationController
 
     courses = paginate(found_courses, params)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
+  end
+
+  def close_test
+    course = Course.find(params[:course_id])
+    if course.creator != current_user
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
+    end
+
+    # Confirm that the lag time is exceeded and the test is closeable
+    expiration = course.test_expiration
+    lag_time = 1.hour
+    closing_time = expiration + (course.instructions['time']).seconds + lag_time
+    is_closeable = closing_time < Time.now
+
+    time_left = distance_of_time_in_words(closing_time, Time.now)
+    if !is_closeable
+      raise Errors::BaseError.new(message: "Please wait #{time_left} before you close this test", status: 400)
+    end
+
+    # Start a job to submit all remaining sessions
+    CourseSessionSubmissionJob.perform_now(course)
+
+    # Close the test
+    course.course_status_closed!
+
+    render json: {}, status: :ok
   end
 end
