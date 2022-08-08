@@ -94,7 +94,7 @@ class CoursesController < ApplicationController
 
     time_left = distance_of_time_in_words(closing_time, Time.now)
     if !is_closeable
-      raise Errors::BaseError.new(message: "Please wait #{time_left} before you close this test", status: 400)
+      raise Errors::BaseError.new(message: "Please wait #{time_left} before you can close this test", status: 400)
     end
 
     # Start a job to submit all remaining sessions

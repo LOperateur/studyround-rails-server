@@ -3,8 +3,16 @@ class ResultsController < ApplicationController
 
   def show
     result = Result.find(params[:id])
+
     if result.user != current_user
-      raise Errors::ForbiddenError.new(message: "You cannot view this result")
+      if result.session_type_test?
+        # For tests, raise exception if a user other than the candidate or creator tries to access it
+        if result.course.creator != current_user
+          raise Errors::ForbiddenError.new(message: "You cannot view this result")
+        end
+      else
+        raise Errors::ForbiddenError.new(message: "You cannot view this result")
+      end
     end
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
@@ -12,8 +20,21 @@ class ResultsController < ApplicationController
 
   def session_items
     result = Result.find(params[:result_id])
+
     if result.user != current_user
-      raise Errors::ForbiddenError.new(message: "You cannot view this result session")
+      if result.session_type_test?
+        # For tests, raise exception if a user other than the candidate or creator tries to access it
+        if result.course.creator != current_user
+          raise Errors::ForbiddenError.new(message: "You cannot view this result session")
+        end
+      else
+        raise Errors::ForbiddenError.new(message: "You cannot view this result session")
+      end
+    end
+
+    # Restrict session item access if reveal answers is false and the course isn't closed yet
+    if !result.course.instructions['reveal_answers'] && !result.course.course_status_closed?
+      raise Errors::ForbiddenError.new(message: "The creator of this course has restricted viewing answers until they close the test. Please check back later.")
     end
 
     # Doing our own pagination here due to the nature of the query
