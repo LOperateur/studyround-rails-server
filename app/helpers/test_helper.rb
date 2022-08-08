@@ -282,7 +282,7 @@ module TestHelper
     reveal_answers = @instructions[:reveal_answers]
 
     reveal_answers_text = "Upon submission, your answers for each question would be available for review"
-    hidden_answers_text = "Upon submission, your answers for each question would be available for review only after this test is closed by the creator"
+    hidden_answers_text = "Upon submission, your answers for each question would NOT be available for review until this test is closed by the creator"
 
     reveal_answers ? reveal_answers_text : hidden_answers_text
   end
