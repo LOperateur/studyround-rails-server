@@ -281,8 +281,8 @@ module TestHelper
   def map_reveal_answers_instruction
     reveal_answers = @instructions[:reveal_answers]
 
-    reveal_answers_text = "Your answers for each question would be available at the end of your test"
-    hidden_answers_text = "Your answers for each question would be available after the test expires"
+    reveal_answers_text = "Upon submission, your answers for each question would be available for review"
+    hidden_answers_text = "Upon submission, your answers for each question would be available for review only after this test is closed by the creator"
 
     reveal_answers ? reveal_answers_text : hidden_answers_text
   end
