@@ -32,9 +32,11 @@ class ResultsController < ApplicationController
       end
     end
 
-    # Restrict session item access if reveal answers is false and the course isn't closed yet
-    if !result.course.instructions['reveal_answers'] && !result.course.course_status_closed?
-      raise Errors::ForbiddenError.new(message: "The creator of this course has restricted viewing answers until they close the test. Please check back later.")
+    if result.session_type_test?
+      # Restrict session item access if reveal answers is false and the course isn't closed yet
+      if !result.course.instructions['reveal_answers'] && !result.course.course_status_closed?
+        raise Errors::ForbiddenError.new(message: "The creator of this course has restricted viewing answers until they close the test. Please check back later.")
+      end
     end
 
     # Doing our own pagination here due to the nature of the query
