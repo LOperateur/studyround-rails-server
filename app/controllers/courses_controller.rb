@@ -97,8 +97,15 @@ class CoursesController < ApplicationController
       raise Errors::BaseError.new(message: "Please wait #{time_left} before you can close this test", status: 400)
     end
 
-    # Start a job to submit all remaining sessions
-    CourseSessionSubmissionJob.perform_now(course)
+    # Submit all remaining sessions
+    # CourseSessionSubmissionJob.perform_now(course)
+    course.sessions.each do |session|
+      begin
+        get_end_test_result(session.user, session.course)
+      rescue Errors::BaseError
+        # Ignored
+      end
+    end
 
     # Close the test
     course.course_status_closed!

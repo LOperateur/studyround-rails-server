@@ -10,5 +10,6 @@ class CourseSessionSubmissionJob < ApplicationJob
         # Ignored
       end
     end
+    # TODO: When used, we can send a notification after this job completes
   end
 end
