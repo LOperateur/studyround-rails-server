@@ -88,7 +88,7 @@ class CoursesController < ApplicationController
 
     # Confirm that the lag time is exceeded and the test is closeable
     expiration = course.test_expiration
-    lag_time = 1.hour
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
     closing_time = expiration + (course.instructions['time']).seconds + lag_time
     is_closeable = closing_time < Time.now
 
@@ -97,8 +97,15 @@ class CoursesController < ApplicationController
       raise Errors::BaseError.new(message: "Please wait #{time_left} before you can close this test", status: 400)
     end
 
-    # Start a job to submit all remaining sessions
-    CourseSessionSubmissionJob.perform_now(course)
+    # Submit all remaining sessions
+    # CourseSessionSubmissionJob.perform_now(course)
+    course.sessions.each do |session|
+      begin
+        get_end_test_result(session.user, session.course)
+      rescue Errors::BaseError
+        # Ignored
+      end
+    end
 
     # Close the test
     course.course_status_closed!
