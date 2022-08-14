@@ -88,7 +88,7 @@ class CoursesController < ApplicationController
 
     # Confirm that the lag time is exceeded and the test is closeable
     expiration = course.test_expiration
-    lag_time = 1.hour
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
     closing_time = expiration + (course.instructions['time']).seconds + lag_time
     is_closeable = closing_time < Time.now
 

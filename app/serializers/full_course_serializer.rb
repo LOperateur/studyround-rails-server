@@ -7,7 +7,7 @@ class FullCourseSerializer < DetailedCourseSerializer
 
       expiration = object.test_expiration
       results = Result.where(course_id: object.id)
-      lag_time = 1.hour
+      lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
       closing_time = expiration + (object.instructions['time']).seconds + lag_time
       is_closeable = closing_time < Time.now
 
@@ -15,9 +15,13 @@ class FullCourseSerializer < DetailedCourseSerializer
         expiration: expiration,
         users: results.distinct.count(:user_id),
         submissions: results.count,
-        result_expiration: if object.creator.pro_account then nil else expiration + 48.hours end,
         closing_time: closing_time,
         closeable: is_closeable,
+        result_expiration: if object.creator.pro_account
+                             nil
+                           else
+                             expiration + ENV['FREE_TEST_SESSION_ACCESS_HOURS'].to_i.hours
+                           end,
       }
     else
       nil

@@ -20,13 +20,23 @@ class ResultsController < ApplicationController
 
   def session_items
     result = Result.find(params[:result_id])
+    course = result.course
 
     if result.user != current_user
       if result.session_type_test?
+
         # For tests, raise exception if a user other than the candidate or creator tries to access it
-        if result.course.creator != current_user
+        if course.creator != current_user
           raise Errors::ForbiddenError.new(message: "You cannot view this result session")
         end
+
+        # If the creator tries to access this while not a pro-user and their access is expired, error out
+        # TODO: Pay gated feature
+        result_expiration = course.test_expiration + ENV['FREE_TEST_SESSION_ACCESS_HOURS'].to_i.hours
+        if !course.creator.pro_account && (result_expiration < Time.now)
+          raise Errors::ForbiddenError.new(message: "Your access to this result session is expired.")
+        end
+
       else
         raise Errors::ForbiddenError.new(message: "You cannot view this result session")
       end
@@ -34,7 +44,7 @@ class ResultsController < ApplicationController
 
     if result.session_type_test?
       # Restrict session item access if reveal answers is false and the course isn't closed yet
-      if !result.course.instructions['reveal_answers'] && !result.course.course_status_closed?
+      if !course.instructions['reveal_answers'] && !course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "The creator of this course has restricted viewing answers until they close the test. Please check back later.")
       end
     end
