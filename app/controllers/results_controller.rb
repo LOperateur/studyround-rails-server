@@ -30,12 +30,12 @@ class ResultsController < ApplicationController
           raise Errors::ForbiddenError.new(message: "You cannot view this result session")
         end
 
-        # If the creator tries to access this while not a pro-user and their access is expired, error out
         # TODO: Pay gated feature
-        result_expiration = course.test_expiration + ENV['FREE_TEST_SESSION_ACCESS_HOURS'].to_i.hours
-        if !course.creator.pro_account && (result_expiration < Time.now)
-          raise Errors::ForbiddenError.new(message: "Your access to this result session is expired.")
-        end
+        # If the creator tries to access this while not a pro-user and their access is expired, error out
+        # result_expiration = course.test_expiration + ENV['FREE_TEST_SESSION_ACCESS_HOURS'].to_i.hours
+        # if !course.creator.pro_account && (result_expiration < Time.now)
+        #   raise Errors::ForbiddenError.new(message: "Your access to this result session is expired.")
+        # end
 
       else
         raise Errors::ForbiddenError.new(message: "You cannot view this result session")
