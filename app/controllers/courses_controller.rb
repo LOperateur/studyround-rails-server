@@ -5,6 +5,7 @@ class CoursesController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
+  before_action :load_course, only: [:show, :update, :publish, :destroy]
 
   wrap_parameters format: []
 
@@ -14,11 +15,89 @@ class CoursesController < ApplicationController
   end
 
   def show
-    course = Course.find(params[:id])
-    if current_user.nil? || course.creator != current_user
-      render json: course, root: :data, serializer: DetailedCourseSerializer
+    if current_user.nil? || @course.creator != current_user
+      render json: @course, root: :data, serializer: DetailedCourseSerializer
     else
-      render json: course, root: :data, serializer: FullCourseSerializer
+      render json: @course, root: :data, serializer: FullCourseSerializer
+    end
+  end
+
+  def create
+    course = current_user.courses.build(create_course_params)
+    begin
+      course.save!
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(course.errors.to_h)
+    end
+    render json: course, root: :data, serializer: FullCourseSerializer
+  end
+
+  def update
+    if @course.test
+      if @course.publish_status_published?
+        raise Errors::ForbiddenError.new(message: "You cannot update a published Test!")
+      end
+    end
+
+    # If a course has been published, prevent any changes to price/currency
+    # Making it free will be allowed automatically, however, making it paid at a different
+    # price from what was originally published will require us to take action first.
+    # This will be checked in the validator since going from free->paid will throw an error if price is null.
+    if !@course.last_publish_date.nil?
+      new_price = update_course_params[:price]
+      new_currency = update_course_params[:currency]
+
+      # If changing the price/currency and the price/currency is different from what was there before
+      if (!new_price.nil? && @course.price != new_price) || (!new_currency.nil? && @course.currency != new_currency)
+        render json: { message: "Please contact us to change the price or currency", data: {} }, status: 200
+        return
+      end
+    end
+
+    begin
+      @course.assign_attributes(update_course_params)
+      @course.save!
+      render json: @course, root: :data, serializer: FullCourseSerializer
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(@course.errors.to_h)
+    end
+  end
+
+  def publish
+    if @course.publish_status_published?
+      raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is already published!")
+    end
+
+    begin
+      @course.publish_status = :publish_status_published
+      @course.version = @course.version + 1
+      @course.last_publish_date = Time.now
+      @course.save!
+      render json: { message: "Published successfully", data: {} }, status: 200
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(@course.errors.to_h)
+    end
+  end
+
+  def destroy
+    # If a course has never been published, hard delete it as well as all of its questions.
+    if @course.last_publish_date.nil?
+      @course.destroy!
+      render json: { message: "Deleted successfully", data: {} }, status: 200
+      return
+    end
+
+    if @course.test
+      if @course.publish_status_published?
+        raise Errors::ForbiddenError.new(message: "You cannot delete a published Test!")
+      end
+    end
+
+    begin
+      @course.course_status_deleted!
+      render json: { message: "Deleted successfully", data: {} }, status: 200
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(@course.errors.to_h)
     end
   end
 
@@ -112,4 +191,36 @@ class CoursesController < ApplicationController
 
     render json: {}, status: :ok
   end
+
+  private
+
+  def load_course
+    @course = Course.course_status_active.find(params[:id])
+    if @course.creator != current_user
+      Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
+    end
+  end
+
+  def course_or_test(course)
+    if course.test
+      "test"
+    else
+      "course"
+    end
+  end
+
+  def create_course_params
+    params.permit(:creator_id, :title, :sale_status, :price, :currency,
+                  :private, :test, :about, :image, :test_expiration,
+                  :instructions => [:time, :graded, :max_trials, :user_limit, :extra_id_title, :reveal_answers],
+                  :category_ids => [])
+  end
+
+  def update_course_params
+    params.permit(:creator_id, :title, :sale_status, :price, :currency,
+                  :private, :about, :image, :test_expiration,
+                  :instructions => [:time, :graded, :max_trials, :user_limit, :extra_id_title, :reveal_answers],
+                  :category_ids => [])
+  end
+
 end

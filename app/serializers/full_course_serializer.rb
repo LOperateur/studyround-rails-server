@@ -1,6 +1,6 @@
 class FullCourseSerializer < DetailedCourseSerializer
   type :course
-  attributes :instructions, :private, :publish_status, :course_status, :test_statistics
+  attributes :instructions, :private, :publish_status, :course_status, :last_publish_date, :test_statistics
 
   def test_statistics
     if object.test
