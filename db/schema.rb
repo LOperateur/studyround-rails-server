@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_06_29_085656) do
+ActiveRecord::Schema.define(version: 2022_09_25_222209) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -38,26 +38,25 @@ ActiveRecord::Schema.define(version: 2022_06_29_085656) do
   create_table "courses", force: :cascade do |t|
     t.bigint "creator_id"
     t.string "title"
-    t.integer "sale_status"
+    t.integer "sale_status", default: 1
     t.decimal "price", precision: 10, scale: 2
     t.string "currency"
-    t.boolean "private"
-    t.boolean "test"
+    t.boolean "private", default: false
+    t.boolean "test", default: false
     t.text "about"
     t.string "image_url"
-    t.integer "version", default: 1
+    t.integer "version", default: 0
     t.datetime "test_expiration"
-    t.integer "publish_status"
-    t.jsonb "draft_content"
-    t.integer "course_status"
+    t.integer "publish_status", default: 1
+    t.integer "course_status", default: 1
     t.integer "next_edition"
     t.integer "previous_edition"
     t.float "rating"
     t.jsonb "instructions"
-    t.boolean "completed"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "question_tags"
+    t.datetime "last_publish_date"
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
   end
