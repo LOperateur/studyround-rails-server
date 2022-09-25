@@ -210,8 +210,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.2,
-          "completed": false
+          "rating": 4.2
         },
         {
           "creator": user,
@@ -225,8 +224,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.7,
-          "completed": false
+          "rating": 3.7
         },
         {
           "creator": user,
@@ -240,8 +238,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.6,
-          "completed": false
+          "rating": 4.6
         },
         {
           "creator": user,
@@ -255,8 +252,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.9,
-          "completed": false
+          "rating": 3.9
         },
         {
 
@@ -271,8 +267,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.1,
-          "completed": false
+          "rating": 4.1
         },
         {
           "creator": user,
@@ -286,8 +281,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.1,
-          "completed": false
+          "rating": 4.1
         },
         {
           "creator": user,
@@ -301,8 +295,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.3,
-          "completed": false
+          "rating": 4.3
         },
         {
           "creator": user,
@@ -316,8 +309,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.0,
-          "completed": false
+          "rating": 4.0
         },
         {
           "creator": user,
@@ -331,8 +323,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.0,
-          "completed": false
+          "rating": 3.0
         },
         {
           "creator": user,
@@ -346,8 +337,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.0,
-          "completed": false
+          "rating": 4.0
         },
         {
           "creator": user,
@@ -361,8 +351,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.1,
-          "completed": false
+          "rating": 3.1
         },
         {
           "creator": user,
@@ -376,8 +365,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.4,
-          "completed": false
+          "rating": 3.4
         },
         {
           "creator": user,
@@ -391,8 +379,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.2,
-          "completed": false
+          "rating": 3.2
         },
         {
           "creator": user,
@@ -406,8 +393,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 2.2,
-          "completed": false
+          "rating": 2.2
         },
         {
           "creator": user,
@@ -421,8 +407,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 3.5,
-          "completed": false
+          "rating": 3.5
         },
         {
           "creator": user,
@@ -436,8 +421,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 4.0,
-          "completed": false
+          "rating": 4.0
         },
         {
           "creator": user,
@@ -451,8 +435,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 5.0,
-          "completed": false
+          "rating": 5.0
         },
         {
           "creator": user,
@@ -466,8 +449,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 5.0,
-          "completed": false
+          "rating": 5.0
         },
         {
           "creator": user,
@@ -481,8 +463,7 @@ unless Rails.env.production?
           "version": 1,
           "course_status": :course_status_active,
           "publish_status": :publish_status_published,
-          "rating": 5.0,
-          "completed": false
+          "rating": 5.0
         }
       ]
     )
