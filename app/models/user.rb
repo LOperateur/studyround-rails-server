@@ -8,7 +8,7 @@ class User < ApplicationRecord
   validates :password_confirmation, presence: true, length: { minimum: 8 }
 
   has_one :refresh_token, dependent: :destroy
-  has_many :courses, dependent: :destroy
+  has_many :courses, dependent: :destroy, class_name: "Course", foreign_key: :creator_id
   has_many :interests, dependent: :destroy
   has_many :categories, through: :interests
   has_many :results
