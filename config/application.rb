@@ -52,5 +52,7 @@ module ULearnserver
         end
       end
     end
+
+    config.autoload_paths += [Rails.root.join('app', 'models', 'validators').to_s]
   end
 end

@@ -1,10 +1,13 @@
 class Course < ApplicationRecord
   belongs_to :creator, class_name: 'User'
 
+  validates :title, presence: true
+  validates_with CourseValidator
+
   has_many :categorizations, dependent: :destroy
   has_many :categories, through: :categorizations
   has_many :results
-  has_many :questions
+  has_many :questions, dependent: :destroy
   has_many :reviews
   has_many :sessions
 
@@ -22,6 +25,7 @@ class Course < ApplicationRecord
     course_status_suspended: 2,
     course_status_expired: 3, # For tests
     course_status_closed: 4, # For tests
+    course_status_deleted: 5,
   }
 
   # Don't change the order of 1 and 2, referenced in migration

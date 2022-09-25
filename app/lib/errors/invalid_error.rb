@@ -10,7 +10,7 @@ module Errors
       errors.reduce([]) do |r, (att, msg)|
         r << {
           status: status,
-          message: msg,
+          message: "#{att.to_s.upcase_first.gsub("_", " ")} #{msg}",
           source: { pointer: "/data/attributes/#{att}" }
         }
       end
