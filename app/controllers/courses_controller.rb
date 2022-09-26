@@ -24,6 +24,10 @@ class CoursesController < ApplicationController
 
   def create
     course = current_user.courses.build(create_course_params)
+    if !create_course_params[:test_expiration].nil?
+      course.test_expiration = DateTime.parse(create_course_params[:test_expiration])
+    end
+
     begin
       course.save!
     rescue ActiveRecord::RecordInvalid
@@ -54,8 +58,12 @@ class CoursesController < ApplicationController
       end
     end
 
+    @course.assign_attributes(update_course_params)
+    if !update_course_params[:test_expiration].nil?
+      @course.test_expiration = DateTime.parse(update_course_params[:test_expiration])
+    end
+
     begin
-      @course.assign_attributes(update_course_params)
       @course.save!
       render json: @course, root: :data, serializer: FullCourseSerializer
     rescue ActiveRecord::RecordInvalid
