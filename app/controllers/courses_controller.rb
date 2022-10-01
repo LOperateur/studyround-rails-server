@@ -23,10 +23,8 @@ class CoursesController < ApplicationController
   end
 
   def create
-    course = current_user.courses.build(create_course_params)
-    if !create_course_params[:test_expiration].nil?
-      course.test_expiration = DateTime.parse(create_course_params[:test_expiration])
-    end
+    course_params = prepare_received_course_params(create_course_params)
+    course = current_user.courses.build(course_params)
 
     begin
       course.save!
@@ -58,10 +56,8 @@ class CoursesController < ApplicationController
       end
     end
 
-    @course.assign_attributes(update_course_params)
-    if !update_course_params[:test_expiration].nil?
-      @course.test_expiration = DateTime.parse(update_course_params[:test_expiration])
-    end
+    course_params = prepare_received_course_params(update_course_params)
+    @course.assign_attributes(course_params)
 
     begin
       @course.save!
@@ -217,18 +213,35 @@ class CoursesController < ApplicationController
     end
   end
 
+  def prepare_received_course_params(received_params)
+    course_params = received_params
+
+    if !received_params[:test_expiration].nil?
+      test_expiration = DateTime.parse(received_params[:test_expiration])
+      course_params[:test_expiration] = test_expiration
+    end
+
+    if !received_params[:instructions].nil?
+      instructions_json = JSON.parse(received_params[:instructions])
+      course_params[:instructions] = instructions_json
+    end
+
+    if !received_params[:category_ids].nil?
+      category_json = JSON.parse(received_params[:category_ids])
+      course_params[:category_ids] = category_json
+    end
+
+    return course_params
+  end
+
   def create_course_params
     params.permit(:creator_id, :title, :sale_status, :price, :currency,
-                  :private, :test, :about, :image, :test_expiration,
-                  :instructions => [:time, :graded, :max_trials, :user_limit, :extra_id_title, :reveal_answers],
-                  :category_ids => [])
+                  :private, :test, :about, :image, :test_expiration, :instructions, :category_ids)
   end
 
   def update_course_params
     params.permit(:creator_id, :title, :sale_status, :price, :currency,
-                  :private, :about, :image, :test_expiration,
-                  :instructions => [:time, :graded, :max_trials, :user_limit, :extra_id_title, :reveal_answers],
-                  :category_ids => [])
+                  :private, :about, :image, :test_expiration, :instructions, :category_ids)
   end
 
 end
