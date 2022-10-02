@@ -178,10 +178,14 @@ module TestHelper
       # If for some reason, the session no longer exists or has been destroyed
       # Use the id passed in the params to find the session's result
       session_key = idempotent_session_key(current_user.id, params_session_id, :test)
-      result = Result.find_by!(session_key: session_key)
+      begin
+        result = Result.find_by!(session_key: session_key)
+      rescue
+        raise Errors::BaseError.new(message: "Unable to obtain session", status: 404)
+      end
 
     else
-      raise Errors::BaseError.new(message: "Unable to obtain session, please check your results", status: 400)
+      raise Errors::BaseError.new(message: "Unknown session", status: 400)
     end
 
     return result

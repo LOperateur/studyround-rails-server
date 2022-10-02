@@ -62,26 +62,40 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unknown session!", status: 400)
     end
 
-    # Idempotency check to prevent double submissions
-    session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
-    result = Result.find_by(session_key: session_key) ||
-      Result.create!(
-        course: @course,
-        user: current_user,
-        score: score,
-        total: total,
-        duration: end_course_session_params[:duration],
-        num_questions: num_questions,
-        elapsed_time: end_course_session_params[:elapsed_time],
-        session_type: end_course_session_params[:session_type],
-        session_key: session_key,
-        session_items: session_items_with_answers
-      )
-
-    # Get and destroy the session
     session = Session.find_by(id: end_course_session_params[:session_id])
+
     if session
+      duration = session.duration
+      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+
+      # Idempotency check to prevent double submissions
+      session_key = idempotent_session_key(current_user.id, session.id, type)
+      result = Result.find_by(session_key: session_key) ||
+        Result.create!(
+          course: @course,
+          user: current_user,
+          score: score,
+          total: total,
+          duration: duration,
+          num_questions: num_questions,
+          elapsed_time: elapsed_time,
+          session_type: type,
+          session_key: session_key,
+          session_items: session_items_with_answers
+        )
+
+      # Delete the session
       session.destroy
+
+    else
+      # If for some reason, the session no longer exists or has been destroyed
+      # Use the id passed in the params to find the session's result
+      session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
+      begin
+        result = Result.find_by!(session_key: session_key)
+      rescue
+        raise Errors::BaseError.new(message: "Unable to obtain session", status: 404)
+      end
     end
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
@@ -231,8 +245,7 @@ class SessionsController < ApplicationController
   end
 
   def end_course_session_params
-    params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :questions,
-                  :tags => [],
+    params.permit(:session_type, :session_id, :questions,
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 
