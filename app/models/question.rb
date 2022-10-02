@@ -6,7 +6,14 @@ class Question < ApplicationRecord
     publish_status_published: 2,
   }
 
-  scope :published_active_questions, -> { where(publish_status: :publish_status_published) }
+  enum question_status: {
+    question_status_active: 1,
+    question_status_suspended: 2,
+    question_status_deleted: 3,
+  }
+
+  scope :published_active_questions, -> { where(publish_status: :publish_status_published, question_status: :question_status_active) }
+  scope :non_deleted_questions, -> { where.not(question_status: :question_status_deleted) }
 
   # Used to serialize the question model on the go without having to render
   def serialized_question
