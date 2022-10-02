@@ -14,24 +14,14 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
 
-    session = course_based_session
     session_type = session_type(start_course_session_params[:session_type])
 
     case session_type
     when :study
-      questions = @course.questions.publish_status_published.order(order: :asc)
+      session = course_based_session(@course)
+      questions = @course.questions.published_active_questions.order(order: :asc)
     when :quiz, :practice
-      num_questions = start_course_session_params[:questions]
-      check_course_session_limits(num_questions)
-      session_id = session[:id]
-      Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
-      if session_type == :quiz
-        # where("JSONB_ARRAY_LENGTH(answer) = 1")
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
-      else
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
-      end
-      check_min_available_questions(questions.length)
+      session, questions = create_course_based_session(start_course_session_params, @course)
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -72,21 +62,41 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unknown session!", status: 400)
     end
 
-    # Idempotency check to prevent double submissions
-    session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
-    result = Result.find_by(session_key: session_key) ||
-      Result.create!(
-        course: @course,
-        user: current_user,
-        score: score,
-        total: total,
-        duration: end_course_session_params[:duration],
-        num_questions: num_questions,
-        elapsed_time: end_course_session_params[:elapsed_time],
-        session_type: end_course_session_params[:session_type],
-        session_key: session_key,
-        session_items: session_items_with_answers
-      )
+    session = Session.find_by(id: end_course_session_params[:session_id])
+
+    if session
+      duration = session.duration
+      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+
+      # Idempotency check to prevent double submissions
+      session_key = idempotent_session_key(current_user.id, session.id, type)
+      result = Result.find_by(session_key: session_key) ||
+        Result.create!(
+          course: @course,
+          user: current_user,
+          score: score,
+          total: total,
+          duration: duration,
+          num_questions: num_questions,
+          elapsed_time: elapsed_time,
+          session_type: type,
+          session_key: session_key,
+          session_items: session_items_with_answers
+        )
+
+      # Delete the session
+      session.destroy
+
+    else
+      # If for some reason, the session no longer exists or has been destroyed
+      # Use the id passed in the params to find the session's result
+      session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
+      begin
+        result = Result.find_by!(session_key: session_key)
+      rescue
+        raise Errors::BaseError.new(message: "Unable to obtain session", status: 404)
+      end
+    end
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
   end
@@ -201,19 +211,6 @@ class SessionsController < ApplicationController
 
   private
 
-  def course_based_session
-    {
-      # Remove the 0.xxxx decimal prefix
-      id: SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
-      current_question_number: 1,
-      server_time: DateTime.now.utc,
-      start_time: DateTime.now.utc,
-      course_id: @course.id,
-      course_name: @course.title,
-      session_items: [],
-    }
-  end
-
   def create_test_based_session(params)
     session = Session.create(params.merge(start_test_session_params))
 
@@ -239,17 +236,16 @@ class SessionsController < ApplicationController
   end
 
   def load_course
-    @course = Course.find(params[:course_id])
+    @course = Course.published_active_courses.find(params[:course_id])
   end
 
   def start_course_session_params
-    params.permit(:session_type, :questions, :device_id, :web_tab_id,
+    params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration,
                   :tags => [])
   end
 
   def end_course_session_params
-    params.permit(:session_type, :elapsed_time, :duration, :session_id, :course_id, :questions,
-                  :tags => [],
+    params.permit(:session_type, :session_id, :questions,
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 

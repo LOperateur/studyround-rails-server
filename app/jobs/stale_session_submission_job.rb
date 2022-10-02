@@ -3,13 +3,17 @@ class StaleSessionSubmissionJob < ApplicationJob
   queue_as :default
 
   def perform
-    recent_sessions = Session.where({ session_type: :test }).created_after(48.hours.ago)
+    # Finished sessions are those that the Time now has passed their creation + duration
+    finished_sessions = Session.where("created_at + interval '1 second' * duration < ?", Time.now)
 
-    recent_sessions.each do |session|
+    finished_sessions.each do |session|
       begin
-        # Sessions that cannot be updated are considered stale
-        if check_session_for_valid_update(session).nil?
+        if session.session_type_test?
+          # Finished sessions for test should be converted to results
           get_end_test_result(session.user, session.course)
+        else
+          # Finished sessions for quiz/practice should just be deleted
+          session.destroy
         end
       rescue Errors::BaseError
         # Ignored

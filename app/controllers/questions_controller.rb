@@ -31,11 +31,6 @@ class QuestionsController < ApplicationController
     @course = Course.find(params[:course_id])
   end
 
-  def seed
-    session_id = params[:session_id]
-    session_id_to_seed(session_id)
-  end
-
   def handle_course_index
     session_type = session_type(params[:session_type])
 
@@ -43,19 +38,16 @@ class QuestionsController < ApplicationController
     when :study
       questions = @course.questions.publish_status_published.order(order: :asc)
     when :quiz, :practice
-      num_questions = params[:questions].to_i
-      Course.connection.execute("SELECT SETSEED(#{seed})")
-      if session_type == :quiz
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
-      else
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
-      end
+      session = Session.find(params[:session_id])
+      question_ids = session.session_items.map { |session_item| session_item["question_id"] }
+
+      # Sort by the order of ids supplied
+      questions = Question.where(id: question_ids).sort_by { |i| question_ids.index(i.id) }
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
-    # Converting to array to calculate the offset page data w.r.t num_questions
-    paginated_questions = paginate(questions.to_a, params)
+    paginated_questions = paginate(questions, params)
     render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
   end
 

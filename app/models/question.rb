@@ -6,6 +6,8 @@ class Question < ApplicationRecord
     publish_status_published: 2,
   }
 
+  scope :published_active_questions, -> { where(publish_status: :publish_status_published) }
+
   # Used to serialize the question model on the go without having to render
   def serialized_question
     ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionSerializer).as_json
