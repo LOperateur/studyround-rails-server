@@ -199,7 +199,7 @@ class CoursesController < ApplicationController
   private
 
   def load_course
-    @course = Course.where.not(course_status: :course_status_deleted).find(params[:id])
+    @course = Course.non_deleted_courses.find(params[:id])
     if @course.creator != current_user
       Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
     end

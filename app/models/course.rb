@@ -13,6 +13,7 @@ class Course < ApplicationRecord
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
   scope :visible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired], private: false) }
+  scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
 
   enum sale_status: {
     sale_status_free: 1,

@@ -14,24 +14,14 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
 
-    session = course_based_session
     session_type = session_type(start_course_session_params[:session_type])
 
     case session_type
     when :study
-      questions = @course.questions.publish_status_published.order(order: :asc)
+      session = course_based_session(@course)
+      questions = @course.questions.published_active_questions.order(order: :asc)
     when :quiz, :practice
-      num_questions = start_course_session_params[:questions]
-      check_course_session_limits(num_questions)
-      session_id = session[:id]
-      Course.connection.execute("SELECT SETSEED(#{session_id_to_seed(session_id)})")
-      if session_type == :quiz
-        # where("JSONB_ARRAY_LENGTH(answer) = 1")
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
-      else
-        questions = @course.questions.publish_status_published.order(Arel.sql("RANDOM()")).limit(num_questions)
-      end
-      check_min_available_questions(questions.length)
+      session, questions = create_course_based_session(start_course_session_params, @course)
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -87,6 +77,12 @@ class SessionsController < ApplicationController
         session_key: session_key,
         session_items: session_items_with_answers
       )
+
+    # Get and destroy the session
+    session = Session.find_by(id: end_course_session_params[:session_id])
+    if session
+      session.destroy
+    end
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
   end
@@ -201,19 +197,6 @@ class SessionsController < ApplicationController
 
   private
 
-  def course_based_session
-    {
-      # Remove the 0.xxxx decimal prefix
-      id: SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
-      current_question_number: 1,
-      server_time: DateTime.now.utc,
-      start_time: DateTime.now.utc,
-      course_id: @course.id,
-      course_name: @course.title,
-      session_items: [],
-    }
-  end
-
   def create_test_based_session(params)
     session = Session.create(params.merge(start_test_session_params))
 
@@ -239,11 +222,11 @@ class SessionsController < ApplicationController
   end
 
   def load_course
-    @course = Course.find(params[:course_id])
+    @course = Course.published_active_courses.find(params[:course_id])
   end
 
   def start_course_session_params
-    params.permit(:session_type, :questions, :device_id, :web_tab_id,
+    params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration,
                   :tags => [])
   end
 
