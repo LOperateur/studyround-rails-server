@@ -25,6 +25,32 @@ class QuestionsController < ApplicationController
     }
   end
 
+  # From a Creator's point of view
+
+  def questions
+
+  end
+
+  def show
+
+  end
+
+  def create
+
+  end
+
+  def update
+
+  end
+
+  def publish
+
+  end
+
+  def destroy
+
+  end
+
   private
 
   def load_course
@@ -84,5 +110,11 @@ class QuestionsController < ApplicationController
       action: :submit,
       data: result[:result]
     )
+  end
+
+  def create_update_question_params
+    params.permit(:course_id, :question, :question_raw, :question_image,
+                  :explanation, :explanation_raw, :explanation_image,
+                  :options, :answer, :multi_answer, :multiplier)
   end
 end

@@ -27,6 +27,13 @@ Rails.application.routes.draw do
     resources :reviews
   end
 
+  get '/creator/courses/:course_id/questions', to: "questions#questions"
+  post '/creator/courses/:course_id/questions', to: "questions#create"
+  get '/creator/courses/:course_id/questions/:question_id', to: "questions#show"
+  patch '/creator/courses/:course_id/questions/:question_id', to: "questions#update"
+  patch '/creator/courses/:course_id/questions/:question_id/publish', to: "questions#publish"
+  delete '/creator/courses/:course_id/questions/:question_id', to: "questions#destroy"
+
   resources :questions do
     get '/explanation', to: "questions#explanation"
   end
