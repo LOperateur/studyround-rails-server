@@ -8,7 +8,7 @@ class Course < ApplicationRecord
   has_many :categories, through: :categorizations
   has_many :results
   has_many :questions, dependent: :destroy
-  has_many :reviews
+  has_many :reviews, dependent: :destroy
   has_many :sessions
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
