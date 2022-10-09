@@ -3,6 +3,10 @@ class CreatorQuestionListSerializer < ActiveModel::Serializer
   attributes :id, :question, :draft
 
   def draft
-    { question: object.draft["question"] }
+    if object.draft.present?
+      { question: object.draft["question"] }
+    else
+      nil
+    end
   end
 end

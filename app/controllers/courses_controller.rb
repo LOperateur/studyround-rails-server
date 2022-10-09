@@ -77,32 +77,33 @@ class CoursesController < ApplicationController
       @course.version = @course.version + 1
       @course.last_publish_date = Time.now
       @course.save!
-      render json: { message: "Published successfully", data: {} }, status: 200
     rescue ActiveRecord::RecordInvalid
       raise Errors::InvalidError.new(@course.errors.to_h)
     end
+
+    render json: @course, root: :data, meta: { message: "Published successfully" },
+           serializer: FullCourseSerializer
   end
 
   def destroy
-    # If a course has never been published, hard delete it as well as all of its questions.
-    if @course.last_publish_date.nil?
-      @course.destroy!
-      render json: { message: "Deleted successfully", data: {} }, status: 200
-      return
-    end
-
-    if @course.test
+    if @course.test?
       if @course.publish_status_published?
         raise Errors::ForbiddenError.new(message: "You cannot delete a published Test!")
       end
     end
 
-    begin
-      @course.course_status_deleted!
-      render json: { message: "Deleted successfully", data: {} }, status: 200
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(@course.errors.to_h)
+    # If a course has never been published, hard delete it as well as all of its questions.
+    if @course.last_publish_date.nil?
+      @course.destroy!
+    else
+      begin
+        @course.course_status_deleted!
+      rescue ActiveRecord::RecordInvalid
+        raise Errors::InvalidError.new(@course.errors.to_h)
+      end
     end
+
+    render json: { message: "Deleted successfully", data: {} }, status: 200
   end
 
   def categorised

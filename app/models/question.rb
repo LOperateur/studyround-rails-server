@@ -1,6 +1,8 @@
 class Question < ApplicationRecord
   belongs_to :course
 
+  validates_with QuestionValidator
+
   enum publish_status: {
     publish_status_draft: 1,
     publish_status_published: 2,
