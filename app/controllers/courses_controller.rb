@@ -77,32 +77,33 @@ class CoursesController < ApplicationController
       @course.version = @course.version + 1
       @course.last_publish_date = Time.now
       @course.save!
-      render json: { message: "Published successfully", data: {} }, status: 200
     rescue ActiveRecord::RecordInvalid
       raise Errors::InvalidError.new(@course.errors.to_h)
     end
+
+    render json: @course, root: :data, meta: { message: "Published successfully" },
+           serializer: FullCourseSerializer
   end
 
   def destroy
-    # If a course has never been published, hard delete it as well as all of its questions.
-    if @course.last_publish_date.nil?
-      @course.destroy!
-      render json: { message: "Deleted successfully", data: {} }, status: 200
-      return
-    end
-
-    if @course.test
+    if @course.test?
       if @course.publish_status_published?
         raise Errors::ForbiddenError.new(message: "You cannot delete a published Test!")
       end
     end
 
-    begin
-      @course.course_status_deleted!
-      render json: { message: "Deleted successfully", data: {} }, status: 200
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(@course.errors.to_h)
+    # If a course has never been published, hard delete it as well as all of its questions.
+    if @course.last_publish_date.nil?
+      @course.destroy!
+    else
+      begin
+        @course.course_status_deleted!
+      rescue ActiveRecord::RecordInvalid
+        raise Errors::InvalidError.new(@course.errors.to_h)
+      end
     end
+
+    render json: { message: "Deleted successfully", data: {} }, status: 200
   end
 
   def categorised
@@ -216,17 +217,17 @@ class CoursesController < ApplicationController
   def prepare_received_course_params(received_params)
     course_params = received_params
 
-    if !received_params[:test_expiration].nil?
+    if received_params.key?(:test_expiration)
       test_expiration = DateTime.parse(received_params[:test_expiration])
       course_params[:test_expiration] = test_expiration
     end
 
-    if !received_params[:instructions].nil?
+    if received_params.key?(:instructions)
       instructions_json = JSON.parse(received_params[:instructions])
       course_params[:instructions] = instructions_json
     end
 
-    if !received_params[:category_ids].nil?
+    if received_params.key?(:category_ids)
       category_json = JSON.parse(received_params[:category_ids])
       course_params[:category_ids] = category_json
     end

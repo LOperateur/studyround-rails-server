@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_09_25_222209) do
+ActiveRecord::Schema.define(version: 2022_10_08_232337) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -88,16 +88,19 @@ ActiveRecord::Schema.define(version: 2022_09_25_222209) do
     t.jsonb "tags"
     t.string "question_image_url"
     t.jsonb "options"
-    t.string "answer_image_url"
     t.boolean "multi_answer", default: false
     t.integer "multiplier", default: 1
     t.text "explanation"
     t.string "explanation_image_url"
-    t.integer "version", default: 1
-    t.integer "publish_status"
+    t.integer "version", default: 0
+    t.integer "publish_status", default: 1
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "answer"
+    t.jsonb "question_raw"
+    t.jsonb "explanation_raw"
+    t.integer "question_status", default: 1
+    t.jsonb "draft"
     t.index ["course_id"], name: "index_questions_on_course_id"
   end
 

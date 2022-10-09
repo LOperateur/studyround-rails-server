@@ -19,7 +19,7 @@ class SessionsController < ApplicationController
     case session_type
     when :study
       session = course_based_session(@course)
-      questions = @course.questions.published_active_questions.order(order: :asc)
+      questions = @course.questions.published_active_questions.order(created_at: :asc)
     when :quiz, :practice
       session, questions = create_course_based_session(start_course_session_params, @course)
     else
@@ -129,7 +129,7 @@ class SessionsController < ApplicationController
     # If session_param already has an id, return the existing session, otherwise, create a new one
     session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
 
-    questions = @course.questions.publish_status_published.order(order: :asc)
+    questions = @course.questions.publish_status_published.order(created_at: :asc)
 
     paginated_questions = paginate(questions)
 
