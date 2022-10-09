@@ -29,7 +29,10 @@ class QuestionsController < ApplicationController
   # From a Creator's point of view
 
   def questions
+    questions = @course.questions
+    paginated_questions = paginate(questions, params)
 
+    render json: paginated_questions, root: :data, each_serializer: CreatorQuestionListSerializer
   end
 
   def show
