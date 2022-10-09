@@ -114,7 +114,7 @@ module TestHelper
 
   def get_end_test_result(user, course, params_session_items = nil, params_session_id = nil)
     session = user.sessions.find_by(course: course)
-    questions = course.questions.order(order: :asc)
+    questions = course.questions.order(created_at: :asc)
 
     if params_session_items.present?
       session_items = params_session_items

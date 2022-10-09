@@ -216,17 +216,17 @@ class CoursesController < ApplicationController
   def prepare_received_course_params(received_params)
     course_params = received_params
 
-    if !received_params[:test_expiration].nil?
+    if received_params.key?(:test_expiration)
       test_expiration = DateTime.parse(received_params[:test_expiration])
       course_params[:test_expiration] = test_expiration
     end
 
-    if !received_params[:instructions].nil?
+    if received_params.key?(:instructions)
       instructions_json = JSON.parse(received_params[:instructions])
       course_params[:instructions] = instructions_json
     end
 
-    if !received_params[:category_ids].nil?
+    if received_params.key?(:category_ids)
       category_json = JSON.parse(received_params[:category_ids])
       course_params[:category_ids] = category_json
     end

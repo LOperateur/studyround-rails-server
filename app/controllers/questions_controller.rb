@@ -2,7 +2,8 @@ class QuestionsController < ApplicationController
   include SessionHelper
   include TestHelper
 
-  before_action :load_course, only: [:index]
+  before_action :load_course, except: :explanation
+  before_action :load_question, only: :show
 
   wrap_parameters format: []
 
@@ -32,11 +33,21 @@ class QuestionsController < ApplicationController
   end
 
   def show
-
+    render json: @question, root: :data, serializer: CreatorQuestionSerializer
   end
 
   def create
+    draft = create_draft(create_update_question_params)
+    question = @course.questions.build
+    question.draft = draft
 
+    begin
+      question.save!
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(question.errors.to_h)
+    end
+
+    render json: question, root: :data, serializer: CreatorQuestionSerializer
   end
 
   def update
@@ -57,12 +68,20 @@ class QuestionsController < ApplicationController
     @course = Course.find(params[:course_id])
   end
 
+  def load_question
+    begin
+      @question = @course.questions.find(params[:id])
+    rescue
+      raise Errors::NotFoundError.new(message: "Cannot find question with id #{params[:id]} for course with id #{params[:course_id]}")
+    end
+  end
+
   def handle_course_index
     session_type = session_type(params[:session_type])
 
     case session_type
     when :study
-      questions = @course.questions.publish_status_published.order(order: :asc)
+      questions = @course.questions.publish_status_published.order(created_at: :asc)
     when :quiz, :practice
       session = Session.find(params[:session_id])
       question_ids = session.session_items.map { |session_item| session_item["question_id"] }
@@ -92,7 +111,7 @@ class QuestionsController < ApplicationController
       raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
-    questions = @course.questions.publish_status_published.order(order: :asc)
+    questions = @course.questions.publish_status_published.order(created_at: :asc)
 
     paginated_questions = paginate(questions, params)
     render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
@@ -112,9 +131,42 @@ class QuestionsController < ApplicationController
     )
   end
 
+  def create_draft(question_params)
+    if question_params.key?(:options)
+      options_json = JSON.parse(question_params[:options])
+      question_params[:options] = options_json
+    end
+
+    if question_params.key?(:question_raw)
+      question_raw_json = JSON.parse(question_params[:question_raw])
+      question_params[:question_raw] = question_raw_json
+    end
+
+    if question_params.key?(:explanation_raw)
+      explanation_raw_json = JSON.parse(question_params[:explanation_raw])
+      question_params[:explanation_raw] = explanation_raw_json
+    end
+
+    if question_params.key?(:answer)
+      answer_json = JSON.parse(question_params[:answer])
+      question_params[:answer] = answer_json
+    end
+
+    question = @course.questions.build(question_params.except(:question_image, :explanation_image, :option_images))
+
+    draft = question.as_json
+    return strip_non_draft_fields(draft)
+  end
+
+  def strip_non_draft_fields(draft)
+    return draft.symbolize_keys.except(:id, :course_id, :order, :tags, :version, :publish_status,
+                                       :question_status, :draft, :created_at, :updated_at)
+  end
+
   def create_update_question_params
-    params.permit(:course_id, :question, :question_raw, :question_image,
+    params.permit(:question, :question_raw, :question_image,
                   :explanation, :explanation_raw, :explanation_image,
-                  :options, :answer, :multi_answer, :multiplier)
+                  :options, :answer, :multi_answer, :multiplier, :option_images
+    )
   end
 end

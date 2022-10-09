@@ -5,10 +5,10 @@ class CourseSerializer < ActiveModel::Serializer
   belongs_to :creator, serializer: ProfileSerializer
 
   def num_questions
-    object.questions.publish_status_published.count
+    object.questions.published_active_questions.count
   end
 
   def num_explanations
-    object.questions.publish_status_published.where.not(explanation: nil).count
+    object.questions.published_active_questions.where.not(explanation: nil).count
   end
 end
