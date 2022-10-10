@@ -197,6 +197,18 @@ class CoursesController < ApplicationController
     render json: {}, status: :ok
   end
 
+  def created_courses
+    courses = current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc)
+    paginated_courses = paginate(courses, params)
+    render json: courses, root: :data, meta: paginated_meta(paginated_courses)
+  end
+
+  def created_tests
+    tests = current_user.courses.non_deleted_courses.where(test: true).order(created_at: :desc)
+    paginated_tests = paginate(tests, params)
+    render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
+  end
+
   private
 
   def load_course

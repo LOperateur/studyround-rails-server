@@ -22,6 +22,8 @@ Rails.application.routes.draw do
   get '/courses/recent', to: "courses#recent_courses"
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
+  get '/courses/created', to: "courses#created_courses"
+  get '/courses/tests/created', to: "courses#created_tests"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
