@@ -45,14 +45,12 @@ class Course < ApplicationRecord
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
   end
 
-  # Image handling in controller during update
-  # 1.) image √   image_url √   =>    Changing image
-  # 2.) image √   image_url X   =>    New image
-  # 3.) image X   image_url √   =>    No changes
-  # 4.) image X   image_url X   =>    Deleting image
-
   def image_url
-    path = rails_blob_path(self.image, only_path: true)
-    ActionController::Base.helpers.asset_path(path)
+    begin
+      path = rails_blob_path(self.image, only_path: true)
+      return ActionController::Base.helpers.asset_path(path)
+    rescue
+      nil
+    end
   end
 end
