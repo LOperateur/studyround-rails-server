@@ -223,6 +223,7 @@ class QuestionsController < ApplicationController
 
     # Upload actual image files if they are present, they override the url values
     # But exclude them from the actual question object
+    # TODO: Revisit this exclusion to exclude urls instead
     question = @course.questions.build(question_params.except(:question_image, :explanation_image, :option_images))
 
     draft = question.as_json

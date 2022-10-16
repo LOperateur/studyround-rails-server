@@ -57,7 +57,8 @@ class CoursesController < ApplicationController
     end
 
     course_params = prepare_received_course_params(update_course_params)
-    @course.assign_attributes(course_params)
+    handle_image_update(course_params)
+    @course.assign_attributes(course_params.except(:image_url)) # Todo: Remove Image url as a db field
 
     begin
       @course.save!
@@ -247,14 +248,36 @@ class CoursesController < ApplicationController
     return course_params
   end
 
+  # Image handling in controller during update
+  # 1.) image √   image_url √   =>    Changing image
+  # 2.) image √   image_url X   =>    New image
+  # 3.) image X   image_url √   =>    No changes
+  # 4.) image X   image_url X   =>    Deleting image
+  def handle_image_update(course_params)
+    has_image_to_upload = course_params.key?(:image) && course_params[:image].present?
+    has_image_url_to_retain = course_params.key?(:image_url) && course_params[:image_url].present?
+
+    if has_image_to_upload
+      # For new or changed image, delete any current image first
+      @course.image.purge
+    else
+      if has_image_url_to_retain
+        # No changes, do nothing
+      else
+        # Delete image
+        @course.image.purge
+      end
+    end
+  end
+
   def create_course_params
-    params.permit(:creator_id, :title, :sale_status, :price, :currency,
-                  :private, :test, :about, :image, :test_expiration, :instructions, :category_ids)
+    params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
+                  :test, :about, :image, :test_expiration, :instructions, :category_ids)
   end
 
   def update_course_params
-    params.permit(:creator_id, :title, :sale_status, :price, :currency,
-                  :private, :about, :image, :test_expiration, :instructions, :category_ids)
+    params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
+                  :about, :image, :image_url, :test_expiration, :instructions, :category_ids)
   end
 
 end
