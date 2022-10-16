@@ -3,12 +3,12 @@ class Question < ApplicationRecord
 
   validates_with QuestionValidator
 
+  # has_one_attached :question_image_published
   # has_one_attached :question_image
-  # has_one_attached :question_image_draft
+  # has_one_attached :explanation_image_published
   # has_one_attached :explanation_image
-  # has_one_attached :explanation_image_draft
+  # has_many_attached :option_images_published
   # has_many_attached :option_images
-  # has_many_attached :option_images_draft
 
   enum publish_status: {
     publish_status_draft: 1,
