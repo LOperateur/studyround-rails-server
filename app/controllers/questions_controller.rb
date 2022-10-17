@@ -35,7 +35,7 @@ class QuestionsController < ApplicationController
     questions = @course.questions.non_deleted_questions
     paginated_questions = paginate(questions, params)
 
-    render json: paginated_questions, root: :data, each_serializer: CreatorQuestionListSerializer
+    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions), each_serializer: CreatorQuestionListSerializer
   end
 
   def show
