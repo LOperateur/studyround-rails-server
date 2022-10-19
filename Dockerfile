@@ -6,4 +6,5 @@ COPY ./Gemfile* ./
 RUN bundle install
 COPY ./ ./
 EXPOSE 3000
-CMD ["rails", "s"]
+
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb", "staging", "-b", "tcp://0.0.0.0:3000"]
