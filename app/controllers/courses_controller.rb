@@ -259,13 +259,13 @@ class CoursesController < ApplicationController
 
     if has_image_to_upload
       # For new or changed image, delete any current image first
-      @course.image.purge
+      # This is automatically handled by Active Storage
     else
       if has_image_url_to_retain
         # No changes, do nothing
       else
         # Delete image
-        @course.image.purge
+        @course.image.purge_later
       end
     end
   end

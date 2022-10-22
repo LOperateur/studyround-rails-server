@@ -24,7 +24,7 @@ class QuestionsController < ApplicationController
       data: {
         question_id: question.id,
         explanation: question.explanation,
-        explanation_image_url: question.explanation_image_url,
+        explanation_image_url: question.generated_explanation_image_url,
       }
     }
   end

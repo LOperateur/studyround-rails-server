@@ -45,12 +45,14 @@ class Course < ApplicationRecord
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
   end
 
-  def image_url
+  def generated_image_url
     begin
       path = rails_blob_path(self.image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)
     rescue
-      nil
+      # TODO: Deprecate and remove `image_url`
+      # If no image is attached, check for an optional db-added url
+      return self.image_url
     end
   end
 end
