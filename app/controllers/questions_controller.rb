@@ -32,7 +32,7 @@ class QuestionsController < ApplicationController
   # From a Creator's point of view
 
   def questions
-    questions = @course.questions.non_deleted_questions
+    questions = @course.questions.non_deleted_questions.order(created_at: :asc)
     paginated_questions = paginate(questions, params)
 
     render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions), each_serializer: CreatorQuestionListSerializer
