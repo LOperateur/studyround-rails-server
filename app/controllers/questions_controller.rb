@@ -271,7 +271,11 @@ class QuestionsController < ApplicationController
     end
 
     # Attach the image files in the create/update methods instead
-    question = @course.questions.build(question_params.except(:question_image, :explanation_image, :option_images))
+    question = @course.questions.build(
+      question_params.except(
+        :question_image, :question_image_url, :explanation_image, :explanation_image_url, :option_images
+      )
+    )
 
     rough_draft = question.as_json
 
