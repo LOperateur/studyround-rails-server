@@ -43,9 +43,13 @@ class QuestionsController < ApplicationController
   end
 
   def create
-    draft = create_draft(create_update_question_params)
+    draft = create_draft(create_question_params)
     question = @course.questions.build
     question.draft = draft
+
+    # Attach images
+    question.question_image.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
+    question.explanation_image.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
 
     begin
       question.save!
@@ -61,8 +65,12 @@ class QuestionsController < ApplicationController
       raise Errors::BaseError.new(message: "You can only edit a question a maximum of 5 times", status: 400)
     end
 
-    draft = create_draft(create_update_question_params)
+    draft = create_draft(update_question_params)
     @question.draft = draft
+
+    # Attach images
+    handle_image_update(update_question_params, :question_image, :question_image_url)
+    handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
 
     begin
       @question.save!
@@ -221,13 +229,47 @@ class QuestionsController < ApplicationController
       question_params[:answer] = answer_json
     end
 
-    # Upload actual image files if they are present, they override the url values
-    # But exclude them from the actual question object
-    # TODO: Revisit this exclusion to exclude urls instead
+    # Attach the image files in the create/update methods instead
     question = @course.questions.build(question_params.except(:question_image, :explanation_image, :option_images))
 
-    draft = question.as_json
-    return strip_non_draft_fields(draft)
+    rough_draft = question.as_json
+
+    # Manually add image_url fields for the draft since we're removing image urls at the db level
+    rough_draft["question_image_url"] = question_params[:question_image_url]
+    rough_draft["explanation_image_url"] = question_params[:explanation_image_url]
+
+    return strip_non_draft_fields(rough_draft)
+  end
+
+  # Image handling in controller during update
+  # 1.) image √   image_url √   =>    Changing image
+  # 2.) image √   image_url X   =>    New image
+  # 3.) image X   image_url √   =>    No changes
+  # 4.) image X   image_url X   =>    Deleting image
+  def handle_image_update(question_params, image_key, image_url_key)
+    has_image_to_upload = question_params[image_key].present?
+    has_image_url_to_retain = question_params[image_url_key].present?
+
+    attachment = case image_key
+                 when :question_image
+                   @question.question_image
+                 when :explanation_image
+                   @question.explanation_image
+                 else
+                   nil
+                 end
+
+    if has_image_to_upload
+      # Attach new or changed image, active storage would purge any current image first
+      attachment.attach(update_question_params[image_key]) if attachment.present?
+    else
+      if has_image_url_to_retain
+        # No changes, do nothing
+      else
+        # Delete image
+        attachment.purge_later if attachment.present?
+      end
+    end
   end
 
   def published_test_check
@@ -243,7 +285,14 @@ class QuestionsController < ApplicationController
                                        :question_status, :draft, :created_at, :updated_at)
   end
 
-  def create_update_question_params
+  def create_question_params
+    params.permit(:question, :question_raw, :question_image,
+                  :explanation, :explanation_raw, :explanation_image,
+                  :options, :answer, :multi_answer, :multiplier, :option_images
+    )
+  end
+
+  def update_question_params
     params.permit(:question, :question_raw, :question_image, :question_image_url,
                   :explanation, :explanation_raw, :explanation_image, :explanation_image_url,
                   :options, :answer, :multi_answer, :multiplier, :option_images

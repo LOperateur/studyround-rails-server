@@ -56,6 +56,6 @@ class Question < ApplicationRecord
   end
 
   def generated_option_image_url(order)
-
+    # Todo
   end
 end

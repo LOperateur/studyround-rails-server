@@ -254,12 +254,12 @@ class CoursesController < ApplicationController
   # 3.) image X   image_url √   =>    No changes
   # 4.) image X   image_url X   =>    Deleting image
   def handle_image_update(course_params)
-    has_image_to_upload = course_params.key?(:image) && course_params[:image].present?
-    has_image_url_to_retain = course_params.key?(:image_url) && course_params[:image_url].present?
+    has_image_to_upload = course_params[:image].present?
+    has_image_url_to_retain = course_params[:image_url].present?
 
     if has_image_to_upload
-      # For new or changed image, delete any current image first
-      # This is automatically handled by Active Storage
+      # Attach is handled in `assign_attributes` for new or changed image.
+      # Deleting any current image first is automatically handled by Active Storage.
     else
       if has_image_url_to_retain
         # No changes, do nothing
