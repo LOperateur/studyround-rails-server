@@ -58,7 +58,7 @@ class CoursesController < ApplicationController
 
     course_params = prepare_received_course_params(update_course_params)
     handle_image_update(course_params)
-    @course.assign_attributes(course_params.except(:image_url)) # Todo: Remove Image url as a db field
+    @course.assign_attributes(course_params)
 
     begin
       @course.save!
@@ -254,18 +254,18 @@ class CoursesController < ApplicationController
   # 3.) image X   image_url √   =>    No changes
   # 4.) image X   image_url X   =>    Deleting image
   def handle_image_update(course_params)
-    has_image_to_upload = course_params.key?(:image) && course_params[:image].present?
-    has_image_url_to_retain = course_params.key?(:image_url) && course_params[:image_url].present?
+    has_image_to_upload = course_params[:image].present?
+    has_image_url_to_retain = course_params[:image_url].present?
 
     if has_image_to_upload
-      # For new or changed image, delete any current image first
-      @course.image.purge
+      # Attach is handled in `assign_attributes` for new or changed image.
+      # Deleting any current image first is automatically handled by Active Storage.
     else
       if has_image_url_to_retain
         # No changes, do nothing
       else
         # Delete image
-        @course.image.purge
+        @course.image.purge_later
       end
     end
   end

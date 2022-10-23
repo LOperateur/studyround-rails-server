@@ -45,7 +45,7 @@ class Course < ApplicationRecord
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
   end
 
-  def image_url
+  def generated_image_url
     begin
       path = rails_blob_path(self.image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)

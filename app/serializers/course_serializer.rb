@@ -5,7 +5,7 @@ class CourseSerializer < ActiveModel::Serializer
   belongs_to :creator, serializer: ProfileSerializer
 
   def image_url
-    object.image_url || nil
+    object.generated_image_url
   end
 
   def num_questions
