@@ -58,7 +58,7 @@ class CoursesController < ApplicationController
 
     course_params = prepare_received_course_params(update_course_params)
     handle_image_update(course_params)
-    @course.assign_attributes(course_params.except(:image_url)) # Todo: Remove Image url as a db field
+    @course.assign_attributes(course_params)
 
     begin
       @course.save!

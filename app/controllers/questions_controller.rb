@@ -115,11 +115,9 @@ class QuestionsController < ApplicationController
 
     begin
       @question.question = draft[:question]
-      # @question.question_image_url = draft[:question_image_url] Todo: remove image_url from db
       @question.question_raw = draft[:question_raw]
 
       @question.explanation = draft[:explanation]
-      # @question.explanation_image_url = draft[:explanation_image_url] Todo: remove image_url from db
       @question.explanation_raw = draft[:explanation_raw]
 
       @question.options = draft[:options]
@@ -165,11 +163,12 @@ class QuestionsController < ApplicationController
       @question.destroy!
     else
       begin
-        @question.question_status_deleted!
         # Also delete any drafts if soft-deleting
         @question.draft = nil
         @question.question_image_draft.purge_later
         @question.explanation_image_draft.purge_later
+
+        @question.question_status_deleted!
       rescue
         raise Errors::InvalidError.new(@question.errors.to_h)
       end

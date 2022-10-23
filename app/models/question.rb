@@ -39,9 +39,7 @@ class Question < ApplicationRecord
       path = rails_blob_path(self.question_image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)
     rescue
-      # TODO: Deprecate and remove `question_image_url`
-      # If no image is attached, check for an optional db-added url
-      return self.question_image_url
+      nil
     end
   end
 
@@ -50,9 +48,7 @@ class Question < ApplicationRecord
       path = rails_blob_path(self.explanation_image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)
     rescue
-      # TODO: Deprecate and remove `explanation_image_url`
-      # If no image is attached, check for an optional db-added url
-      return self.explanation_image_url
+      nil
     end
   end
 

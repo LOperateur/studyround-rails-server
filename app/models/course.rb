@@ -50,9 +50,7 @@ class Course < ApplicationRecord
       path = rails_blob_path(self.image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)
     rescue
-      # TODO: Deprecate and remove `image_url`
-      # If no image is attached, check for an optional db-added url
-      return self.image_url
+      nil
     end
   end
 end
