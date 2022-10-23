@@ -48,8 +48,12 @@ class QuestionsController < ApplicationController
     question.draft = draft
 
     # Attach images
-    question.question_image.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
-    question.explanation_image.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
+    question.question_image_draft.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
+    question.explanation_image_draft.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
+
+    # Add generated urls to draft json
+    question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
+    question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
     begin
       question.save!
@@ -68,9 +72,26 @@ class QuestionsController < ApplicationController
     draft = create_draft(update_question_params)
     @question.draft = draft
 
-    # Attach images
+    # Attach draft images
     handle_image_update(update_question_params, :question_image, :question_image_url)
     handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
+
+    # Add generated urls to draft json (Checking against the url params opposed to `attached?`
+    # since purge_later is slow to detect deletions)
+    @question.draft["question_image_url"] =
+      if update_question_params[:question_image_url].present? || update_question_params[:question_image].present?
+        generated_attachment_url(@question.question_image_draft)
+      else
+        nil
+      end
+
+    @question.draft["explanation_image_url"] =
+      if update_question_params[:explanation_image_url].present? || update_question_params[:explanation_image].present?
+        generated_attachment_url(@question.explanation_image_draft)
+      else
+        nil
+      end
+
 
     begin
       @question.save!
@@ -94,11 +115,11 @@ class QuestionsController < ApplicationController
 
     begin
       @question.question = draft[:question]
-      @question.question_image_url = draft[:question_image_url]
+      # @question.question_image_url = draft[:question_image_url] Todo: remove image_url from db
       @question.question_raw = draft[:question_raw]
 
       @question.explanation = draft[:explanation]
-      @question.explanation_image_url = draft[:explanation_image_url]
+      # @question.explanation_image_url = draft[:explanation_image_url] Todo: remove image_url from db
       @question.explanation_raw = draft[:explanation_raw]
 
       @question.options = draft[:options]
@@ -106,8 +127,23 @@ class QuestionsController < ApplicationController
       @question.multiplier = draft[:multiplier]
       @question.multi_answer = draft[:multi_answer]
 
+      # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
+      if @question.question_image_draft.attached?
+        copy_attachment(@question.question_image_draft, @question.question_image)
+      else
+        @question.question_image.detach
+      end
+
+      if @question.explanation_image_draft.attached?
+        copy_attachment(@question.explanation_image_draft, @question.explanation_image)
+      else
+        @question.explanation_image.detach
+      end
+
       @question.version = @question.version + 1
       @question.draft = nil
+      @question.question_image_draft.purge_later
+      @question.explanation_image_draft.purge_later
       @question.publish_status = :publish_status_published
 
       # TODO: Move previous version to version history when implemented
@@ -122,12 +158,18 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
+
+
     # If Question has never been published, hard delete it
     if @question.question.nil?
       @question.destroy!
     else
       begin
         @question.question_status_deleted!
+        # Also delete any drafts if soft-deleting
+        @question.draft = nil
+        @question.question_image_draft.purge_later
+        @question.explanation_image_draft.purge_later
       rescue
         raise Errors::InvalidError.new(@question.errors.to_h)
       end
@@ -234,10 +276,6 @@ class QuestionsController < ApplicationController
 
     rough_draft = question.as_json
 
-    # Manually add image_url fields for the draft since we're removing image urls at the db level
-    rough_draft["question_image_url"] = question_params[:question_image_url]
-    rough_draft["explanation_image_url"] = question_params[:explanation_image_url]
-
     return strip_non_draft_fields(rough_draft)
   end
 
@@ -250,25 +288,52 @@ class QuestionsController < ApplicationController
     has_image_to_upload = question_params[image_key].present?
     has_image_url_to_retain = question_params[image_url_key].present?
 
-    attachment = case image_key
-                 when :question_image
-                   @question.question_image
-                 when :explanation_image
-                   @question.explanation_image
-                 else
-                   nil
-                 end
+    draft_attachment, attachment = get_attachments(image_key)
 
     if has_image_to_upload
       # Attach new or changed image, active storage would purge any current image first
-      attachment.attach(update_question_params[image_key]) if attachment.present?
+      draft_attachment.attach(update_question_params[image_key]) if draft_attachment.present?
     else
       if has_image_url_to_retain
-        # No changes, do nothing
+        # Attach the latest image to this draft
+        if draft_attachment.attached?
+          # Do nothing, latest draft image already attached
+        elsif attachment.attached?
+          # Transfer a copy of the published attachment to the draft
+          copy_attachment(attachment, draft_attachment)
+        end
       else
         # Delete image
-        attachment.purge_later if attachment.present?
+        draft_attachment.purge_later if draft_attachment.present?
       end
+    end
+  end
+
+  def get_attachments(image_key)
+    case image_key
+    when :question_image
+      return @question.question_image_draft, @question.question_image
+    when :explanation_image
+      return @question.explanation_image_draft, @question.explanation_image
+    else
+      return nil, nil
+    end
+  end
+
+  def copy_attachment(from_attachment, to_attachment)
+    to_attachment.attach(
+      io: StringIO.new(from_attachment.download),
+      filename: from_attachment.filename,
+      content_type: from_attachment.content_type
+    )
+  end
+
+  def generated_attachment_url(attachment)
+    begin
+      path = rails_blob_path(attachment, only_path: true)
+      return ActionController::Base.helpers.asset_path(path)
+    rescue
+      nil
     end
   end
 

@@ -1,14 +1,15 @@
 class Question < ApplicationRecord
+  include Rails.application.routes.url_helpers
   belongs_to :course
 
   validates_with QuestionValidator
 
-  has_one_attached :question_image_published, dependent: :detach # Retain history of published attachments
-  has_one_attached :question_image
-  has_one_attached :explanation_image_published, dependent: :detach
-  has_one_attached :explanation_image
-  has_many_attached :option_images_published, dependent: :detach
-  has_many_attached :option_images
+  has_one_attached :question_image, dependent: :detach # Retain history of published attachments
+  has_one_attached :question_image_draft
+  has_one_attached :explanation_image, dependent: :detach
+  has_one_attached :explanation_image_draft
+  has_many_attached :option_images, dependent: :detach
+  has_many_attached :option_images_draft
 
   enum publish_status: {
     publish_status_draft: 1,
@@ -35,7 +36,7 @@ class Question < ApplicationRecord
 
   def generated_question_image_url
     begin
-      path = rails_blob_path(self.question_image_published, only_path: true)
+      path = rails_blob_path(self.question_image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)
     rescue
       # TODO: Deprecate and remove `question_image_url`
@@ -46,7 +47,7 @@ class Question < ApplicationRecord
 
   def generated_explanation_image_url
     begin
-      path = rails_blob_path(self.explanation_image_published, only_path: true)
+      path = rails_blob_path(self.explanation_image, only_path: true)
       return ActionController::Base.helpers.asset_path(path)
     rescue
       # TODO: Deprecate and remove `explanation_image_url`

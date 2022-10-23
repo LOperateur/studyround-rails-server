@@ -3,14 +3,6 @@ class CreatorQuestionSerializer < QuestionAnswerSerializer
   attributes :question_raw, :explanation, :explanation_image_url, :explanation_raw,
              :remaining_edits, :draft
 
-  def question_raw
-    object.question_raw.to_s
-  end
-
-  def explanation_raw
-    object.explanation_raw.to_s
-  end
-
   def explanation_image_url
     object.generated_explanation_image_url
   end
