@@ -142,14 +142,19 @@ class CoursesController < ApplicationController
   end
 
   def recent_courses
-    # Get recently used course results for this user
+    # Fetch the test for any ongoing test sessions for this user
+    ongoing_tests = Session.where.not(session_type: :test).limit(10).map { |session| session.course }
+
+    # Get recently used course results
     results = current_user.results.published_active_course_results.limit(100)
 
     # Group courses selecting the most recent result for each and sorting them in descending order
     grouped_courses = results.group(:course).order('maximum_created_at desc').maximum(:created_at).take(10).to_h.keys
     # grouped_courses = results.group(:course).maximum(:created_at).sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
 
-    render json: grouped_courses, root: :data
+    # Render both lists
+    combined = (ongoing_tests + grouped_courses).uniq
+    render json: combined, root: :data
   end
 
   def search
