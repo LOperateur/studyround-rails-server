@@ -159,8 +159,6 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
-
-
     # If Question has never been published, hard delete it
     if @question.question.nil?
       @question.destroy!
