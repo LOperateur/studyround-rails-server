@@ -203,6 +203,34 @@ class CoursesController < ApplicationController
     render json: {}, status: :ok
   end
 
+  def my_courses
+
+  end
+
+  def tests
+
+  end
+
+  def purchased_courses
+    course_transactions_query = Transaction.select(:purchase_item_id)
+                                                    .where("buyer_id = ?", current_user.id)
+                                                    .course_based_transactions.transaction_status_completed.to_sql
+    purchased_courses = Course.where("id IN (#{course_transactions_query})").where(test: false)
+
+    paginated_purchased_courses = paginate(purchased_courses, params)
+    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
+  end
+
+  def purchased_tests
+    course_transactions_query = Transaction.select(:purchase_item_id)
+                                                    .where("buyer_id = ?", current_user.id)
+                                                    .course_based_transactions.transaction_status_completed.to_sql
+    purchased_tests = Course.where("id IN (#{course_transactions_query})").where(test: true)
+
+    paginated_purchased_tests = paginate(purchased_tests, params)
+    render json: paginated_purchased_tests, root: :data, meta: paginated_meta(paginated_purchased_tests)
+  end
+
   def created_courses
     courses = current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc)
     paginated_courses = paginate(courses, params)

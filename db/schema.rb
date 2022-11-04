@@ -186,6 +186,9 @@ ActiveRecord::Schema.define(version: 2022_10_31_083610) do
     t.decimal "purchase_price", precision: 10, scale: 2
     t.integer "transaction_status"
     t.integer "payment_method"
+    t.string "description"
+    t.string "external_txn_id"
+    t.datetime "completed_at"
     t.jsonb "extra"
     t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
     t.index ["seller_id"], name: "index_transactions_on_seller_id"

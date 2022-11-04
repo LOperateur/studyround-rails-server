@@ -9,6 +9,9 @@ class CreateTransactions < ActiveRecord::Migration[5.2]
       t.decimal :purchase_price, precision: 10, scale: 2
       t.integer :transaction_status
       t.integer :payment_method
+      t.string :description
+      t.string :external_txn_id
+      t.datetime :completed_at
       t.jsonb :extra
     end
   end
