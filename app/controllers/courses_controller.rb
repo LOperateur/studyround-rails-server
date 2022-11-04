@@ -142,14 +142,19 @@ class CoursesController < ApplicationController
   end
 
   def recent_courses
-    # Get recently used course results for this user
+    # Fetch the test for any ongoing test sessions for this user
+    ongoing_tests = Session.where.not(session_type: :test).limit(10).map { |session| session.course }
+
+    # Get recently used course results
     results = current_user.results.published_active_course_results.limit(100)
 
     # Group courses selecting the most recent result for each and sorting them in descending order
     grouped_courses = results.group(:course).order('maximum_created_at desc').maximum(:created_at).take(10).to_h.keys
     # grouped_courses = results.group(:course).maximum(:created_at).sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
 
-    render json: grouped_courses, root: :data
+    # Render both lists
+    combined = (ongoing_tests + grouped_courses).uniq
+    render json: combined, root: :data
   end
 
   def search
@@ -196,6 +201,50 @@ class CoursesController < ApplicationController
     course.course_status_closed!
 
     render json: {}, status: :ok
+  end
+
+  def my_courses
+    # TODO: Use a more bespoke mechanism in future
+    user_result_ids = current_user.results.select(:course_id)
+                                  .published_active_course_results
+                                  .limit(500).order("results.created_at desc")
+                                  .map { |result| result["course_id"] }
+    my_courses = Course.where(id: user_result_ids).where(test: false).sort_by { |i| user_result_ids.index(i.id) }
+
+    paginated_my_courses = paginate(my_courses, params)
+    render json: paginated_my_courses, root: :data, meta: paginated_meta(paginated_my_courses)
+  end
+
+  def tests
+    # TODO: Write something more complex in future
+    tests = Course.published_active_courses.where(test: true).order(created_at: :desc)
+
+    paginated_tests = paginate(tests, params)
+    render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
+  end
+
+  def purchased_courses
+    course_transaction_ids = Transaction.select(:purchase_item_id)
+                                        .where("buyer_id = ?", current_user.id)
+                                        .limit(500).order(completed_at: :desc)
+                                        .course_based_transactions.transaction_status_completed
+                                        .map { |transaction| transaction["purchase_item_id"] }
+    purchased_courses = Course.where(id: course_transaction_ids).where(test: false).sort_by { |i| course_transaction_ids.index(i.id) }
+
+    paginated_purchased_courses = paginate(purchased_courses, params)
+    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
+  end
+
+  def purchased_tests
+    course_transaction_ids = Transaction.select(:purchase_item_id)
+                                        .where("buyer_id = ?", current_user.id)
+                                        .limit(500).order(completed_at: :desc)
+                                        .course_based_transactions.transaction_status_completed
+                                        .map { |transaction| transaction["purchase_item_id"] }
+    purchased_tests = Course.where(id: course_transaction_ids).where(test: true).sort_by { |i| course_transaction_ids.index(i.id) }
+
+    paginated_purchased_tests = paginate(purchased_tests, params)
+    render json: paginated_purchased_tests, root: :data, meta: paginated_meta(paginated_purchased_tests)
   end
 
   def created_courses

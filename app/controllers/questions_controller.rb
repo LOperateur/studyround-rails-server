@@ -92,7 +92,6 @@ class QuestionsController < ApplicationController
         nil
       end
 
-
     begin
       @question.save!
     rescue ActiveRecord::RecordInvalid
@@ -125,6 +124,14 @@ class QuestionsController < ApplicationController
       @question.multiplier = draft[:multiplier]
       @question.multi_answer = draft[:multi_answer]
 
+      @question.version = @question.version + 1
+      @question.draft = nil
+      @question.publish_status = :publish_status_published
+
+      @question.save!
+
+      # Handle images if save was successful
+
       # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
       if @question.question_image_draft.attached?
         copy_attachment(@question.question_image_draft, @question.question_image)
@@ -138,15 +145,11 @@ class QuestionsController < ApplicationController
         @question.explanation_image.detach
       end
 
-      @question.version = @question.version + 1
-      @question.draft = nil
       @question.question_image_draft.purge_later
       @question.explanation_image_draft.purge_later
-      @question.publish_status = :publish_status_published
 
       # TODO: Move previous version to version history when implemented
 
-      @question.save!
     rescue
       raise Errors::InvalidError.new(@question.errors.to_h)
     end
@@ -156,8 +159,6 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
-
-
     # If Question has never been published, hard delete it
     if @question.question.nil?
       @question.destroy!
