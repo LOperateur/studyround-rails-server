@@ -14,7 +14,8 @@ class QuestionValidator < ActiveModel::Validator
         record.errors.add :answer, "must be set!"
       end
 
-      if !record.multi_answer? && !record.answer.blank? && record.answer.length > 1
+      # Single answer non-german obj questions should only have one answer
+      if !record.multi_answer? && record.options.present? && record.answer.present? && record.answer.length > 1
         record.errors.add :answers, "for single answer questions cannot exceed 1"
       end
     end
