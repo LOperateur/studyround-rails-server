@@ -130,7 +130,7 @@ class QuestionsController < ApplicationController
 
       @question.save!
 
-      # Handle images is save was successful
+      # Handle images if save was successful
 
       # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
       if @question.question_image_draft.attached?
