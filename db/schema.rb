@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_10_23_183042) do
+ActiveRecord::Schema.define(version: 2022_10_31_083610) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -177,6 +177,20 @@ ActiveRecord::Schema.define(version: 2022_10_23_183042) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "transactions", force: :cascade do |t|
+    t.bigint "buyer_id"
+    t.bigint "seller_id"
+    t.bigint "purchase_item_id"
+    t.integer "purchase_item_type"
+    t.string "purchase_currency"
+    t.decimal "purchase_price", precision: 10, scale: 2
+    t.integer "transaction_status"
+    t.integer "payment_method"
+    t.jsonb "extra"
+    t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
+    t.index ["seller_id"], name: "index_transactions_on_seller_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "username"
     t.string "password_digest"
@@ -215,4 +229,6 @@ ActiveRecord::Schema.define(version: 2022_10_23_183042) do
   add_foreign_key "reviews", "users"
   add_foreign_key "sessions", "courses"
   add_foreign_key "sessions", "users"
+  add_foreign_key "transactions", "users", column: "buyer_id"
+  add_foreign_key "transactions", "users", column: "seller_id"
 end
