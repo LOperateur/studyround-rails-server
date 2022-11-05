@@ -45,7 +45,7 @@ class CoursesController < ApplicationController
     # Making it free will be allowed automatically, however, making it paid at a different
     # price from what was originally published will require us to take action first.
     # This will be checked in the validator since going from free->paid will throw an error if price is null.
-    if !@course.last_publish_date.nil?
+    if @course.last_publish_date.present?
       new_price = update_course_params[:price]
       new_currency = update_course_params[:currency]
 
@@ -317,7 +317,7 @@ class CoursesController < ApplicationController
         # No changes, do nothing
       else
         # Delete image
-        @course.image.purge_later
+        @course.image.purge
       end
     end
   end
