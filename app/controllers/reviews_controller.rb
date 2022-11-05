@@ -80,6 +80,7 @@ class ReviewsController < ApplicationController
     review_count = @course.reviews.count.to_f
     rating = review_count == 0 ? 0 : (@course.reviews.sum(:rating) / review_count).round(2)
     @course.rating = rating
+    @course.rating_count = review_count
     @course.save!
   end
 end

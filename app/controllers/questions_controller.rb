@@ -76,21 +76,9 @@ class QuestionsController < ApplicationController
     handle_image_update(update_question_params, :question_image, :question_image_url)
     handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
 
-    # Add generated urls to draft json (Checking against the url params opposed to `attached?`
-    # since purge_later is slow to detect deletions)
-    @question.draft["question_image_url"] =
-      if update_question_params[:question_image_url].present? || update_question_params[:question_image].present?
-        generated_attachment_url(@question.question_image_draft)
-      else
-        nil
-      end
-
-    @question.draft["explanation_image_url"] =
-      if update_question_params[:explanation_image_url].present? || update_question_params[:explanation_image].present?
-        generated_attachment_url(@question.explanation_image_draft)
-      else
-        nil
-      end
+    # Add generated urls to draft json
+    @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
+    @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
 
     begin
       @question.save!
@@ -308,7 +296,7 @@ class QuestionsController < ApplicationController
         end
       else
         # Delete image
-        draft_attachment.purge_later if draft_attachment.present?
+        draft_attachment.purge if draft_attachment.present?
       end
     end
   end

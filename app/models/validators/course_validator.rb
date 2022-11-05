@@ -24,6 +24,12 @@ class CourseValidator < ActiveModel::Validator
       if record.questions.publish_status_published.count < 10
         record.errors.add course_or_test(record).to_sym, "having less than 10 published questions cannot be published"
       end
+
+      if record.instructions.present?
+        if record.instructions["max_trials"] > 1 && record.instructions["reveal_answers"] == true
+          record.errors.add :instructions, "error - Answers cannot be revealed for tests with multiple attempts"
+        end
+      end
     end
   end
 
