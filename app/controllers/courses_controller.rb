@@ -130,9 +130,12 @@ class CoursesController < ApplicationController
   end
 
   def top_courses
+    # Todo: Consider using ratings instead of results for top courses
+    #  Then simply change this one to trending courses.
+
     # Firstly, get non-test, published course results created over the past 120 days
     # Passing in the "results." to avoid unambiguity due to the "joins" statement
-    results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(200)
+    results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(1000)
 
     # Group the results by their courses then sort based on the number of results per course
     grouped_courses = results.group(:course).order('count_all desc').count.take(10).to_h.keys
@@ -146,7 +149,7 @@ class CoursesController < ApplicationController
     ongoing_tests = Session.where.not(session_type: :test).limit(10).map { |session| session.course }
 
     # Get recently used course results
-    results = current_user.results.published_active_course_results.limit(100)
+    results = current_user.results.published_active_course_results.limit(500)
 
     # Group courses selecting the most recent result for each and sorting them in descending order
     grouped_courses = results.group(:course).order('maximum_created_at desc').maximum(:created_at).take(10).to_h.keys
@@ -216,8 +219,8 @@ class CoursesController < ApplicationController
   end
 
   def tests
-    # TODO: Write something more complex in future
-    tests = Course.published_active_courses.where(test: true).order(created_at: :desc)
+    # TODO: Use a formula between ratings and rating count before ordering
+    tests = Course.published_active_courses.where(test: true).order(rating: :desc)
 
     paginated_tests = paginate(tests, params)
     render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
@@ -226,7 +229,7 @@ class CoursesController < ApplicationController
   def purchased_courses
     course_transaction_ids = Transaction.select(:purchase_item_id)
                                         .where("buyer_id = ?", current_user.id)
-                                        .limit(500).order(completed_at: :desc)
+                                        .order(completed_at: :desc)
                                         .course_based_transactions.transaction_status_completed
                                         .map { |transaction| transaction["purchase_item_id"] }
     purchased_courses = Course.where(id: course_transaction_ids).where(test: false).sort_by { |i| course_transaction_ids.index(i.id) }
@@ -238,7 +241,7 @@ class CoursesController < ApplicationController
   def purchased_tests
     course_transaction_ids = Transaction.select(:purchase_item_id)
                                         .where("buyer_id = ?", current_user.id)
-                                        .limit(500).order(completed_at: :desc)
+                                        .order(completed_at: :desc)
                                         .course_based_transactions.transaction_status_completed
                                         .map { |transaction| transaction["purchase_item_id"] }
     purchased_tests = Course.where(id: course_transaction_ids).where(test: true).sort_by { |i| course_transaction_ids.index(i.id) }
