@@ -146,7 +146,7 @@ class CoursesController < ApplicationController
 
   def recent_courses
     # Fetch the test for any ongoing test sessions for this user
-    ongoing_tests = Session.where.not(session_type: :test).limit(10).map { |session| session.course }
+    ongoing_tests = Session.where(session_type: :test).limit(10).map { |session| session.course }
 
     # Get recently used course results
     results = current_user.results.published_active_course_results.limit(500)
