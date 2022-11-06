@@ -39,6 +39,9 @@ gem 'active_model_serializers', '~> 0.10.0'
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
 
+# AWS S3 Buckets
+gem 'aws-sdk-s3', require: false
+
 # Use sidekiq for background jobs
 gem 'sidekiq'
 

@@ -20,10 +20,14 @@ Rails.application.routes.draw do
   get '/courses/categorised', to: "courses#categorised"
   get '/courses/top', to: "courses#top_courses"
   get '/courses/recent', to: "courses#recent_courses"
-  get '/search', to: "courses#search"
-  patch '/courses/:id/publish', to: "courses#publish"
+  get '/courses/my-courses', to: "courses#my_courses"
+  get '/courses/tests', to: "courses#tests"
   get '/courses/created', to: "courses#created_courses"
   get '/courses/tests/created', to: "courses#created_tests"
+  get '/courses/purchased', to: "courses#purchased_courses"
+  get '/courses/tests/purchased', to: "courses#purchased_tests"
+  get '/search', to: "courses#search"
+  patch '/courses/:id/publish', to: "courses#publish"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
@@ -32,7 +36,7 @@ Rails.application.routes.draw do
   get '/creator/courses/:course_id/questions', to: "questions#questions"
   post '/creator/courses/:course_id/questions', to: "questions#create"
   get '/creator/courses/:course_id/questions/:id', to: "questions#show"
-  patch '/creator/courses/:course_id/questions/:id', to: "questions#update"
+  put '/creator/courses/:course_id/questions/:id', to: "questions#update"
   patch '/creator/courses/:course_id/questions/:id/publish', to: "questions#publish"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
 

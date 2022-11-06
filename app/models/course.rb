@@ -1,4 +1,6 @@
 class Course < ApplicationRecord
+  include Rails.application.routes.url_helpers
+
   belongs_to :creator, class_name: 'User'
 
   validates :title, presence: true
@@ -10,6 +12,7 @@ class Course < ApplicationRecord
   has_many :questions, dependent: :destroy
   has_many :reviews, dependent: :destroy
   has_many :sessions
+  has_one_attached :image
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
   scope :visible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired], private: false) }
@@ -40,5 +43,14 @@ class Course < ApplicationRecord
   # Used to serialize the course mini-model on the go without having to render
   def serialized_mini_course
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
+  end
+
+  def generated_image_url
+    begin
+      path = rails_blob_path(self.image, only_path: true)
+      return ActionController::Base.helpers.asset_path(path)
+    rescue
+      nil
+    end
   end
 end

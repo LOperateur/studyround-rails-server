@@ -45,7 +45,7 @@ class CoursesController < ApplicationController
     # Making it free will be allowed automatically, however, making it paid at a different
     # price from what was originally published will require us to take action first.
     # This will be checked in the validator since going from free->paid will throw an error if price is null.
-    if !@course.last_publish_date.nil?
+    if @course.last_publish_date.present?
       new_price = update_course_params[:price]
       new_currency = update_course_params[:currency]
 
@@ -57,7 +57,8 @@ class CoursesController < ApplicationController
     end
 
     course_params = prepare_received_course_params(update_course_params)
-    @course.assign_attributes(course_params)
+    handle_image_update(course_params)
+    @course.assign_attributes(course_params.except(:image_url))
 
     begin
       @course.save!
@@ -129,9 +130,12 @@ class CoursesController < ApplicationController
   end
 
   def top_courses
+    # Todo: Consider using ratings instead of results for top courses
+    #  Then simply change this one to trending courses.
+
     # Firstly, get non-test, published course results created over the past 120 days
     # Passing in the "results." to avoid unambiguity due to the "joins" statement
-    results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(200)
+    results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(1000)
 
     # Group the results by their courses then sort based on the number of results per course
     grouped_courses = results.group(:course).order('count_all desc').count.take(10).to_h.keys
@@ -141,14 +145,19 @@ class CoursesController < ApplicationController
   end
 
   def recent_courses
-    # Get recently used course results for this user
-    results = current_user.results.published_active_course_results.limit(100)
+    # Fetch the test for any ongoing test sessions for this user
+    ongoing_tests = Session.where.not(session_type: :test).limit(10).map { |session| session.course }
+
+    # Get recently used course results
+    results = current_user.results.published_active_course_results.limit(500)
 
     # Group courses selecting the most recent result for each and sorting them in descending order
     grouped_courses = results.group(:course).order('maximum_created_at desc').maximum(:created_at).take(10).to_h.keys
     # grouped_courses = results.group(:course).maximum(:created_at).sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
 
-    render json: grouped_courses, root: :data
+    # Render both lists
+    combined = (ongoing_tests + grouped_courses).uniq
+    render json: combined, root: :data
   end
 
   def search
@@ -195,6 +204,50 @@ class CoursesController < ApplicationController
     course.course_status_closed!
 
     render json: {}, status: :ok
+  end
+
+  def my_courses
+    # TODO: Use a more bespoke mechanism in future
+    user_result_ids = current_user.results.select(:course_id)
+                                  .published_active_course_results
+                                  .limit(500).order("results.created_at desc")
+                                  .map { |result| result["course_id"] }
+    my_courses = Course.where(id: user_result_ids).where(test: false).sort_by { |i| user_result_ids.index(i.id) }
+
+    paginated_my_courses = paginate(my_courses, params)
+    render json: paginated_my_courses, root: :data, meta: paginated_meta(paginated_my_courses)
+  end
+
+  def tests
+    # TODO: Use a formula between ratings and rating count before ordering
+    tests = Course.published_active_courses.where(test: true).order(rating: :desc)
+
+    paginated_tests = paginate(tests, params)
+    render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
+  end
+
+  def purchased_courses
+    course_transaction_ids = Transaction.select(:purchase_item_id)
+                                        .where("buyer_id = ?", current_user.id)
+                                        .order(completed_at: :desc)
+                                        .course_based_transactions.transaction_status_completed
+                                        .map { |transaction| transaction["purchase_item_id"] }
+    purchased_courses = Course.where(id: course_transaction_ids).where(test: false).sort_by { |i| course_transaction_ids.index(i.id) }
+
+    paginated_purchased_courses = paginate(purchased_courses, params)
+    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
+  end
+
+  def purchased_tests
+    course_transaction_ids = Transaction.select(:purchase_item_id)
+                                        .where("buyer_id = ?", current_user.id)
+                                        .order(completed_at: :desc)
+                                        .course_based_transactions.transaction_status_completed
+                                        .map { |transaction| transaction["purchase_item_id"] }
+    purchased_tests = Course.where(id: course_transaction_ids).where(test: true).sort_by { |i| course_transaction_ids.index(i.id) }
+
+    paginated_purchased_tests = paginate(purchased_tests, params)
+    render json: paginated_purchased_tests, root: :data, meta: paginated_meta(paginated_purchased_tests)
   end
 
   def created_courses
@@ -247,14 +300,36 @@ class CoursesController < ApplicationController
     return course_params
   end
 
+  # Image handling in controller during update
+  # 1.) image √   image_url √   =>    Changing image
+  # 2.) image √   image_url X   =>    New image
+  # 3.) image X   image_url √   =>    No changes
+  # 4.) image X   image_url X   =>    Deleting image
+  def handle_image_update(course_params)
+    has_image_to_upload = course_params[:image].present?
+    has_image_url_to_retain = course_params[:image_url].present?
+
+    if has_image_to_upload
+      # Attach is handled in `assign_attributes` for new or changed image.
+      # Deleting any current image first is automatically handled by Active Storage.
+    else
+      if has_image_url_to_retain
+        # No changes, do nothing
+      else
+        # Delete image
+        @course.image.purge
+      end
+    end
+  end
+
   def create_course_params
-    params.permit(:creator_id, :title, :sale_status, :price, :currency,
-                  :private, :test, :about, :image, :test_expiration, :instructions, :category_ids)
+    params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
+                  :test, :about, :image, :test_expiration, :instructions, :category_ids)
   end
 
   def update_course_params
-    params.permit(:creator_id, :title, :sale_status, :price, :currency,
-                  :private, :about, :image, :test_expiration, :instructions, :category_ids)
+    params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
+                  :about, :image, :image_url, :test_expiration, :instructions, :category_ids)
   end
 
 end

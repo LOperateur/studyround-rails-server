@@ -24,7 +24,7 @@ class QuestionsController < ApplicationController
       data: {
         question_id: question.id,
         explanation: question.explanation,
-        explanation_image_url: question.explanation_image_url,
+        explanation_image_url: question.generated_explanation_image_url,
       }
     }
   end
@@ -32,10 +32,10 @@ class QuestionsController < ApplicationController
   # From a Creator's point of view
 
   def questions
-    questions = @course.questions.non_deleted_questions
+    questions = @course.questions.non_deleted_questions.order(created_at: :asc)
     paginated_questions = paginate(questions, params)
 
-    render json: paginated_questions, root: :data, each_serializer: CreatorQuestionListSerializer
+    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions), each_serializer: CreatorQuestionListSerializer
   end
 
   def show
@@ -43,9 +43,17 @@ class QuestionsController < ApplicationController
   end
 
   def create
-    draft = create_draft(create_update_question_params)
+    draft = create_draft(create_question_params)
     question = @course.questions.build
     question.draft = draft
+
+    # Attach images
+    question.question_image_draft.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
+    question.explanation_image_draft.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
+
+    # Add generated urls to draft json
+    question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
+    question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
     begin
       question.save!
@@ -61,8 +69,16 @@ class QuestionsController < ApplicationController
       raise Errors::BaseError.new(message: "You can only edit a question a maximum of 5 times", status: 400)
     end
 
-    draft = create_draft(create_update_question_params)
+    draft = create_draft(update_question_params)
     @question.draft = draft
+
+    # Attach draft images
+    handle_image_update(update_question_params, :question_image, :question_image_url)
+    handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
+
+    # Add generated urls to draft json
+    @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
+    @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
 
     begin
       @question.save!
@@ -86,11 +102,9 @@ class QuestionsController < ApplicationController
 
     begin
       @question.question = draft[:question]
-      @question.question_image_url = draft[:question_image_url]
       @question.question_raw = draft[:question_raw]
 
       @question.explanation = draft[:explanation]
-      @question.explanation_image_url = draft[:explanation_image_url]
       @question.explanation_raw = draft[:explanation_raw]
 
       @question.options = draft[:options]
@@ -102,9 +116,28 @@ class QuestionsController < ApplicationController
       @question.draft = nil
       @question.publish_status = :publish_status_published
 
+      @question.save!
+
+      # Handle images if save was successful
+
+      # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
+      if @question.question_image_draft.attached?
+        copy_attachment(@question.question_image_draft, @question.question_image)
+      else
+        @question.question_image.detach
+      end
+
+      if @question.explanation_image_draft.attached?
+        copy_attachment(@question.explanation_image_draft, @question.explanation_image)
+      else
+        @question.explanation_image.detach
+      end
+
+      @question.question_image_draft.purge_later
+      @question.explanation_image_draft.purge_later
+
       # TODO: Move previous version to version history when implemented
 
-      @question.save!
     rescue
       raise Errors::InvalidError.new(@question.errors.to_h)
     end
@@ -119,6 +152,11 @@ class QuestionsController < ApplicationController
       @question.destroy!
     else
       begin
+        # Also delete any drafts if soft-deleting
+        @question.draft = nil
+        @question.question_image_draft.purge_later
+        @question.explanation_image_draft.purge_later
+
         @question.question_status_deleted!
       rescue
         raise Errors::InvalidError.new(@question.errors.to_h)
@@ -221,12 +259,74 @@ class QuestionsController < ApplicationController
       question_params[:answer] = answer_json
     end
 
-    # Upload actual image files if they are present, they override the url values
-    # But exclude them from the actual question object
-    question = @course.questions.build(question_params.except(:question_image, :explanation_image, :option_images))
+    # Attach the image files in the create/update methods instead
+    question = @course.questions.build(
+      question_params.except(
+        :question_image, :question_image_url, :explanation_image, :explanation_image_url, :option_images
+      )
+    )
 
-    draft = question.as_json
-    return strip_non_draft_fields(draft)
+    rough_draft = question.as_json
+
+    return strip_non_draft_fields(rough_draft)
+  end
+
+  # Image handling in controller during update
+  # 1.) image √   image_url √   =>    Changing image
+  # 2.) image √   image_url X   =>    New image
+  # 3.) image X   image_url √   =>    No changes
+  # 4.) image X   image_url X   =>    Deleting image
+  def handle_image_update(question_params, image_key, image_url_key)
+    has_image_to_upload = question_params[image_key].present?
+    has_image_url_to_retain = question_params[image_url_key].present?
+
+    draft_attachment, attachment = get_attachments(image_key)
+
+    if has_image_to_upload
+      # Attach new or changed image, active storage would purge any current image first
+      draft_attachment.attach(update_question_params[image_key]) if draft_attachment.present?
+    else
+      if has_image_url_to_retain
+        # Attach the latest image to this draft
+        if draft_attachment.attached?
+          # Do nothing, latest draft image already attached
+        elsif attachment.attached?
+          # Transfer a copy of the published attachment to the draft
+          copy_attachment(attachment, draft_attachment)
+        end
+      else
+        # Delete image
+        draft_attachment.purge if draft_attachment.present?
+      end
+    end
+  end
+
+  def get_attachments(image_key)
+    case image_key
+    when :question_image
+      return @question.question_image_draft, @question.question_image
+    when :explanation_image
+      return @question.explanation_image_draft, @question.explanation_image
+    else
+      return nil, nil
+    end
+  end
+
+  def copy_attachment(from_attachment, to_attachment)
+    to_attachment.attach(
+      io: StringIO.new(from_attachment.download),
+      filename: from_attachment.filename,
+      content_type: from_attachment.content_type
+    )
+  end
+
+  def generated_attachment_url(attachment)
+    begin
+      path = rails_blob_path(attachment, only_path: true)
+      return ActionController::Base.helpers.asset_path(path)
+    rescue
+      nil
+    end
   end
 
   def published_test_check
@@ -242,7 +342,14 @@ class QuestionsController < ApplicationController
                                        :question_status, :draft, :created_at, :updated_at)
   end
 
-  def create_update_question_params
+  def create_question_params
+    params.permit(:question, :question_raw, :question_image,
+                  :explanation, :explanation_raw, :explanation_image,
+                  :options, :answer, :multi_answer, :multiplier, :option_images
+    )
+  end
+
+  def update_question_params
     params.permit(:question, :question_raw, :question_image, :question_image_url,
                   :explanation, :explanation_raw, :explanation_image, :explanation_image_url,
                   :options, :answer, :multi_answer, :multiplier, :option_images

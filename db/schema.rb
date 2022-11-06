@@ -10,10 +10,31 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_10_08_232337) do
+ActiveRecord::Schema.define(version: 2022_11_05_090510) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "active_storage_attachments", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "record_type", null: false
+    t.bigint "record_id", null: false
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "filename", null: false
+    t.string "content_type"
+    t.text "metadata"
+    t.bigint "byte_size", null: false
+    t.string "checksum", null: false
+    t.datetime "created_at", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
 
   create_table "categories", force: :cascade do |t|
     t.bigint "parent_id"
@@ -44,7 +65,6 @@ ActiveRecord::Schema.define(version: 2022_10_08_232337) do
     t.boolean "private", default: false
     t.boolean "test", default: false
     t.text "about"
-    t.string "image_url"
     t.integer "version", default: 0
     t.datetime "test_expiration"
     t.integer "publish_status", default: 1
@@ -57,6 +77,7 @@ ActiveRecord::Schema.define(version: 2022_10_08_232337) do
     t.datetime "updated_at", null: false
     t.jsonb "question_tags"
     t.datetime "last_publish_date"
+    t.integer "rating_count"
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
   end
@@ -86,12 +107,10 @@ ActiveRecord::Schema.define(version: 2022_10_08_232337) do
     t.integer "order"
     t.text "question"
     t.jsonb "tags"
-    t.string "question_image_url"
     t.jsonb "options"
     t.boolean "multi_answer", default: false
     t.integer "multiplier", default: 1
     t.text "explanation"
-    t.string "explanation_image_url"
     t.integer "version", default: 0
     t.integer "publish_status", default: 1
     t.datetime "created_at", null: false
@@ -159,6 +178,23 @@ ActiveRecord::Schema.define(version: 2022_10_08_232337) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "transactions", force: :cascade do |t|
+    t.bigint "buyer_id"
+    t.bigint "seller_id"
+    t.bigint "purchase_item_id"
+    t.integer "purchase_item_type"
+    t.string "purchase_currency"
+    t.decimal "purchase_price", precision: 10, scale: 2
+    t.integer "transaction_status"
+    t.integer "payment_method"
+    t.string "description"
+    t.string "external_txn_id"
+    t.datetime "completed_at"
+    t.jsonb "extra"
+    t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
+    t.index ["seller_id"], name: "index_transactions_on_seller_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "username"
     t.string "password_digest"
@@ -182,6 +218,7 @@ ActiveRecord::Schema.define(version: 2022_10_08_232337) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
@@ -196,4 +233,6 @@ ActiveRecord::Schema.define(version: 2022_10_08_232337) do
   add_foreign_key "reviews", "users"
   add_foreign_key "sessions", "courses"
   add_foreign_key "sessions", "users"
+  add_foreign_key "transactions", "users", column: "buyer_id"
+  add_foreign_key "transactions", "users", column: "seller_id"
 end
