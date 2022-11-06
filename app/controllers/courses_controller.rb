@@ -220,7 +220,7 @@ class CoursesController < ApplicationController
 
   def tests
     # TODO: Use a formula between ratings and rating count before ordering
-    tests = Course.published_active_courses.where(test: true).order(rating: :desc)
+    tests = Course.published_active_courses.where(test: true).order("rating desc nulls last")
 
     paginated_tests = paginate(tests, params)
     render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
