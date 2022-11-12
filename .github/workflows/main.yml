@@ -29,9 +29,10 @@ jobs:
 
     steps:
       - name: Deploy App to AWS
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
           repo: ulearn-nginx-proxy
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
-          workflow_file_name: main.yml
+          workflow_file_name: staging.yml
+          ref: staging
