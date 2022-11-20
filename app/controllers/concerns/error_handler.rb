@@ -18,13 +18,20 @@ module ErrorHandler
   private
 
   def handle_error(e)
-    mapped = map_error(e)
-    # notify about unexpected_error unless mapped
-    mapped ||= Errors::BaseError.new
+    mapped_error = map_error(e)
 
-    # add a message if there's one available
-    mapped.message = e.message unless e.message.blank?
-    render_error(mapped)
+    # Default to Base Error if not mapped
+    mapped_error ||= Errors::BaseError.new
+
+    # Add a message if there's one available
+    mapped_error.message = e.message if e.message.present?
+    
+    # If it's a not-found error, simplify the error message by removing the params after "with"
+    if mapped_error.is_a? Errors::NotFoundError
+      mapped_error.message = mapped_error.message.split(" with").first
+    end
+    
+    render_error(mapped_error)
   end
 
   def map_error(e)
