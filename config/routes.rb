@@ -8,10 +8,11 @@ Rails.application.routes.draw do
   post '/otp/generate', to: "auth#generate_otp"
   post '/otp/validate', to: "auth#validate_otp"
 
-  resources :users, only: [:show]
   get '/user', to: "users#profile"
+  put '/user', to: "users#update"
   get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
+  resources :users, only: [:show]
 
   resources :categories, only: [:index] do
     get '/courses', to: "courses#per_category"
