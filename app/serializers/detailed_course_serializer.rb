@@ -1,6 +1,8 @@
+# Course serializer showing some detailed information
+# on the course which can be presented to the general user base.
 class DetailedCourseSerializer < CourseSerializer
   type :course
-  attributes :about, :review_count, :num_questions, :num_explanations
+  attributes :about, :review_count, :num_questions, :num_explanations, :test_expiration
 
   has_many :categories, serializer: MiniCategorySerializer
 
