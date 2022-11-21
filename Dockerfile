@@ -5,6 +5,9 @@ WORKDIR /app
 COPY ./Gemfile* ./
 RUN bundle install
 COPY ./ ./
+
+ENTRYPOINT ["./entrypoint.sh"]
+
 EXPOSE 3000
 
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb", "staging", "-b", "tcp://0.0.0.0:3000"]
