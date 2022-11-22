@@ -1,3 +1,5 @@
+# Course serializer showing all details of the course
+# specifically reserved for the viewership of the creator only.
 class FullCourseSerializer < DetailedCourseSerializer
   type :course
   attributes :instructions, :private, :publish_status, :course_status, :last_publish_date, :test_statistics

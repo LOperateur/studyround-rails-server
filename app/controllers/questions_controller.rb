@@ -179,7 +179,7 @@ class QuestionsController < ApplicationController
     begin
       @question = @course.questions.non_deleted_questions.find(params[:id])
     rescue
-      raise Errors::NotFoundError.new(message: "Cannot find question with id #{params[:id]} for course with id #{params[:course_id]}")
+      raise Errors::NotFoundError.new(message: "Cannot find this question in the course")
     end
   end
 

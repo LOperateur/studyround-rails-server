@@ -60,7 +60,7 @@ class ReviewsController < ApplicationController
     begin
       @review = @course.reviews.find(params[:id])
     rescue
-      raise Errors::NotFoundError.new(message: "Cannot find review with id #{params[:id]} for course with id #{params[:course_id]}")
+      raise Errors::NotFoundError.new(message: "Cannot find this review for this course")
     end
   end
 

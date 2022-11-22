@@ -73,5 +73,5 @@ Rails.application.configure do
   config.file_watcher = ActiveSupport::EventedFileUpdateChecker
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
-  config.action_controller.asset_host = "http://localhost:3000"
+  config.action_controller.asset_host = ENV['RAILS_ASSET_HOST']
 end
