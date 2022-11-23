@@ -18,6 +18,7 @@ class User < ApplicationRecord
   has_many :results
   has_many :reviews
   has_many :sessions
+  has_many :notifications
   has_one_attached :profile_image
 
   def downcase_fields
