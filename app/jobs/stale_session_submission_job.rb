@@ -15,8 +15,8 @@ class StaleSessionSubmissionJob < ApplicationJob
           # Finished sessions for quiz/practice should just be deleted
           session.destroy
         end
-      rescue Errors::BaseError
-        # Ignored
+      rescue
+        # TODO: Report this
       end
     end
   end

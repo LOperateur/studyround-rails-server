@@ -9,8 +9,8 @@ class TestExpirationJob < ApplicationJob
         # Expire all these tests that their expiration dates have passed
         # TODO: Also send a notification to the creator
         test.course_status_expired!
-      rescue Errors::BaseError
-        # Ignored
+      rescue
+        # TODO: Report this
       end
     end
   end
