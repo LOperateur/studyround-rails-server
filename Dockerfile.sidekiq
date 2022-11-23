@@ -1,0 +1,9 @@
+FROM ruby:2.7.1
+
+RUN apt-get update && apt-get install -y nodejs
+WORKDIR /app
+COPY ./Gemfile* ./
+RUN bundle install
+COPY ./ ./
+
+CMD ["bundle", "exec", "sidekiq", "-c", "5", "-q", "default", "-q", "mailers", "-v"]

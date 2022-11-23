@@ -37,5 +37,7 @@
 .rakeTasks
 
 /.idea
+.env
+docker-compose.yml
 
 .DS_STORE
