@@ -20,6 +20,6 @@ class Transaction < ApplicationRecord
 
   enum payment_method: {
     payment_method_card: 1,
-    payment_method_bank: 2,
+    payment_method_others: 2,
   }
 end
