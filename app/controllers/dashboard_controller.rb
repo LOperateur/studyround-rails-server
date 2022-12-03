@@ -7,19 +7,19 @@ class DashboardController < ApplicationController
     render json: {
       data: [
         {
-          image: ActionController::Base.helpers.asset_path("carousel/carousel-1.jpg"),
+          image: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/carousel-1.jpg",
           link: "https://u-learn-web.herokuapp.com"
         },
         {
-          image: ActionController::Base.helpers.asset_path("carousel/carousel-2.jpg"),
+          image: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/carousel-2.jpg",
           link: "https://u-learn-web.herokuapp.com"
         },
         {
-          image: ActionController::Base.helpers.asset_path("carousel/carousel-3.jpg"),
+          image: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/carousel-3.jpg",
           link: "https://u-learn-web.herokuapp.com"
         },
         {
-          image: ActionController::Base.helpers.asset_path("carousel/carousel-4.jpg"),
+          image: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/carousel-4.jpg",
           link: "https://u-learn-web.herokuapp.com"
         }
       ]
