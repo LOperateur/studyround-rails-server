@@ -67,4 +67,6 @@ Rails.application.routes.draw do
   post '/tests/:course_id/complete', to: "courses#close_test"
   resources :sessions, only: [:update]
 
+  post '/transactions/initiate', to: "transactions#initiate"
+  post '/transactions/verify', to: "transactions#verify"
 end
