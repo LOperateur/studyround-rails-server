@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_23_214946) do
+ActiveRecord::Schema.define(version: 2022_12_04_223838) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -190,7 +190,6 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
 
   create_table "transactions", force: :cascade do |t|
     t.bigint "buyer_id"
-    t.bigint "seller_id"
     t.bigint "purchase_item_id"
     t.integer "purchase_item_type"
     t.string "purchase_currency"
@@ -201,8 +200,9 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
     t.string "external_txn_id"
     t.datetime "completed_at"
     t.jsonb "extra"
+    t.string "transaction_ref"
     t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
-    t.index ["seller_id"], name: "index_transactions_on_seller_id"
+    t.index ["transaction_ref"], name: "index_transactions_on_transaction_ref", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -244,5 +244,4 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
   add_foreign_key "sessions", "courses"
   add_foreign_key "sessions", "users"
   add_foreign_key "transactions", "users", column: "buyer_id"
-  add_foreign_key "transactions", "users", column: "seller_id"
 end

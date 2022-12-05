@@ -12,7 +12,6 @@ class User < ApplicationRecord
   has_one :refresh_token, dependent: :destroy
   has_many :courses, dependent: :destroy, class_name: "Course", foreign_key: :creator_id
   has_many :transactions, class_name: "Transaction", foreign_key: :buyer_id
-  has_many :transactions, class_name: "Transaction", foreign_key: :seller_id
   has_many :interests, dependent: :destroy
   has_many :categories, through: :interests
   has_many :results
