@@ -4,6 +4,7 @@ def set_aws_docker_managed_secrets
   secret_json = ENV[secret_name]
   secret_hash = JSON.parse(secret_json)
 
+  ENV['DATABASE_URL'] = secret_hash['DATABASE_URL']
   ENV['FREE_TEST_SESSION_ACCESS_HOURS'] = secret_hash['FREE_TEST_SESSION_ACCESS_HOURS']
   ENV['LANG'] = secret_hash['LANG']
   ENV['RACK_ENV'] = secret_hash['RACK_ENV']
