@@ -1,7 +1,7 @@
 def set_aws_docker_managed_secrets
   secret_name = "JSON_VAR"
 
-  secret_json = ENV[secret_name]
+  secret_json = ENV[secret_name] || '{}'
   secret_hash = JSON.parse(secret_json)
 
   ENV['DATABASE_URL'] = secret_hash['DATABASE_URL']
