@@ -3,7 +3,7 @@ Rails.application.configure do
 
   # Load env vars
   config.before_configuration do
-    set_aws_docker_managed_secrets
+    # set_aws_docker_managed_secrets
   end
 
   # Code is not reloaded between requests.
