@@ -14,6 +14,8 @@ def set_aws_docker_managed_secrets
   ENV['RAILS_MASTER_KEY'] = secret_hash['RAILS_MASTER_KEY']
   ENV['RAILS_SERVE_STATIC_FILES'] = secret_hash['RAILS_SERVE_STATIC_FILES']
   ENV['REDIS_PROVIDER'] = secret_hash['REDIS_PROVIDER']
+  ENV['REDIS_TLS_URL'] = secret_hash['REDIS_TLS_URL']
+  ENV['REDIS_URL'] = secret_hash['REDIS_URL']
   ENV['SECRET_KEY_BASE'] = secret_hash['SECRET_KEY_BASE']
   ENV['SENDGRID_API_KEY'] = secret_hash['SENDGRID_API_KEY']
   ENV['SENDGRID_PASSWORD'] = secret_hash['SENDGRID_PASSWORD']

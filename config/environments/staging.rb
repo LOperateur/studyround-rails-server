@@ -3,6 +3,10 @@ Rails.application.configure do
 
   # Load env vars
   config.before_configuration do
+    secret_json = ENV["JSON_VAR"] || '{}'
+    secret_hash = JSON.parse(secret_json)
+
+    ENV['DATABASE_URL'] = secret_hash['DATABASE_URL']
     set_aws_docker_managed_secrets
   end
 
