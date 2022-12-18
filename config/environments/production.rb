@@ -1,11 +1,6 @@
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
-  # Load env vars
-  config.before_configuration do
-    set_aws_docker_managed_secrets
-  end
-
   # Code is not reloaded between requests.
   config.cache_classes = true
 
