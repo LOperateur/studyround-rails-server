@@ -1,5 +1,4 @@
 require_relative 'boot'
-require_relative 'initializers/secret_manager'
 
 require 'rails/all'
 
