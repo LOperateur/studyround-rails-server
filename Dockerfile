@@ -5,7 +5,8 @@ WORKDIR /app
 COPY ./Gemfile* ./
 RUN bundle install
 COPY ./ ./
-RUN echo $JSON_VAR | jq -r 'to_entries[] | .key + "=\"" + (.value|tostring) + "\""' > "file.txt" && set -a && . ./file.txt && set +a && rm file.txt
+
+ENV JSON_VAR=$JSON_VAR
 
 ENTRYPOINT ["./entrypoint.sh"]
 
