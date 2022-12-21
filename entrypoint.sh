@@ -9,4 +9,4 @@ if [[ $? -eq 0 ]] ; then
   bundle exec rails db:setup
 fi
 
-exec "$@"
+bundle exec puma -C config/puma.rb staging -b tcp://0.0.0.0:3000

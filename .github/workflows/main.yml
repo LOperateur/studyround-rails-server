@@ -23,29 +23,9 @@ jobs:
         with:
           push: true
           tags: caleb42/u-learn-ruby-backend:latest
-      - name: Build ulearn sidekiq docker image
-        run: docker build . --file Dockerfile.sidekiq --tag caleb42/u-learn-ruby-sidekiq:latest
-      - name: Docker Push
-        run: docker push caleb42/u-learn-ruby-sidekiq:latest
-  build-sidekiq:
-    runs-on: ubuntu-latest
-    needs: build-backend
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Docker Login
-        env:
-          DOCKER_USER: ${{secrets.DOCKER_USER}}
-          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        run: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - name: Build ulearn sidekiq docker image
-        run: docker build . --file Dockerfile.sidekiq --tag caleb42/u-learn-ruby-sidekiq:latest
-      - name: Docker Push
-        run: docker push caleb42/u-learn-ruby-sidekiq:latest
   deploy:
     runs-on: ubuntu-latest
-    needs: build-sidekiq
+    needs: build-backend
 
     steps:
       - name: Deploy App to AWS
