@@ -1,6 +1,6 @@
 #! /bin/sh
 
-echo $JSON_VAR | jq -r 'to_entries[] | .key + "=\"" + (.value|tostring) + "\""' > "file.txt" && set -a && . ./file.txt && set +a && rm file.txt
+echo $JSON_VAR | jq -r 'to_entries[] | .key + "=\"" + (.value|tostring) + "\""' > "file.txt" && set -a && . ./file.txt && set +a
 
 bundle exec rake db:migrate
 
