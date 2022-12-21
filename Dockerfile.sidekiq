@@ -6,6 +6,10 @@ COPY ./Gemfile* ./
 RUN bundle install
 COPY ./ ./
 
+ENV JSON_VAR=$JSON_VAR
+
+ENTRYPOINT ["./entrypoint.sh"]
+
 EXPOSE 4000
 
 CMD ["bundle", "exec", "sidekiq", "-c", "5", "-q", "default", "-q", "mailers", "-v"]
