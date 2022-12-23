@@ -35,4 +35,4 @@ jobs:
           repo: ulearn-nginx-proxy
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
           workflow_file_name: staging.yml
-          ref: development
+          ref: staging
