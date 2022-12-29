@@ -7,6 +7,7 @@ RUN bundle install
 COPY ./ ./
 
 ENV JSON_VAR=$JSON_VAR
+ENV APP=$APP
 
 ENTRYPOINT ["./entrypoint.sh"]
 
