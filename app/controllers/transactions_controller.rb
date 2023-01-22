@@ -9,11 +9,6 @@ class TransactionsController < ApplicationController
       break ref if !Transaction.exists?(transaction_ref: ref)
     end
 
-    # t = current_user.transactions.build
-    # t.transaction_status = :transaction_status_pending
-    # t.transaction_ref = transaction_ref
-    # t.save!
-
     render json: { data: { transaction_ref: transaction_ref } }, status: :ok
   end
 
@@ -32,7 +27,9 @@ class TransactionsController < ApplicationController
       build_flw_success_response response['data']
     else
       # Inform the customer their payment was unsuccessful
-      build_flw_error_response response
+      # Ideally this shouldn't be called even if the payment fails since flutterwave
+      # won't dismiss the modal until success/cancel, but this serves as a check just in case
+      build_flw_error_response
     end
   end
 
@@ -56,24 +53,35 @@ class TransactionsController < ApplicationController
     transaction.purchase_item_id = data['meta']['item_id']
     transaction.purchase_item_type = data['meta']['item_type']
     transaction.purchase_price = data['amount']
-    transaction.purchase_currency = data['purchase_currency']
+    transaction.purchase_currency = data['currency']
     transaction.completed_at = Time.now
     transaction.extra = data
 
     if data['card'].present?
-      save_card data['card']
       transaction.payment_method = :payment_method_card
     else
       transaction.payment_method = :payment_method_others
     end
 
-    # transaction.save!
+    if transaction.purchase_item_type_course?
+      transaction.description = "Purchased #{Course.find(data['meta']['item_id']).title}"
+    elsif transaction.purchase_item_type_explanations?
+      transaction.description = "Purchased explanations for #{Course.find(data['meta']['item_id'])}"
+    else
+      transaction.description = "User purchase transaction"
+    end
+
+    transaction.save!
     render json: transaction
   end
 
-  def build_flw_error_response(response) end
+  def build_flw_error_response
+    raise Errors::BaseError.new(message: "Something went wrong with the payment, please contact customer care", status: 400)
+  end
 
-  def save_card(card) end
+  def save_card(card)
+    # Todo: Implement this later
+  end
 
   def verify_transaction_params
     params.permit(:transaction_id)
