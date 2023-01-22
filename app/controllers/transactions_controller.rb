@@ -58,6 +58,7 @@ class TransactionsController < ApplicationController
     transaction.extra = data
 
     if data['card'].present?
+      save_card data['card']
       transaction.payment_method = :payment_method_card
     else
       transaction.payment_method = :payment_method_others
@@ -76,7 +77,7 @@ class TransactionsController < ApplicationController
   end
 
   def build_flw_error_response
-    raise Errors::BaseError.new(message: "Something went wrong with the payment, please contact customer care", status: 400)
+    render json: { message: "Payment not completed!", data: { } }, status: :ok
   end
 
   def save_card(card)
