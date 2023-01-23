@@ -4,11 +4,7 @@ class TransactionsController < ApplicationController
   wrap_parameters format: []
 
   def initiate
-    transaction_ref = loop do
-      ref = SecureRandom.hex(10)
-      break ref if !Transaction.exists?(transaction_ref: ref)
-    end
-
+    transaction_ref = generate_transaction_ref
     render json: { data: { transaction_ref: transaction_ref } }, status: :ok
   end
 
@@ -33,9 +29,50 @@ class TransactionsController < ApplicationController
     end
   end
 
+  def process_transaction
+    flw = Flutterwave.new(ENV["FLUTTERWAVE_PUBLIC_KEY"], ENV["FLUTTERWAVE_SECRET_KEY"], ENV["FLUTTERWAVE_ENCRYPTION_KEY"])
+    charge = TokenizedCharge.new(flw)
+
+    details = {
+      token: current_user.financial_cards.first.token, # Todo: Use card ID
+      currency: "NGN", # Todo: Get from item
+      country: "NG",
+      amount: 2000, # Todo: Get from item
+      email: current_user.email,
+      tx_ref: generate_transaction_ref,
+      meta: {
+        item_id: process_transaction_params[:item_id],
+        item_type: process_transaction_params[:item_type]
+      }
+    }
+
+    begin
+      # FLW requires the keys to be strings to go through
+      response = charge.tokenized_charge details.deep_stringify_keys
+    rescue => error
+      # Todo: Log the error
+      raise Errors::BaseError.new(message: "Unable to charge payment method on account", status: 400)
+    end
+
+    if response['status'] === "success"
+      # Success! Confirm the customer's payment
+      build_flw_success_response(response['data'], false)
+    else
+      # Todo: Create failed transaction object with all data and add data to error response, use payment_cancelled for now
+      build_flw_error_response
+    end
+  end
+
   private
 
-  def build_flw_success_response(data)
+  def generate_transaction_ref
+    loop do
+      ref = SecureRandom.hex(10)
+      break ref if !Transaction.exists?(transaction_ref: ref)
+    end
+  end
+
+  def build_flw_success_response(data, save_card = true)
     transaction = Transaction.find_by(transaction_ref: data['tx_ref']) ||
       Transaction.new(transaction_ref: data['tx_ref'], transaction_status: :transaction_status_pending, buyer: current_user)
 
@@ -50,24 +87,24 @@ class TransactionsController < ApplicationController
     end
 
     transaction.external_txn_id = data['id']
-    transaction.purchase_item_id = data['meta']['item_id']
-    transaction.purchase_item_type = data['meta']['item_type']
+    transaction.purchase_item_id = data.dig('meta', 'item_id') || process_transaction_params[:item_id] # Meta not passed for token charge
+    transaction.purchase_item_type = data.dig('meta', 'item_type') || process_transaction_params[:item_type]
     transaction.purchase_price = data['amount']
     transaction.purchase_currency = data['currency']
     transaction.completed_at = Time.now
-    transaction.extra = data
+    transaction.extra = data # Todo: Remove card token from this data
 
     if data['card'].present?
-      save_card data['card']
+      save_card(data['card']) if save_card
       transaction.payment_method = :payment_method_card
     else
       transaction.payment_method = :payment_method_others
     end
 
     if transaction.purchase_item_type_course?
-      transaction.description = "Purchased #{Course.find(data['meta']['item_id']).title}"
+      transaction.description = "Purchased #{Course.find(transaction.purchase_item_id).title}"
     elsif transaction.purchase_item_type_explanations?
-      transaction.description = "Purchased explanations for #{Course.find(data['meta']['item_id'])}"
+      transaction.description = "Purchased explanations for #{Course.find(transaction.purchase_item_id)}"
     else
       transaction.description = "User purchase transaction"
     end
@@ -77,15 +114,30 @@ class TransactionsController < ApplicationController
   end
 
   def build_flw_error_response
-    render json: { message: "Payment not completed!", data: { } }, status: :ok
+    raise Errors::BaseError.new(message: "Payment not completed, please contact customer care", status: 400)
   end
 
   def save_card(card)
-    # Todo: Implement this later
+    new_card = current_user.financial_cards.build(
+      country: card['country'],
+      expiry: card['expiry'],
+      first_six: card['first_6digits'],
+      issuer: card['issuer'],
+      last_four: card['last_4digits'],
+      token: card['token'],
+      card_type: card['type'],
+      provider: "flutterwave",
+    )
+
+    new_card.save
   end
 
   def verify_transaction_params
     params.permit(:transaction_id)
+  end
+
+  def process_transaction_params
+    params.permit(:item_id, :item_type)
   end
 
 end

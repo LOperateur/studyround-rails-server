@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_12_04_223838) do
+ActiveRecord::Schema.define(version: 2023_01_23_105023) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -80,6 +80,22 @@ ActiveRecord::Schema.define(version: 2022_12_04_223838) do
     t.integer "rating_count"
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
+  end
+
+  create_table "financial_cards", force: :cascade do |t|
+    t.string "country"
+    t.string "expiry"
+    t.string "first_six"
+    t.string "issuer"
+    t.string "last_four"
+    t.string "card_type"
+    t.string "token"
+    t.string "provider"
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token"], name: "index_financial_cards_on_token", unique: true
+    t.index ["user_id"], name: "index_financial_cards_on_user_id"
   end
 
   create_table "interests", force: :cascade do |t|
@@ -232,6 +248,7 @@ ActiveRecord::Schema.define(version: 2022_12_04_223838) do
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
   add_foreign_key "courses", "users", column: "creator_id"
+  add_foreign_key "financial_cards", "users"
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
   add_foreign_key "notifications", "users"
