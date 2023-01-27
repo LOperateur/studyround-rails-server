@@ -7,7 +7,7 @@ on:
     branches: [staging]
 
 jobs:
-  build-backend:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,10 +22,10 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: caleb42/u-learn-ruby-backend:latest
+          tags: caleb42/u-learn-ruby-backend:${{ github.sha }}
   deploy:
     runs-on: ubuntu-latest
-    needs: build-backend
+    needs: build
 
     steps:
       - name: Deploy App to AWS
@@ -36,3 +36,4 @@ jobs:
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
           workflow_file_name: staging.yml
           ref: staging
+          client_payload: '{"triggered": "true", "tag": "caleb42/u-learn-ruby-backend:${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
