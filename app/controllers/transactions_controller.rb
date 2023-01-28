@@ -14,8 +14,9 @@ class TransactionsController < ApplicationController
     begin
       transactions = Transactions.new(flw)
       response = transactions.verify_transaction verify_transaction_params[:transaction_id]
-    rescue
-      raise Errors::BaseError.new(message: "Unable to process this transaction", status: 400)
+    rescue => error
+      build_trx_cancelled_response(error, verify_transaction_params[:transaction_ref])
+      raise Errors::BaseError.new(message: "Unable to verify this transaction", status: 400)
     end
 
     if response['data']['status'] === "successful"
@@ -164,8 +165,11 @@ class TransactionsController < ApplicationController
       provider: "flutterwave",
     )
 
-    # Todo: Prevent saving the same card twice assuming the user loads the modal again
-    new_card.save
+    # Prevent saving the same card twice assuming the user loads the modal again
+    if !FinancialCard.exists?(token: new_card.token) &&
+      FinancialCard.where(first_six: new_card.first_six, last_four: new_card.last_four).empty?
+      new_card.save
+    end
   end
 
   def verify_transaction_params
