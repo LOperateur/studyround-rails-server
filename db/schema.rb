@@ -217,6 +217,8 @@ ActiveRecord::Schema.define(version: 2023_01_23_105023) do
     t.datetime "completed_at"
     t.jsonb "extra"
     t.string "transaction_ref"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
     t.index ["transaction_ref"], name: "index_transactions_on_transaction_ref", unique: true
   end

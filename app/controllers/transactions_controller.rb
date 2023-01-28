@@ -20,12 +20,13 @@ class TransactionsController < ApplicationController
 
     if response['data']['status'] === "successful"
       # Success! Confirm the customer's payment
-      build_flw_success_response response['data']
+      build_trx_success_response response['data']
     else
       # Inform the customer their payment was unsuccessful
       # Ideally this shouldn't be called even if the payment fails since flutterwave
       # won't dismiss the modal until success/cancel, but this serves as a check just in case
-      build_flw_error_response
+      build_trx_cancelled_response(response, verify_transaction_params[:transaction_ref])
+      raise Errors::BaseError.new(message: "Payment not completed, please contact customer care", status: 400)
     end
   end
 
@@ -33,13 +34,31 @@ class TransactionsController < ApplicationController
     flw = Flutterwave.new(ENV["FLUTTERWAVE_PUBLIC_KEY"], ENV["FLUTTERWAVE_SECRET_KEY"], ENV["FLUTTERWAVE_ENCRYPTION_KEY"])
     charge = TokenizedCharge.new(flw)
 
+    begin
+      token = current_user.financial_cards.find(process_transaction_params[:card_id]).token
+    rescue
+      raise Errors::NotFoundError.new(message: "Unable to find payment method attached")
+    end
+
+    # Currently assuming all item_type's are courses
+    case process_transaction_params[:item_type].to_sym
+    when :course, :explanations
+      course = Course.find(process_transaction_params[:item_id])
+      price = course.price
+      currency = course.currency
+    else
+      raise Errors::NotFoundError.new(message: "Unknown transaction item type")
+    end
+
+    tx_ref = generate_transaction_ref
+
     details = {
-      token: current_user.financial_cards.first.token, # Todo: Use card ID
-      currency: "NGN", # Todo: Get from item
+      token: token,
+      currency: currency,
       country: "NG",
-      amount: 2000, # Todo: Get from item
+      amount: price,
       email: current_user.email,
-      tx_ref: generate_transaction_ref,
+      tx_ref: tx_ref,
       meta: {
         item_id: process_transaction_params[:item_id],
         item_type: process_transaction_params[:item_type]
@@ -50,16 +69,16 @@ class TransactionsController < ApplicationController
       # FLW requires the keys to be strings to go through
       response = charge.tokenized_charge details.deep_stringify_keys
     rescue => error
-      # Todo: Log the error
-      raise Errors::BaseError.new(message: "Unable to charge payment method on account", status: 400)
+      build_trx_error_response(error, tx_ref, currency, price)
+      raise Errors::BaseError.new(message: "Unable to charge payment method on account, please contact customer care", status: 400)
     end
 
     if response['status'] === "success"
       # Success! Confirm the customer's payment
-      build_flw_success_response(response['data'], false)
+      build_trx_success_response(response['data'], false)
     else
-      # Todo: Create failed transaction object with all data and add data to error response, use payment_cancelled for now
-      build_flw_error_response
+      build_trx_error_response(response, tx_ref, currency, price)
+      raise Errors::BaseError.new(message: "Payment failed, please contact customer care", status: 400)
     end
   end
 
@@ -72,7 +91,7 @@ class TransactionsController < ApplicationController
     end
   end
 
-  def build_flw_success_response(data, save_card = true)
+  def build_trx_success_response(data, save_card = true)
     transaction = Transaction.find_by(transaction_ref: data['tx_ref']) ||
       Transaction.new(transaction_ref: data['tx_ref'], transaction_status: :transaction_status_pending, buyer: current_user)
 
@@ -104,17 +123,33 @@ class TransactionsController < ApplicationController
     if transaction.purchase_item_type_course?
       transaction.description = "Purchased #{Course.find(transaction.purchase_item_id).title}"
     elsif transaction.purchase_item_type_explanations?
-      transaction.description = "Purchased explanations for #{Course.find(transaction.purchase_item_id)}"
+      transaction.description = "Purchased explanations for #{Course.find(transaction.purchase_item_id).title}"
     else
       transaction.description = "User purchase transaction"
     end
 
     transaction.save!
-    render json: transaction
+    render json: transaction, root: :data
   end
 
-  def build_flw_error_response
-    raise Errors::BaseError.new(message: "Payment not completed, please contact customer care", status: 400)
+  def build_trx_error_response(data, tx_ref, currency, price)
+    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: :transaction_status_failed, buyer: current_user)
+
+    transaction.payment_method = :payment_method_card
+    transaction.purchase_item_id = process_transaction_params[:item_id]
+    transaction.purchase_item_type = process_transaction_params[:item_type]
+    transaction.purchase_currency = currency
+    transaction.purchase_price = price
+    transaction.extra = data
+
+    transaction.save
+  end
+
+  def build_trx_cancelled_response(data, tx_ref)
+    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: :transaction_status_cancelled, buyer: current_user)
+    transaction.extra = data
+
+    transaction.save
   end
 
   def save_card(card)
@@ -129,15 +164,16 @@ class TransactionsController < ApplicationController
       provider: "flutterwave",
     )
 
+    # Todo: Prevent saving the same card twice assuming the user loads the modal again
     new_card.save
   end
 
   def verify_transaction_params
-    params.permit(:transaction_id)
+    params.permit(:transaction_id, :transaction_ref)
   end
 
   def process_transaction_params
-    params.permit(:item_id, :item_type)
+    params.permit(:item_id, :item_type, :card_id)
   end
 
 end
