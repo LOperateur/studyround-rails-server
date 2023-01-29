@@ -74,7 +74,7 @@ class TransactionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to charge payment method on account, please contact customer care", status: 400)
     end
 
-    if response['status'] === "success"
+    if response['data']&.[]('status') === "successful"
       # Success! Confirm the customer's payment
       build_trx_success_response(response['data'], false)
     else
@@ -141,6 +141,7 @@ class TransactionsController < ApplicationController
     transaction.purchase_item_type = process_transaction_params[:item_type]
     transaction.purchase_currency = currency
     transaction.purchase_price = price
+    transaction.description = "User purchase transaction"
     transaction.extra = data
 
     transaction.save
@@ -149,7 +150,7 @@ class TransactionsController < ApplicationController
   def build_trx_response(data, tx_ref, status)
     transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: status, buyer: current_user)
     transaction.extra = data
-
+    transaction.description = "User purchase transaction"
     transaction.save
   end
 
