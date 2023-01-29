@@ -15,7 +15,7 @@ class TransactionsController < ApplicationController
       transactions = Transactions.new(flw)
       response = transactions.verify_transaction verify_transaction_params[:transaction_id]
     rescue => error
-      build_trx_cancelled_response(error, verify_transaction_params[:transaction_ref])
+      build_trx_response(error, verify_transaction_params[:transaction_ref], :transaction_status_pending)
       raise Errors::BaseError.new(message: "Unable to verify this transaction", status: 400)
     end
 
@@ -26,7 +26,7 @@ class TransactionsController < ApplicationController
       # Inform the customer their payment was unsuccessful
       # Ideally this shouldn't be called even if the payment fails since flutterwave
       # won't dismiss the modal until success/cancel, but this serves as a check just in case
-      build_trx_cancelled_response(response, verify_transaction_params[:transaction_ref])
+      build_trx_response(response, verify_transaction_params[:transaction_ref], :transaction_status_cancelled)
       raise Errors::BaseError.new(message: "Payment not completed, please contact customer care", status: 400)
     end
   end
@@ -146,8 +146,8 @@ class TransactionsController < ApplicationController
     transaction.save
   end
 
-  def build_trx_cancelled_response(data, tx_ref)
-    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: :transaction_status_cancelled, buyer: current_user)
+  def build_trx_response(data, tx_ref, status)
+    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: status, buyer: current_user)
     transaction.extra = data
 
     transaction.save
