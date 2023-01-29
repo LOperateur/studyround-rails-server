@@ -13,6 +13,10 @@ class CreateTransactions < ActiveRecord::Migration[5.2]
       t.string :external_txn_id
       t.datetime :completed_at
       t.jsonb :extra
+      t.string :transaction_ref
+
+      t.timestamps
     end
+    add_index :transactions, :transaction_ref, unique: true
   end
 end

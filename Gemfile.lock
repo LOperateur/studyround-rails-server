@@ -108,8 +108,12 @@ GEM
       factory_bot (~> 6.2.0)
       railties (>= 5.0.0)
     ffi (1.13.1)
+    flutterwave_sdk (0.1.1)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
+    httparty (0.20.0)
+      mime-types (~> 3.0)
+      multi_xml (>= 0.5.2)
     i18n (1.8.5)
       concurrent-ruby (~> 1.0)
     io-like (0.3.1)
@@ -130,12 +134,16 @@ GEM
     marcel (0.3.3)
       mimemagic (~> 0.3.2)
     method_source (1.0.0)
+    mime-types (3.4.1)
+      mime-types-data (~> 3.2015)
+    mime-types-data (3.2022.0105)
     mimemagic (0.3.8)
       nokogiri (~> 1)
     mini_mime (1.0.2)
     mini_portile2 (2.4.0)
     minitest (5.14.1)
     msgpack (1.3.3)
+    multi_xml (0.6.0)
     nio4r (2.5.2)
     nokogiri (1.10.10)
       mini_portile2 (~> 2.4.0)
@@ -261,6 +269,8 @@ DEPENDENCIES
   coffee-rails (~> 4.2)
   digest-murmurhash
   factory_bot_rails
+  flutterwave_sdk
+  httparty
   jbuilder (~> 2.5)
   jwt
   listen (>= 3.0.5, < 3.2)
