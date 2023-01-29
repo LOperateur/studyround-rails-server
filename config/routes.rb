@@ -71,5 +71,5 @@ Rails.application.routes.draw do
   post '/transactions/verify', to: "transactions#verify"
   post '/transactions/process', to: "transactions#process_transaction"
 
-  get '/cards', to: "cards#index"
+  resources :cards, only: [:index, :destroy]
 end
