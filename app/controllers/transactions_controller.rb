@@ -19,7 +19,7 @@ class TransactionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to verify this transaction", status: 400)
     end
 
-    if response['data']['status'] === "successful"
+    if response['data']&.[]('status') === "successful"
       # Success! Confirm the customer's payment
       build_trx_success_response response['data']
     else
