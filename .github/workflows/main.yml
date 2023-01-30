@@ -22,7 +22,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: caleb42/u-learn-ruby-backend:${{ github.sha }}
+          tags: caleb42/u-learn-ruby-backend:${{ github.sha }},caleb42/u-learn-ruby-backend:latest
   deploy:
     runs-on: ubuntu-latest
     needs: build
