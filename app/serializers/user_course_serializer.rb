@@ -1,6 +1,6 @@
 # Course serializer showing some detailed information
 # on the course which can be presented to the general user base.
-class DetailedCourseSerializer < CourseSerializer
+class UserCourseSerializer < CourseSerializer
   type :course
   attributes :about, :review_count, :num_questions, :num_explanations, :test_expiration
 
