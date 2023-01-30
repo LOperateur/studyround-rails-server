@@ -5,7 +5,7 @@ class CoursesController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
-  before_action :load_course, only: [:show, :update, :publish, :destroy]
+  before_action :load_creators_course, only: [:update, :publish, :destroy]
 
   wrap_parameters format: []
 
@@ -15,7 +15,10 @@ class CoursesController < ApplicationController
   end
 
   def show
+    @course = Course.non_deleted_courses.find(params[:id])
+    
     if current_user.nil? || @course.creator != current_user
+      # Todo: Consider preventing access to suspended and closed courses
       render json: @course, root: :data, serializer: DetailedCourseSerializer
     else
       render json: @course, root: :data, serializer: FullCourseSerializer
@@ -226,6 +229,29 @@ class CoursesController < ApplicationController
     render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
   end
 
+  def purchase
+    # Todo: check if user has purchased it first
+
+    transactions_controller = TransactionsController.new
+    transactions_controller.request = request
+    transactions_controller.response = response
+
+    purchase_params = { item_id: params[:id], card_id: purchase_course_params[:card_id] }
+
+    @course = Course.published_active_courses.find(params[:id])
+    if @course.sale_status_paid?
+      purchase_params[:item_type] = :course
+    elsif @course.sale_status_explanations?
+      purchase_params[:item_type] = :explanations
+    else
+      raise Errors::BaseError.new(message: "There's nothing to purchase here", status: 400)
+    end
+
+    transactions_controller.params = purchase_params
+
+    render json: transactions_controller.process_transaction
+  end
+
   def purchased_courses
     course_transaction_ids = Transaction.select(:purchase_item_id)
                                         .where("buyer_id = ?", current_user.id)
@@ -264,10 +290,10 @@ class CoursesController < ApplicationController
 
   private
 
-  def load_course
+  def load_creators_course
     @course = Course.non_deleted_courses.find(params[:id])
     if @course.creator != current_user
-      Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
     end
   end
 
@@ -330,6 +356,10 @@ class CoursesController < ApplicationController
   def update_course_params
     params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
                   :about, :image, :image_url, :test_expiration, :instructions, :category_ids)
+  end
+
+  def purchase_course_params
+    params.permit(:card_id)
   end
 
 end

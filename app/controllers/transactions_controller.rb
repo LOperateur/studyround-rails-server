@@ -71,7 +71,7 @@ class TransactionsController < ApplicationController
       response = charge.tokenized_charge details.deep_stringify_keys
     rescue => error
       build_trx_error_response(error, tx_ref, currency, price)
-      raise Errors::BaseError.new(message: "Unable to charge payment method on account, please contact customer care", status: 400)
+      raise Errors::BaseError.new(message: "Unable to charge payment method, please contact customer care", status: 400)
     end
 
     if response['data']&.[]('status') === "successful"
@@ -130,7 +130,7 @@ class TransactionsController < ApplicationController
     end
 
     transaction.save!
-    render json: transaction, root: :data
+    render json: transaction, root: :data, status: :created
   end
 
   def build_trx_error_response(data, tx_ref, currency, price)

@@ -32,6 +32,7 @@ Rails.application.routes.draw do
   get '/courses/tests/purchased', to: "courses#purchased_tests"
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
+  post '/courses/:id/purchase', to: "courses#purchase"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
@@ -69,7 +70,7 @@ Rails.application.routes.draw do
 
   get '/transactions/initiate', to: "transactions#initiate"
   post '/transactions/verify', to: "transactions#verify"
-  post '/transactions/process', to: "transactions#process_transaction"
+  # post '/transactions/process', to: "transactions#process_transaction"
 
   resources :cards, only: [:index, :destroy]
 end
