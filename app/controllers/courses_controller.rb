@@ -3,7 +3,6 @@ class CoursesController < ApplicationController
   require 'action_view/helpers'
   include ActionView::Helpers::DateHelper
   include TestHelper
-  include TransactionHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
@@ -24,7 +23,7 @@ class CoursesController < ApplicationController
       end
 
       unlocked = if @course.sale_status_paid?
-                   has_user_purchased_item(current_user, @course)
+                   current_user.has_purchased_item(@course)
                  else
                    true
                  end
@@ -242,7 +241,7 @@ class CoursesController < ApplicationController
   def purchase
     @course = Course.published_active_courses.find(params[:id])
 
-    if has_user_purchased_item(current_user, @course)
+    if current_user.has_purchased_item(@course)
       raise Errors::BaseError.new(message: "You have already purchased this item", status: 400)
     end
 

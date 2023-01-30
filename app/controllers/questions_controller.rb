@@ -1,7 +1,6 @@
 class QuestionsController < ApplicationController
   include SessionHelper
   include TestHelper
-  include TransactionHelper
 
   before_action :load_creators_course, except: [:index, :explanation]
   before_action :load_question, only: [:show, :update, :publish, :destroy]
@@ -27,7 +26,7 @@ class QuestionsController < ApplicationController
     course = question.course
 
     if course.sale_status_explanations? && course.creator != current_user
-      if has_user_purchased_item(current_user, course)
+      if current_user.has_purchased_item(course)
         explanation = question.explanation
         explanation_image_url = question.generated_explanation_image_url
       else
