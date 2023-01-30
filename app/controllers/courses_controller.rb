@@ -17,12 +17,21 @@ class CoursesController < ApplicationController
 
   def show
     @course = Course.non_deleted_courses.find(params[:id])
-    
+
     if current_user.nil? || @course.creator != current_user
-      # Todo: Consider preventing access to suspended and closed courses
-      render json: @course, root: :data, serializer: DetailedCourseSerializer
+      if @course.course_status_suspended? || @course.course_status_closed?
+        raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is unavailable")
+      end
+
+      unlocked = if @course.sale_status_paid?
+                   has_user_purchased_item(current_user, @course)
+                 else
+                   true
+                 end
+
+      render json: { data: @course.serialized_user_facing_course[:course].merge(unlocked: unlocked) }
     else
-      render json: @course, root: :data, serializer: FullCourseSerializer
+      render json: { data: @course.serialized_creators_course[:course].merge(unlocked: true) }
     end
   end
 
@@ -35,7 +44,7 @@ class CoursesController < ApplicationController
     rescue ActiveRecord::RecordInvalid
       raise Errors::InvalidError.new(course.errors.to_h)
     end
-    render json: course, root: :data, serializer: FullCourseSerializer
+    render json: course, root: :data, serializer: CreatorCourseSerializer
   end
 
   def update
@@ -66,7 +75,7 @@ class CoursesController < ApplicationController
 
     begin
       @course.save!
-      render json: @course, root: :data, serializer: FullCourseSerializer
+      render json: @course, root: :data, serializer: CreatorCourseSerializer
     rescue ActiveRecord::RecordInvalid
       raise Errors::InvalidError.new(@course.errors.to_h)
     end
@@ -87,7 +96,7 @@ class CoursesController < ApplicationController
     end
 
     render json: @course, root: :data, meta: { message: "Published successfully" },
-           serializer: FullCourseSerializer
+           serializer: CreatorCourseSerializer
   end
 
   def destroy

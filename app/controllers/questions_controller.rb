@@ -26,7 +26,7 @@ class QuestionsController < ApplicationController
     question = Question.find(params[:question_id])
     course = question.course
 
-    if course.sale_status_explanations?
+    if course.sale_status_explanations? && course.creator != current_user
       if has_user_purchased_item(current_user, course)
         explanation = question.explanation
         explanation_image_url = question.generated_explanation_image_url
