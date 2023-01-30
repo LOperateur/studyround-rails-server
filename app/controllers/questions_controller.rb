@@ -1,14 +1,18 @@
 class QuestionsController < ApplicationController
   include SessionHelper
   include TestHelper
+  include TransactionHelper
 
-  before_action :load_course_and_verify, except: [:index, :explanation]
+  before_action :load_creators_course, except: [:index, :explanation]
   before_action :load_question, only: [:show, :update, :publish, :destroy]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
   wrap_parameters format: []
 
   def index
+    # Not using non_deleted_courses here due to the possibility
+    # of a creator deleting a course while a user is taking its session.
+    # Todo: Reconsider this later
     @course = Course.find(params[:course_id])
 
     if @course.test?
@@ -20,11 +24,26 @@ class QuestionsController < ApplicationController
 
   def explanation
     question = Question.find(params[:question_id])
+    course = question.course
+
+    if course.sale_status_explanations?
+      if has_user_purchased_item(current_user, course)
+        explanation = question.explanation
+        explanation_image_url = question.generated_explanation_image_url
+      else
+        explanation = "Please purchase these explanations to view them."
+        explanation_image_url = nil
+      end
+    else
+      explanation = question.explanation
+      explanation_image_url = question.generated_explanation_image_url
+    end
+
     render json: {
       data: {
         question_id: question.id,
-        explanation: question.explanation,
-        explanation_image_url: question.generated_explanation_image_url,
+        explanation: explanation,
+        explanation_image_url: explanation_image_url,
       }
     }
   end
@@ -168,10 +187,10 @@ class QuestionsController < ApplicationController
 
   private
 
-  def load_course_and_verify
-    @course = Course.find(params[:course_id])
+  def load_creators_course
+    @course = Course.non_deleted_courses.find(params[:course_id])
     if @course.creator != current_user
-      Errors::ForbiddenError.new(message: "You don't have the authority to manage questions in this course.")
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage questions in this course.")
     end
   end
 

@@ -3,6 +3,7 @@ class CoursesController < ApplicationController
   require 'action_view/helpers'
   include ActionView::Helpers::DateHelper
   include TestHelper
+  include TransactionHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
@@ -230,7 +231,11 @@ class CoursesController < ApplicationController
   end
 
   def purchase
-    # Todo: check if user has purchased it first
+    @course = Course.published_active_courses.find(params[:id])
+
+    if has_user_purchased_item(current_user, @course)
+      raise Errors::BaseError.new(message: "You have already purchased this item", status: 400)
+    end
 
     transactions_controller = TransactionsController.new
     transactions_controller.request = request
@@ -238,7 +243,6 @@ class CoursesController < ApplicationController
 
     purchase_params = { item_id: params[:id], card_id: purchase_course_params[:card_id] }
 
-    @course = Course.published_active_courses.find(params[:id])
     if @course.sale_status_paid?
       purchase_params[:item_type] = :course
     elsif @course.sale_status_explanations?
