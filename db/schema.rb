@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_23_214946) do
+ActiveRecord::Schema.define(version: 2023_01_23_105023) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -80,6 +80,22 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
     t.integer "rating_count"
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
+  end
+
+  create_table "financial_cards", force: :cascade do |t|
+    t.string "country"
+    t.string "expiry"
+    t.string "first_six"
+    t.string "issuer"
+    t.string "last_four"
+    t.string "card_type"
+    t.string "token"
+    t.string "provider"
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token"], name: "index_financial_cards_on_token", unique: true
+    t.index ["user_id"], name: "index_financial_cards_on_user_id"
   end
 
   create_table "interests", force: :cascade do |t|
@@ -190,7 +206,6 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
 
   create_table "transactions", force: :cascade do |t|
     t.bigint "buyer_id"
-    t.bigint "seller_id"
     t.bigint "purchase_item_id"
     t.integer "purchase_item_type"
     t.string "purchase_currency"
@@ -201,8 +216,11 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
     t.string "external_txn_id"
     t.datetime "completed_at"
     t.jsonb "extra"
+    t.string "transaction_ref"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
-    t.index ["seller_id"], name: "index_transactions_on_seller_id"
+    t.index ["transaction_ref"], name: "index_transactions_on_transaction_ref", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -232,6 +250,7 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
   add_foreign_key "courses", "users", column: "creator_id"
+  add_foreign_key "financial_cards", "users"
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
   add_foreign_key "notifications", "users"
@@ -244,5 +263,4 @@ ActiveRecord::Schema.define(version: 2022_11_23_214946) do
   add_foreign_key "sessions", "courses"
   add_foreign_key "sessions", "users"
   add_foreign_key "transactions", "users", column: "buyer_id"
-  add_foreign_key "transactions", "users", column: "seller_id"
 end

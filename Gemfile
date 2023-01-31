@@ -33,6 +33,10 @@ gem 'will_paginate', '~> 3.3'
 # Serializing responses
 gem 'active_model_serializers', '~> 0.10.0'
 
+# Handling payments
+gem 'flutterwave_sdk'
+gem 'httparty'
+
 # Use ActiveStorage variant
 # gem 'mini_magick', '~> 4.8'
 

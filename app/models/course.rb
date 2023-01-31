@@ -45,6 +45,16 @@ class Course < ApplicationRecord
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
   end
 
+  # Used to serialize the user-facing course model on the go without having to render
+  def serialized_user_facing_course
+    ActiveModelSerializers::SerializableResource.new(self, serializer: UserCourseSerializer).as_json
+  end
+
+  # Used to serialize the creator-facing course model on the go without having to render
+  def serialized_creators_course
+    ActiveModelSerializers::SerializableResource.new(self, serializer: CreatorCourseSerializer).as_json
+  end
+
   def generated_image_url
     begin
       path = rails_blob_path(self.image, only_path: true)

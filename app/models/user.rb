@@ -12,13 +12,13 @@ class User < ApplicationRecord
   has_one :refresh_token, dependent: :destroy
   has_many :courses, dependent: :destroy, class_name: "Course", foreign_key: :creator_id
   has_many :transactions, class_name: "Transaction", foreign_key: :buyer_id
-  has_many :transactions, class_name: "Transaction", foreign_key: :seller_id
   has_many :interests, dependent: :destroy
   has_many :categories, through: :interests
   has_many :results
   has_many :reviews
   has_many :sessions
   has_many :notifications
+  has_many :financial_cards
   has_one_attached :profile_image
 
   def downcase_fields
@@ -38,6 +38,14 @@ class User < ApplicationRecord
       return ActionController::Base.helpers.asset_path(path)
     rescue
       nil
+    end
+  end
+
+  def has_purchased_item(item)
+    if item.is_a? Course
+      Transaction.where(buyer_id: self.id, purchase_item_id: item.id).any?
+    else
+      false
     end
   end
 end
