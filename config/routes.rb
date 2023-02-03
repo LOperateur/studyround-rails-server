@@ -70,7 +70,7 @@ Rails.application.routes.draw do
 
   get '/transactions/initiate', to: "transactions#initiate"
   post '/transactions/verify', to: "transactions#verify"
-  # post '/transactions/process', to: "transactions#process_transaction"
+  post '/transactions/process', to: "transactions#process_transaction"
 
   resources :cards, only: [:index, :destroy]
 end
