@@ -43,7 +43,7 @@ class User < ApplicationRecord
 
   def has_purchased_item(item)
     if item.is_a? Course
-      Transaction.where(buyer_id: self.id, purchase_item_id: item.id).any?
+      item.creator_id == self.id || Transaction.where(buyer_id: self.id, purchase_item_id: item.id).any?
     else
       false
     end
