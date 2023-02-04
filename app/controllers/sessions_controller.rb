@@ -14,6 +14,12 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
 
+    if @course.sale_status_paid?
+      if current_user.nil? || !current_user.has_purchased_item(@course)
+        raise Errors::ForbiddenError.new(message: "Please purchase this course before using it")
+      end
+    end
+
     session_type = session_type(start_course_session_params[:session_type])
 
     case session_type
@@ -118,6 +124,10 @@ class SessionsController < ApplicationController
   def start_test
     if !@course.test?
       raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
+    end
+
+    if @course.sale_status_paid? && !current_user.has_purchased_item(@course)
+      raise Errors::ForbiddenError.new(message: "Please purchase this test before using it")
     end
 
     session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
