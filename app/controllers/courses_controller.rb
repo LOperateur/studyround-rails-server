@@ -17,20 +17,25 @@ class CoursesController < ApplicationController
   def show
     @course = Course.non_deleted_courses.find(params[:id])
 
+    # Track the purchase of items available for sale in this course
+    purchase_status = { }
+
+    if @course.sale_status_paid?
+      purchase_status[:sale_status_paid] = current_user.present? && current_user.has_purchased_item(@course)
+    end
+
+    if @course.sale_status_explanations?
+      purchase_status[:sale_status_explanations] = current_user.present? && current_user.has_purchased_item(@course)
+    end
+
     if current_user.nil? || @course.creator != current_user
       if @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is unavailable")
       end
 
-      unlocked = if @course.sale_status_paid?
-                   current_user.has_purchased_item(@course)
-                 else
-                   true
-                 end
-
-      render json: { data: @course.serialized_user_facing_course[:course].merge(unlocked: unlocked) }
+      render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status) }
     else
-      render json: { data: @course.serialized_creators_course[:course].merge(unlocked: true) }
+      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status) }
     end
   end
 
