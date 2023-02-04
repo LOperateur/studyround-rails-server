@@ -86,10 +86,15 @@ class TransactionsController < ApplicationController
   private
 
   def generate_transaction_ref
-    loop do
-      ref = SecureRandom.hex(10)
-      break ref if !Transaction.exists?(transaction_ref: ref)
-    end
+    email = current_user.email
+    timestamp = Time.now.strftime('%s%L')
+
+    input = "#{email}:#{timestamp}"
+
+    hash = Digest::MurmurHash64A.rawdigest(input) # Returns an integer
+    rnd = Random.new(hash) # Use that integer to seed a new random string
+
+    "ul_flw_#{rnd.hex(10).first(16)}#{timestamp.last(4)}"
   end
 
   def build_trx_success_response(data, save_card = true)
