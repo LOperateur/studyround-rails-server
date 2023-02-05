@@ -71,11 +71,11 @@ class Course < ApplicationRecord
     is_closeable = closing_time < Time.now
 
     if is_closeable
-      TestMailer.with(email: self.creator.email).close_test_email.deliver_later
+      TestMailer.with(email: self.creator.email, title: self.title,).close_test_email.deliver_later
     else
       time_left = closing_time - Time.now
-      TestMailer.with(email: self.creator.email, time_left: time_left).expired_test_email.deliver_later
-      TestMailer.with(email: self.creator.email).close_test_email.deliver_later(wait: (time_left).seconds)
+      TestMailer.with(email: self.creator.email, title: self.title, time_left: time_left).expired_test_email.deliver_later
+      TestMailer.with(email: self.creator.email, title: self.title,).close_test_email.deliver_later(wait: (time_left).seconds)
     end
   end
 

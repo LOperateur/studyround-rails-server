@@ -2,16 +2,93 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>U-Learn Test Expiry Notification!</title>
   <style>
-      /* Email styles need to be inline */
+      body {
+          background-color: #ff8051;
+          font-family: 'Open Sans', sans-serif;
+          margin: 0;
+      }
+
+      table {
+          background-color: white;
+          border-radius: 10px;
+          box-shadow: 0px 0px 10px 0px lightgray;
+          margin: 50px auto;
+          display: table;
+          width: 600px;
+          height: 100%;
+      }
+
+      h1 {
+          margin: 0;
+      }
+
+      a {
+          border-radius: 20px;
+          transition: all 0.3s ease-in-out;
+      }
+
+      a:hover {
+          background-color: #333;
+          color: white;
+          cursor: pointer;
+      }
   </style>
 </head>
-
 <body>
-  <h4>U-Learn test expiry notification.</h4>
-  <p>
-    Your test will expire in: <br>
-    <h3><%= @time_left %> seconds</h3>
-  </p>
+<table>
+  <tr>
+    <td style="padding: 20px; width: 100px; height: 100px; ">
+      <img src="https://ulearn-bucket.s3.amazonaws.com/assets/logo.png" alt="U-learn Logo" width="100" height="100">
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 20px 20px 0 20px;">
+      <h1 style="font-size: 24px; color: #333; text-align: center;">'<%= @title %>' is Expired!</h1>
+      <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
+        Your test, '<%= @title %>' has expired and new candidates would be unable to take it.<br/>
+        We're currently waiting for other users to finish their sessions, after which we will allow you close it.
+      </p>
+      <p style="text-align: center;">
+        You should be able to close it in:
+      </p>
+      <p style="font-size: 60px; color: #333; text-align: center;">
+        <strong><span id="timer">00:00:00</span></strong>
+      </p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 0 20px 20px 20px;">
+      <p style="text-align: center;">
+        <a href="#" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">View Test</a>
+      </p>
+    </td>
+  </tr>
+</table>
+<script>
+    function convertToTimeFormat(totalSeconds) {
+        let hours = Math.floor(totalSeconds / 3600);
+        totalSeconds %= 3600;
+        let minutes = Math.floor(totalSeconds / 60);
+        let seconds = totalSeconds % 60;
+
+        hours = (hours < 10) ? '0' + hours : hours;
+        minutes = (minutes < 10) ? '0' + minutes : minutes;
+        seconds = (seconds < 10) ? '0' + seconds : seconds;
+
+        return `${hours}:${minutes}:${seconds}`;
+    }
+
+    let count = 60;// <%=@time_left%>;
+    const timer = document.querySelector('#timer');
+    interval = setInterval(() => {
+        count--;
+        timer.innerHTML = convertToTimeFormat(count);
+        if (count === 0) {
+            clearInterval(interval);
+        }
+    }, 1000);
+</script>
 </body>
 </html>
