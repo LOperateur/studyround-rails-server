@@ -310,7 +310,7 @@ module TestHelper
   def get_time_left(total_time)
     if is_user_resuming
       # to_time (or Time.now) is more compatible when calculating with DB's ActiveSupport::TimeWithZone
-      time_left = @current_session.created_at + (@current_session.duration).seconds - DateTime.now.to_time
+      time_left = @current_session.created_at + (@current_session.duration).seconds - Time.now
     else
       # If session does not exist, use total_time instead
       time_left = total_time
@@ -357,13 +357,15 @@ module TestHelper
   # Check if the test has expired
   # The user cannot start an expired but can resume one
   def is_expired(expiration)
-    expired = DateTime.now > expiration
+    expired = Time.now > expiration
 
     # If the time indicates it's expired but the course doesn't
     # have an expired or closed status, then expire the course.
     if expired && !(@course.course_status_expired? || @course.course_status_closed?)
-      # TODO: Also send a notification to the creator
       @course.course_status_expired!
+
+      # Handle email notifications
+      @course.send_test_status_emails
     end
 
     return expired
