@@ -208,7 +208,7 @@ class CoursesController < ApplicationController
     end
 
     # Submit all remaining sessions
-    # CourseSessionSubmissionJob.perform_now(course)
+    # Alternative?: CourseSessionSubmissionJob.perform_later(course)
     course.sessions.each do |session|
       begin
         get_end_test_result(session.user, session.course)
@@ -219,6 +219,9 @@ class CoursesController < ApplicationController
 
     # Close the test
     course.course_status_closed!
+
+    # Send an email to all test-takers
+    TestResultsEmailSendJob.perform_later(course)
 
     render json: {}, status: :ok
   end
