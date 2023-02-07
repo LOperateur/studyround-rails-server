@@ -218,7 +218,11 @@ class CoursesController < ApplicationController
     end
 
     # Close the test
-    course.course_status_closed!
+    begin
+      course.course_status_closed!
+    rescue ActiveRecord::RecordInvalid
+      raise Errors::InvalidError.new(course.errors.to_h)
+    end
 
     # Send an email to all test-takers
     TestResultsEmailSendJob.perform_later(course)
