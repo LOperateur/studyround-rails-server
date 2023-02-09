@@ -5,7 +5,7 @@
   <title>U-Learn Test Expiry Notification!</title>
   <style>
       body {
-          background-color: #ff8051;
+          background-color: rgba(255, 128, 81, 0.2);
           font-family: 'Open Sans', sans-serif;
           margin: 0;
       }
@@ -14,10 +14,19 @@
           background-color: white;
           border-radius: 10px;
           box-shadow: 0px 0px 10px 0px lightgray;
-          margin: 50px auto;
+          margin: auto auto;
           display: table;
-          width: 600px;
+          width: 580px;
           height: 100%;
+          padding: 10px 10px 10px 10px;
+      }
+
+      .content {
+          display: block;
+          margin: 50px auto !important;
+          /* makes it centered */
+          max-width: 600px;
+          width: 100%;
       }
 
       h1 {
@@ -37,35 +46,41 @@
   </style>
 </head>
 <body>
-<table>
-  <tr>
-    <td style="padding: 20px; width: 100px; height: 100px; ">
-      <img src="https://ulearn-bucket.s3.amazonaws.com/assets/logo.png" alt="U-learn Logo" width="100" height="100">
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 20px 20px 0 20px;">
-      <h1 style="font-size: 24px; color: #333; text-align: center;">'<%= @title %>' is Expired!</h1>
-      <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
-        Your test, '<%= @title %>' has expired and new candidates would be unable to take it.<br/>
-        We're currently waiting for other users to finish their sessions, after which we will allow you close it.
-      </p>
-      <p style="text-align: center;">
-        You should be able to close it in:
-      </p>
-      <p style="font-size: 60px; color: #333; text-align: center;">
-        <strong><span id="timer">00:00:00</span></strong>
-      </p>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 0 20px 20px 20px;">
-      <p style="text-align: center;">
-        <a href="<%=ENV['HOST_URL']%>/tests/<%= @course_id %>/submissions" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">View Test</a>
-      </p>
-    </td>
-  </tr>
-</table>
+<div class="content">
+  <table>
+    <tr>
+      <td style="padding: 20px; width: 100px; height: 100px; ">
+        <img src="https://ulearn-bucket.s3.amazonaws.com/assets/logo.png" alt="U-learn Logo" width="100" height="100">
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 20px 0 20px;">
+        <h1 style="font-size: 24px; color: #333; text-align: center;">'<%= @title %>' is Expired!</h1>
+        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
+          Your test, '<%= @title %>' has expired and new candidates would be unable to take it.<br/>
+          We're currently waiting for other users to finish their sessions, after which we will allow you close it.
+        </p>
+        <p style="font-size: 16px; text-align: center;">
+          You should be able to close it in:
+        </p>
+        <p style="font-size: 60px; color: #333; text-align: center;">
+          <strong><span id="timer">00:00:00</span></strong>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 20px 20px 20px;">
+        <p style="text-align: center;">
+          <a href="<%= ENV['HOST_URL'] %>/tests/<%= @course_id %>/submissions" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">View
+            Test</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>
+<p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px; text-align: center">
+  Copyright © 2023 L'Operateur Ltd. Nigeria
+</p>
 <script>
     function convertToTimeFormat(totalSeconds) {
         let hours = Math.floor(totalSeconds / 3600);
@@ -80,7 +95,7 @@
         return `${hours}:${minutes}:${seconds}`;
     }
 
-    let count = 60;// <%=@time_left%>;
+    let count = <%=@time_left%>;
     const timer = document.querySelector('#timer');
     interval = setInterval(() => {
         count--;
