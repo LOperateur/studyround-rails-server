@@ -63,4 +63,35 @@ class Course < ApplicationRecord
       nil
     end
   end
+
+  def send_test_status_emails
+    expiration = self.test_expiration
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
+    closing_time = expiration + (self.instructions['time']).seconds + lag_time
+    is_closeable = closing_time < Time.now
+
+    if is_closeable
+      TestMailer.with(
+        email: self.creator.email,
+        title: self.title,
+        course_id: self.id,
+      ).close_test_email.deliver_later
+    else
+      time_left = closing_time - Time.now
+
+      TestMailer.with(
+        email: self.creator.email,
+        title: self.title,
+        course_id: self.id,
+        closing_time: "#{closing_time.to_formatted_s(:long_ordinal)} GMT",
+      ).expired_test_email.deliver_later
+
+      TestMailer.with(
+        email: self.creator.email,
+        title: self.title,
+        course_id: self.id,
+      ).close_test_email.deliver_later(wait: (time_left).seconds)
+    end
+  end
+
 end

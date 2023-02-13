@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <title>U-Learn Verification Email</title>
+  <title>U-Learn Test Expiry Notification!</title>
   <style>
       body {
           background-color: rgba(255, 128, 81, 0.2);
@@ -55,16 +54,22 @@
       </td>
     </tr>
     <tr>
-      <td class="container" style="padding: 20px 20px 0 20px;">
-        <h1 style="font-size: 24px; color: #333; text-align: center;">Email OTP Verification</h1>
-        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px; text-align: center">
-          Verify your email <%= @email %>, for U-Learn.
+      <td style="padding: 20px 20px 0 20px;">
+        <h1 style="font-size: 24px; color: #333; text-align: center;"><%= @title %> is Expired!</h1>
+        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
+          Your test, '<%= @title %>' has expired and new candidates would be unable to take it.<br/>
+          We're currently waiting for other users to finish their sessions, after which we will allow you close it.
         </p>
         <p style="font-size: 16px; text-align: center;">
-          Your otp is:
+          You should be able to close it by <strong><%= @closing_time %></strong>.
         </p>
-        <p style="font-size: 48px; color: #333; text-align: center;">
-          <strong><%= @otp %></strong>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 20px 20px 20px;">
+        <p style="text-align: center;">
+          <a href="<%= ENV['HOST_URL'] %>/tests/<%= @course_id %>/submissions" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">View
+            Test</a>
         </p>
       </td>
     </tr>

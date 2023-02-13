@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <title>U-Learn Verification Email</title>
+  <title>U-Learn Test Close Notification!</title>
   <style>
       body {
           background-color: rgba(255, 128, 81, 0.2);
@@ -55,23 +54,24 @@
       </td>
     </tr>
     <tr>
-      <td class="container" style="padding: 20px 20px 0 20px;">
-        <h1 style="font-size: 24px; color: #333; text-align: center;">Email OTP Verification</h1>
-        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px; text-align: center">
-          Verify your email <%= @email %>, for U-Learn.
+      <td style="padding: 20px 20px 0 20px;">
+        <h1 style="font-size: 24px; color: #333; text-align: center;"><%= @title %> can now be Closed!</h1>
+        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px; text-align: center;">
+          Your test, '<%= @title %>' is done and you can now close it.
         </p>
-        <p style="font-size: 16px; text-align: center;">
-          Your otp is:
-        </p>
-        <p style="font-size: 48px; color: #333; text-align: center;">
-          <strong><%= @otp %></strong>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 20px 20px 20px;">
+        <p style="text-align: center;">
+          <a href="<%= ENV['HOST_URL'] %>/tests/<%= @course_id %>/submissions" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">View Test</a>
         </p>
       </td>
     </tr>
   </table>
+  <p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px; text-align: center">
+    Copyright © 2023 L'Operateur Ltd. Nigeria
+  </p>
 </div>
-<p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px; text-align: center">
-  Copyright © 2023 L'Operateur Ltd. Nigeria
-</p>
 </body>
 </html>

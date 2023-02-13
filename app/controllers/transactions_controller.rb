@@ -160,6 +160,11 @@ class TransactionsController < ApplicationController
   end
 
   def save_card(card)
+    if card['token'].nil? || card['token'].blank?
+      # Don't save cards without the token
+      return
+    end
+
     new_card = current_user.financial_cards.build(
       country: card['country'],
       expiry: card['expiry'],
@@ -171,9 +176,9 @@ class TransactionsController < ApplicationController
       provider: "flutterwave",
     )
 
-    # Prevent saving the same card twice assuming the user loads the modal again
+    # Prevent saving the same card twice for a user assuming they load the modal again
     if !FinancialCard.exists?(token: new_card.token) &&
-      FinancialCard.where(first_six: new_card.first_six, last_four: new_card.last_four).empty?
+      FinancialCard.where(first_six: new_card.first_six, last_four: new_card.last_four, user_id: current_user.id).empty?
       new_card.save
     end
   end
