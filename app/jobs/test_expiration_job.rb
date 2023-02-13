@@ -7,8 +7,10 @@ class TestExpirationJob < ApplicationJob
     expired_tests.each do |test|
       begin
         # Expire all these tests that their expiration dates have passed
-        # TODO: Also send a notification to the creator
         test.course_status_expired!
+
+        # Handle email notifications
+        test.send_test_status_emails
       rescue
         # TODO: Report this
       end

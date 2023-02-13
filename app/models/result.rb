@@ -22,4 +22,13 @@ class Result < ApplicationRecord
   def serialized_result
     ActiveModelSerializers::SerializableResource.new(self, serializer: SessionResultSerializer).as_json
   end
+
+  def send_test_completion_email
+    TestMailer.with(
+      email: self.user.email,
+      title: self.course.title,
+      score: "#{self.score}/#{self.total}",
+      result_id: self.id,
+    ).test_results_email.deliver_later
+  end
 end
