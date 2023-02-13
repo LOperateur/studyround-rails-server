@@ -5,7 +5,7 @@ class TestMailer < ApplicationMailer
     @email = params[:email]
     @title = params[:title]
     @course_id = params[:course_id]
-    @time_left = params[:time_left]
+    @closing_time = params[:closing_time]
     mail(to: @email, subject: 'Your U-Learn Test is expired.')
   end
 

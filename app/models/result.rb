@@ -26,7 +26,7 @@ class Result < ApplicationRecord
   def send_test_completion_email
     TestMailer.with(
       email: self.user.email,
-      title: self.title,
+      title: self.course.title,
       score: "#{self.score}/#{self.total}",
       result_id: self.id,
     ).test_results_email.deliver_later

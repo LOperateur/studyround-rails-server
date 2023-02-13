@@ -55,16 +55,13 @@
     </tr>
     <tr>
       <td style="padding: 20px 20px 0 20px;">
-        <h1 style="font-size: 24px; color: #333; text-align: center;">'<%= @title %>' is Expired!</h1>
+        <h1 style="font-size: 24px; color: #333; text-align: center;"><%= @title %> is Expired!</h1>
         <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
           Your test, '<%= @title %>' has expired and new candidates would be unable to take it.<br/>
           We're currently waiting for other users to finish their sessions, after which we will allow you close it.
         </p>
         <p style="font-size: 16px; text-align: center;">
-          You should be able to close it in:
-        </p>
-        <p style="font-size: 60px; color: #333; text-align: center;">
-          <strong><span id="timer">00:00:00</span></strong>
+          You should be able to close it by <strong><%= @closing_time %></strong>.
         </p>
       </td>
     </tr>
@@ -81,29 +78,5 @@
 <p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px; text-align: center">
   Copyright © 2023 L'Operateur Ltd. Nigeria
 </p>
-<script>
-    function convertToTimeFormat(totalSeconds) {
-        let hours = Math.floor(totalSeconds / 3600);
-        totalSeconds %= 3600;
-        let minutes = Math.floor(totalSeconds / 60);
-        let seconds = totalSeconds % 60;
-
-        hours = (hours < 10) ? '0' + hours : hours;
-        minutes = (minutes < 10) ? '0' + minutes : minutes;
-        seconds = (seconds < 10) ? '0' + seconds : seconds;
-
-        return `${hours}:${minutes}:${seconds}`;
-    }
-
-    let count = <%=@time_left%>;
-    const timer = document.querySelector('#timer');
-    interval = setInterval(() => {
-        count--;
-        timer.innerHTML = convertToTimeFormat(count);
-        if (count === 0) {
-            clearInterval(interval);
-        }
-    }, 1000);
-</script>
 </body>
 </html>

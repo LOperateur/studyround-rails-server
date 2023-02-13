@@ -83,7 +83,7 @@ class Course < ApplicationRecord
         email: self.creator.email,
         title: self.title,
         course_id: self.id,
-        time_left: time_left,
+        closing_time: "#{closing_time.to_formatted_s(:long_ordinal)} GMT",
       ).expired_test_email.deliver_later
 
       TestMailer.with(
