@@ -36,4 +36,4 @@ jobs:
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
           workflow_file_name: staging.yml
           ref: staging
-          client_payload: '{"triggered": "true", "tag": "caleb42/u-learn-ruby-backend:${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
+          client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
