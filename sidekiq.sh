@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 echo $JSON_VAR | jq -r 'to_entries[] | .key + ": \"" + (.value|tostring) + "\""' > "config/local_env.yml"
 
