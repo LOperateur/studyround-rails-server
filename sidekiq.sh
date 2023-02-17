@@ -1,5 +1,6 @@
-#! /bin/sh
+#!/bin/bash
 
-echo $JSON_VAR | jq -r 'to_entries[] | .key + ": \"" + (.value|tostring) + "\""' > "config/local_env.yml" && set -o allexport; . ./config/local_env.yml; set +o allexport
+echo $JSON_VAR | jq -r 'to_entries[] | .key + ": \"" + (.value|tostring) + "\""' > "config/local_env.yml"
 
 bundle exec sidekiq -c 5 -q default -q mailers -v
+
