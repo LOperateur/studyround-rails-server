@@ -64,8 +64,10 @@ Rails.application.routes.draw do
   get '/sessions/:id/verify', to: "sessions#verify_active_session"
 
   post '/sessions/:course_id/start', to: "sessions#start"
+  post '/sessions/:course_id/start-demo', to: "sessions#start_demo"
   post '/tests/:course_id/start', to: "sessions#start_test"
   post '/sessions/:course_id/end', to: "sessions#end"
+  post '/sessions/:course_id/end-demo', to: "sessions#end_demo"
   post '/tests/:course_id/end', to: "sessions#end_test"
   post '/tests/:course_id/complete', to: "courses#close_test"
   resources :sessions, only: [:update]
