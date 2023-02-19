@@ -1,6 +1,8 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
+  get 'guests/create'
+  get 'guests/update'
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
 
   mount Sidekiq::Web => '/sidekiq'
@@ -73,4 +75,8 @@ Rails.application.routes.draw do
   post '/transactions/process', to: "transactions#process_transaction"
 
   resources :cards, only: [:index, :destroy]
+
+  resources :guests, only: [:create] do
+    post '/invite', to: "guests#invite"
+  end
 end

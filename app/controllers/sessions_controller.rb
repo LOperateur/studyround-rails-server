@@ -2,7 +2,7 @@ class SessionsController < ApplicationController
   include SessionHelper
   include TestHelper
 
-  skip_before_action :authorize!, only: [:start]
+  skip_before_action :authorize!, only: [:start_demo, :end_demo]
   before_action :load_course, except: [:update, :verify_active_session]
 
   wrap_parameters format: []
@@ -15,7 +15,7 @@ class SessionsController < ApplicationController
     end
 
     if @course.sale_status_paid?
-      if current_user.nil? || !current_user.has_purchased_item(@course)
+      if !current_user.has_purchased_item(@course)
         raise Errors::ForbiddenError.new(message: "Please purchase this course before using it")
       end
     end
@@ -100,11 +100,69 @@ class SessionsController < ApplicationController
       begin
         result = Result.find_by!(session_key: session_key)
       rescue
-        raise Errors::BaseError.new(message: "Unable to obtain session", status: 404)
+        raise Errors::NotFoundError.new(message: "Unable to obtain session")
       end
     end
 
     render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+  end
+
+  def start_demo
+    if current_user
+      raise Errors::BaseError.new(message: "Logged in users cannot take a demo", status: 400)
+    end
+
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
+    end
+
+    if @course.sale_status_paid?
+      raise Errors::BaseError.new(message: "Invalid course type - paid tests not available for demo", status: 400)
+    end
+
+    # Solely for the purpose of this demo
+    start_course_session_params = {
+      session_type: :practice,
+      duration: 300,
+      questions: 10,
+    }
+
+    session, questions = create_course_based_session(start_course_session_params, @course, true)
+
+    # Converting to array to calculate the offset page data w.r.t num_questions
+    paginated_questions = paginate(questions.to_a)
+
+    render_session_data(session, paginated_questions, false)
+  end
+
+  def end_demo
+    if current_user
+      raise Errors::BaseError.new(message: "Logged in users cannot take a demo", status: 400)
+    end
+
+    if @course.test?
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
+    end
+
+    session_items_with_answers = end_course_session_params[:answers]
+
+    begin
+      score, total = mark(session_items_with_answers)
+    rescue
+      raise Errors::BaseError.new(message: "Unable to calculate result")
+    end
+
+    begin
+      session = Session.find_by(id: end_course_session_params[:session_id])
+      session.destroy
+    rescue
+      # Ignore
+    end
+
+    guest = Guest.find(end_course_session_params[:guest_id])
+    guest.update!(result: end_course_session_params[:answers])
+
+    render json: { guest_id: guest.id, score: "#{score}/#{total}"}, root: :data, status: :ok
   end
 
   # Tests
@@ -255,7 +313,7 @@ class SessionsController < ApplicationController
   end
 
   def end_course_session_params
-    params.permit(:session_type, :session_id, :questions,
+    params.permit(:session_type, :session_id, :questions, :guest_id,
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 
