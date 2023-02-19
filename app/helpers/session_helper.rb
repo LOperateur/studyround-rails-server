@@ -3,11 +3,12 @@ module SessionHelper
   # It never stores answers nor is it used to mark
   # It's sole purpose is to keep reference to the questions started with as
   # well as some other basic session data
-  def create_course_based_session(session_params, course, is_demo=false)
+  def create_course_based_session(session_params, course, user_id)
     num_questions = session_params[:questions]
     check_course_session_limits(num_questions)
 
     light_course_session = {
+      user_id: user_id,
       course: course,
       duration: session_params[:duration],
       session_type: session_type(session_params[:session_type]),
@@ -16,7 +17,8 @@ module SessionHelper
 
     session = Session.new(light_course_session)
 
-    if is_demo
+    if user_id.nil?
+      # Demo session
       # This gives an array of 20 questions of which the first 10 are selected just for guest demo purposes
       questions = course.questions.published_active_questions.limit(20).shuffle.first(num_questions)
     else

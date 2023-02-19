@@ -27,7 +27,7 @@ class SessionsController < ApplicationController
       session = course_based_session(@course)
       questions = @course.questions.published_active_questions.order(created_at: :asc)
     when :quiz, :practice
-      session, questions = create_course_based_session(start_course_session_params, @course)
+      session, questions = create_course_based_session(start_course_session_params, @course, current_user.id)
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -127,7 +127,7 @@ class SessionsController < ApplicationController
       questions: 10,
     }
 
-    session, questions = create_course_based_session(start_course_session_params, @course, true)
+    session, questions = create_course_based_session(start_course_session_params, @course, nil)
 
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a)
