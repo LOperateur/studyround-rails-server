@@ -9,8 +9,9 @@ class UserMailer < ApplicationMailer
 
   def demo_result_signup_email
     @email = params[:email]
+    @title = params[:title]
     @score = params[:score]
     @pass_token = params[:pass_token]
-    mail(to: @email, subject: 'Your U-learn Results!')
+    mail(to: @email, from: 'U-Learn Results <auth@myulearn.com>', subject: 'Your U-Learn Results!')
   end
 end

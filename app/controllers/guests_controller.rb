@@ -1,4 +1,6 @@
 class GuestsController < ApplicationController
+  skip_before_action :authorize!, only: [:create, :invite]
+
   wrap_parameters format: []
 
   def create
@@ -20,11 +22,11 @@ class GuestsController < ApplicationController
       raise Errors::InvalidError.new(guest.errors.to_h)
     end
 
-    render json: guest, status: :created
+    render json: guest, root: :data, status: :created
   end
 
   def invite
-    guest_id = params[:id]
+    guest_id = params[:guest_id]
     guest = Guest.find(guest_id)
 
     email = invite_guest_params[:email]
@@ -45,8 +47,18 @@ class GuestsController < ApplicationController
       raise Errors::InvalidError.new(guest.errors.to_h)
     end
 
+    course = Course.find(invite_guest_params[:course_id])
+
     pass_token = JsonWebToken.encode({ guest_id: guest_id }, 1.year.from_now)
-    UserMailer.with(email: email, score: score, pass_token: pass_token).demo_result_signup_email.deliver_later
+
+    UserMailer.with(
+      email: email,
+      score: score,
+      title: course.title,
+      pass_token: pass_token
+    ).demo_result_signup_email.deliver_later
+
+    render json: guest, root: :data, status: :created
   end
 
   private
@@ -56,6 +68,6 @@ class GuestsController < ApplicationController
   end
 
   def invite_guest_params
-    params.permit(:email, :score)
+    params.permit(:email, :score, :course_id)
   end
 end
