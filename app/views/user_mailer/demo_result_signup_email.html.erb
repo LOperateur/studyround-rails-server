@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <title>U-Learn Verification Email</title>
+  <title>Your U-Learn Results!</title>
   <style>
       body {
           background-color: rgba(255, 128, 81, 0.2);
@@ -56,15 +56,23 @@
     </tr>
     <tr>
       <td style="padding: 20px 20px 0 20px;">
-        <h1 style="font-size: 24px; color: #333; text-align: center;">Email OTP Verification</h1>
-        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px; text-align: center">
-          Verify your email <%= @email %>, for U-Learn.
+        <h1 style="font-size: 24px; color: #333; text-align: center;"><%= @title %> Results!</h1>
+        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 0 20px 0 20px;">
+          You just completed a demo session on U-Learn!.<br/>
+          Your score was:
         </p>
-        <p style="font-size: 16px; text-align: center;">
-          Your otp is:
+        <p style="font-size: 36px; color: #333; padding: 0 20px 0 20px;">
+          <strong><%= @score %></strong>
         </p>
-        <p style="font-size: 48px; color: #333; text-align: center;">
-          <strong><%= @otp %></strong>
+        <p style="font-size: 16px; text-align: center; padding: 0 20px 0 20px;">
+          Enjoyed that demo? Sign up for a U-Learn account to access even more content!
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 20px 20px 20px;">
+        <p style="text-align: center;">
+          <a href="<%= ENV['HOST_URL'] %>/complete-registration?pass_token=<%= @pass_token %>w" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">Sign Up</a>
         </p>
       </td>
     </tr>

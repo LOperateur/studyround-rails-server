@@ -1,6 +1,6 @@
-#! /bin/sh
+#!/bin/sh
 
-echo $JSON_VAR | jq -r 'to_entries[] | .key + ": \"" + (.value|tostring) + "\""' > "config/local_env.yml" && set -o allexport; . ./config/local_env.yml; set +o allexport
+echo $JSON_VAR | jq -r 'to_entries[] | .key + ": \"" + (.value|tostring) + "\""' > "config/local_env.yml"
 
 bundle exec rake db:migrate
 
@@ -9,4 +9,4 @@ if [[ $? -eq 0 ]] ; then
   bundle exec rails db:setup
 fi
 
-bundle exec puma -C config/puma.rb staging -b tcp://0.0.0.0:3000
+bundle exec puma -C config/puma.rb -b tcp://0.0.0.0:3000

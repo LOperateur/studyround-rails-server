@@ -100,17 +100,31 @@ class AuthController < ApplicationController
   end
 
   def signup
+    is_otp_auth = false
+
     # Decode the pass token and obtain the email from it
     begin
       pass_token = signup_params[:pass_token]
       decoded_token = JsonWebToken.decode(pass_token)
-      otp_object = Otp.find(decoded_token[:otp_id])
-      email = otp_object.user_identity
+
+      otp_object = Otp.find_by(id: decoded_token[:otp_id])
+      if otp_object
+        email = otp_object.user_identity
+        is_otp_auth = true
+      else
+        guest = Guest.find_by(id: decoded_token[:guest_id])
+        email = guest.email
+      end
+
+      if email.nil?
+        raise Errors::AuthenticationError.new(message: "Authentication has expired, please try signing up again", action: :signup)
+      end
+
     rescue
-      raise Errors::AuthenticationError.new(message: "Authentication has expired, please try signing up again")
+      raise Errors::AuthenticationError.new(message: "Authentication has expired, please try signing up again", action: :signup)
     end
 
-    unless otp_object.auth_type_verify_email?
+    if is_otp_auth && !otp_object.auth_type_verify_email?
       raise Errors::AuthenticationError.new(message: "Wrong authentication type")
     end
 
@@ -130,7 +144,9 @@ class AuthController < ApplicationController
     refresh_token = create_refresh_token(user)
 
     # Delete the OTP record
-    otp_object.delete
+    if is_otp_auth
+      otp_object.destroy
+    end
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
   end
