@@ -194,7 +194,7 @@ class SessionsController < ApplicationController
       guest.update!(result: result.as_json)
     end
 
-    render json: { guest_id: guest_id, score: "#{score}/#{total}" }, root: :data, status: :ok
+    render json: { guest_id: guest_id }, root: :data, status: :ok
   end
 
   # Tests
