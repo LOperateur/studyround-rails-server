@@ -19,10 +19,17 @@ jobs:
         run: |
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - name: Build Ulearn backend docker image
+        if: github.ref == 'refs/heads/staging'
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: caleb42/u-learn-ruby-backend:${{ github.sha }},caleb42/u-learn-ruby-backend:latest
+          tags: caleb42/u-learn-ruby-backend-staging:${{ github.sha }},caleb42/u-learn-ruby-backend-staging:latest
+      - name: Build Ulearn backend docker image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: caleb42/u-learn-ruby-backend-production:${{ github.sha }},caleb42/u-learn-ruby-backend-production:latest
   deploy:
     runs-on: ubuntu-latest
     needs: build
