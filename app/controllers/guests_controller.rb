@@ -30,7 +30,7 @@ class GuestsController < ApplicationController
     guest = Guest.find(guest_id)
 
     email = invite_guest_params[:email]
-    score = invite_guest_params[:score]
+    score = "#{guest.result['score']}/#{guest.result['total']}"
 
     # Still check if the provided email is a user
     if User.exists?(email: email)
@@ -47,7 +47,7 @@ class GuestsController < ApplicationController
       raise Errors::InvalidError.new(guest.errors.to_h)
     end
 
-    course = Course.find(invite_guest_params[:course_id])
+    course = Course.find(guest.result['course_id'])
 
     pass_token = JsonWebToken.encode({ guest_id: guest_id }, 1.year.from_now)
 
@@ -68,6 +68,6 @@ class GuestsController < ApplicationController
   end
 
   def invite_guest_params
-    params.permit(:email, :score, :course_id)
+    params.permit(:email)
   end
 end

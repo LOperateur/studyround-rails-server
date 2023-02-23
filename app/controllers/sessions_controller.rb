@@ -144,6 +144,10 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
 
+    # Solely for the purpose of this demo
+    session_type = :practice
+    num_questions = 10
+
     session_items_with_answers = end_course_session_params[:answers]
 
     begin
@@ -152,17 +156,45 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
 
-    begin
-      session = Session.find_by(id: end_course_session_params[:session_id])
-      session.destroy
-    rescue
-      # Ignore
+    guest_id = end_course_session_params[:guest_id]
+
+    if guest_id.nil?
+      raise Errors::BaseError.new(message: "Unknown guest user!", status: 400)
     end
 
-    guest = Guest.find(end_course_session_params[:guest_id])
-    guest.update!(result: end_course_session_params[:answers])
+    if end_course_session_params[:session_id].nil?
+      raise Errors::BaseError.new(message: "Unknown session!", status: 400)
+    end
 
-    render json: { guest_id: guest.id, score: "#{score}/#{total}"}, root: :data, status: :ok
+    session = Session.find_by(id: end_course_session_params[:session_id])
+
+    if session
+      duration = session.duration
+      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+
+      # Idempotency check
+      session_key = idempotent_session_key(guest_id, session.id, session_type)
+      result = Result.new(
+        course: @course,
+        score: score,
+        total: total,
+        duration: duration,
+        num_questions: num_questions,
+        elapsed_time: elapsed_time,
+        session_type: session_type,
+        session_key: session_key,
+        session_items: session_items_with_answers
+      )
+
+      # Delete the session
+      session.destroy
+
+      # Send the result to the guest
+      guest = Guest.find(guest_id)
+      guest.update!(result: result.as_json)
+    end
+
+    render json: { guest_id: guest_id }, root: :data, status: :ok
   end
 
   # Tests
