@@ -144,19 +144,30 @@ class AuthController < ApplicationController
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
-    # Include additional details for guest signup
-    if !is_otp_auth && guest.present?
-      if guest.result
-        result = Result.new(ActiveSupport::JSON.decode(guest.result.to_json))
-        result.user = user
-        result.save!
-      end
-      guest.destroy
-    end
-
     # Add extra information for OTP signup and delete the OTP record
     if is_otp_auth
+      AuthProvider.create!(
+        user: user,
+        auth_provider: :auth_provider_password,
+        metadata: { method: :otp },
+        )
       otp_object.destroy
+    else
+      # Include additional details for guest signup then destroy the stale guest record
+      if guest.present?
+        if guest.result
+          result = Result.new(ActiveSupport::JSON.decode(guest.result.to_json))
+          result.user = user
+          result.save!
+        end
+
+        AuthProvider.create!(
+          user: user,
+          auth_provider: :auth_provider_password,
+          metadata: { method: :result }
+        )
+        guest.destroy
+      end
     end
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }

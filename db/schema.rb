@@ -38,7 +38,7 @@ ActiveRecord::Schema.define(version: 2023_02_23_103000) do
 
   create_table "auth_providers", force: :cascade do |t|
     t.bigint "user_id"
-    t.integer "provider"
+    t.integer "auth_provider"
     t.jsonb "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

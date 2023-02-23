@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :auth_provider do
     user { nil }
-    provider { "" }
+    auth_provider { "" }
     metadata { "" }
   end
 end
