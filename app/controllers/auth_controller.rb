@@ -101,6 +101,7 @@ class AuthController < ApplicationController
 
   def signup
     is_otp_auth = false
+    guest = nil
 
     # Decode the pass token and obtain the email from it
     begin
@@ -143,9 +144,30 @@ class AuthController < ApplicationController
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
-    # Delete the OTP record
+    # Add extra information for OTP signup and delete the OTP record
     if is_otp_auth
+      AuthProvider.create!(
+        user: user,
+        auth_provider: :auth_provider_password,
+        metadata: { method: :otp },
+        )
       otp_object.destroy
+    else
+      # Include additional details for guest signup then destroy the stale guest record
+      if guest.present?
+        if guest.result
+          result = Result.new(ActiveSupport::JSON.decode(guest.result.to_json))
+          result.user = user
+          result.save!
+        end
+
+        AuthProvider.create!(
+          user: user,
+          auth_provider: :auth_provider_password,
+          metadata: { method: :result }
+        )
+        guest.destroy
+      end
     end
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
