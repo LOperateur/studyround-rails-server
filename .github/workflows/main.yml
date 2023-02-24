@@ -19,6 +19,7 @@ jobs:
         run: |
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - name: Build Ulearn backend docker image
+        if: github.ref == 'refs/heads/staging'
         uses: docker/build-push-action@v2
         with:
           push: true
@@ -35,6 +36,7 @@ jobs:
 
     steps:
       - name: Deploy App to AWS
+        if: github.ref == 'refs/heads/staging'
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
@@ -42,4 +44,14 @@ jobs:
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
           workflow_file_name: staging.yml
           ref: staging
+          client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
+      - name: Deploy App to AWS
+        if: github.ref == 'refs/heads/main'
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        with:
+          owner: LOperateur
+          repo: ulearn-nginx-proxy
+          github_token: ${{ secrets.G_ACCESS_TOKEN }}
+          workflow_file_name: staging.yml
+          ref: main
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
