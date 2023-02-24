@@ -58,7 +58,7 @@ class GuestsController < ApplicationController
       pass_token: pass_token
     ).demo_result_signup_email.deliver_later
 
-    render json: guest, root: :data, status: :created
+    render json: guest, root: :data, status: :ok
   end
 
   private

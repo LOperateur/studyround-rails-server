@@ -43,7 +43,12 @@ module ULearnserver
     end
 
     if Rails.env.production?
-      # TODO: Set rails config with required origin
+      config.middleware.insert_before 0, Rack::Cors do
+        allow do
+          origins "#{ENV['HOST_URL']}", "#{ENV['URL']}"
+          resource '*', :headers => :any, :methods => [:get, :post, :put, :patch, :delete, :options, :head]
+        end
+      end
     else
       config.middleware.insert_before 0, Rack::Cors do
         allow do
