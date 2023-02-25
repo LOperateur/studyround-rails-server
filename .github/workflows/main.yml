@@ -19,13 +19,13 @@ jobs:
         run: |
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - name: Build Ulearn backend docker image
-        if: ${{ github.base_ref == 'staging' }}
+        if: ${{ github.base_ref == 'staging' || github.ref == 'refs/heads/staging' }}
         uses: docker/build-push-action@v2
         with:
           push: true
           tags: caleb42/u-learn-ruby-backend-staging:${{ github.sha }},caleb42/u-learn-ruby-backend-staging:latest
       - name: Build Ulearn backend docker image
-        if: ${{ github.base_ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: docker/build-push-action@v2
         with:
           push: true
@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Deploy App to AWS
-        if: ${{ github.base_ref == 'staging' }}
+        if: ${{ github.base_ref == 'staging' || github.ref == 'refs/heads/staging' }}
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
@@ -46,7 +46,7 @@ jobs:
           ref: staging
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
       - name: Deploy App to AWS
-        if: ${{ github.base_ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
