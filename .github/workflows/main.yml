@@ -42,7 +42,7 @@ jobs:
           owner: LOperateur
           repo: ulearn-nginx-proxy
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
-          workflow_file_name: staging.yml
+          workflow_file_name: main.yml
           ref: staging
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
       - name: Deploy App to AWS
@@ -52,6 +52,6 @@ jobs:
           owner: LOperateur
           repo: ulearn-nginx-proxy
           github_token: ${{ secrets.G_ACCESS_TOKEN }}
-          workflow_file_name: staging.yml
+          workflow_file_name: main.yml
           ref: main
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "ulearn-backend", "queue": "sidekiq"}'
