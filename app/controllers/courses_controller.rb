@@ -4,7 +4,7 @@ class CoursesController < ApplicationController
   include ActionView::Helpers::DateHelper
   include TestHelper
 
-  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
 
   wrap_parameters format: []
@@ -147,9 +147,18 @@ class CoursesController < ApplicationController
   end
 
   def top_courses
-    # Todo: Consider using ratings instead of results for top courses
-    #  Then simply change this one to trending courses.
+    # Calculate Bayesian average rating for each course
+    if Course.any?
+      average_rating = Course.first.courses_average_rating
+      top_courses = Course.published_active_courses.sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(10)
+    else
+      top_courses = []
+    end
 
+    render json: top_courses, root: :data
+  end
+
+  def trending_courses
     # Firstly, get non-test, published course results created over the past 120 days
     # Passing in the "results." to avoid unambiguity due to the "joins" statement
     results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(1000)
@@ -243,10 +252,16 @@ class CoursesController < ApplicationController
   end
 
   def tests
-    # TODO: Use a formula between ratings and rating count before ordering
-    tests = Course.published_active_courses.where(test: true).order("rating desc nulls last")
+    # Calculate Bayesian average rating for each test
+    min = ENV["TOP_COURSE_MIN_RATING_COUNT"] || 1
 
-    paginated_tests = paginate(tests, params)
+    top_tests = Course.find_by_sql(
+      "SELECT *, ((rating * rating_count) + ((SELECT AVG(rating) FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false) * #{min})) / (rating_count + #{min}) AS weighted_rating
+      FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true
+      ORDER BY weighted_rating DESC NULLS LAST"
+    )
+
+    paginated_tests = paginate(top_tests, params)
     render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
   end
 
