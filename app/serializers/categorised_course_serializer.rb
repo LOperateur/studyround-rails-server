@@ -3,7 +3,7 @@ class CategorisedCourseSerializer < ActiveModel::Serializer
   attributes :id, :name
 
   has_many :courses do
-    min = ENV["TOP_COURSE_MIN_RATING_COUNT"] || 1
+    min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
     if Course.any?
       average_rating = Course.first.courses_average_rating
