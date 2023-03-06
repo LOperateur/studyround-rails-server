@@ -77,7 +77,7 @@ class Course < ApplicationRecord
 
     rating = self.rating # R
     rating_count = self.rating_count # v
-    minimum_required_rating_count = ENV["TOP_COURSE_MIN_RATING_COUNT"] || 1 # m
+    minimum_required_rating_count = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1 # m
     all_courses_average_rating = average # C
 
     weighted_rating = ((rating * rating_count) + (all_courses_average_rating * minimum_required_rating_count)) / (rating_count + minimum_required_rating_count)

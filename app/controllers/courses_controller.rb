@@ -148,7 +148,7 @@ class CoursesController < ApplicationController
 
   def top_courses
     # Calculate Bayesian average rating for each course
-    min = ENV["TOP_COURSE_MIN_RATING_COUNT"] || 1
+    min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
     if Course.any?
       average_rating = Course.first.courses_average_rating
@@ -263,7 +263,7 @@ class CoursesController < ApplicationController
 
   def tests
     # Calculate Bayesian average rating for each test
-    min = ENV["TOP_TEST_MIN_RATING_COUNT"] || 1
+    min = ENV["TOP_TEST_MIN_RATING_COUNT"].to_i || 1
     published_active_tests = "publish_status = 2 AND course_status = 1 AND private = false AND test = true"
 
     # Sql-only method
