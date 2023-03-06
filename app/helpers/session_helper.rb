@@ -5,13 +5,15 @@ module SessionHelper
   # well as some other basic session data
   def create_course_based_session(session_params, course, user_id)
     num_questions = session_params[:questions]
+    duration = session_params[:duration]
+    session_type = require_session_type(session_params[:session_type])
     check_course_session_limits(num_questions)
 
     light_course_session = {
       user_id: user_id,
       course: course,
-      duration: session_params[:duration],
-      session_type: session_type(session_params[:session_type]),
+      duration: duration,
+      session_type: session_type,
       session_items: [],
     }
 
@@ -39,16 +41,18 @@ module SessionHelper
 
     session.save!
 
-    return course_based_session(course, session.id), questions
+    return course_based_session(course, session_type, session.id, duration), questions
   end
 
-  def course_based_session(course, session_id = nil)
+  def course_based_session(course, session_type, session_id = nil, duration = 0)
     {
       # Remove the 0.xxxx decimal prefix
       id: session_id || SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
       current_question_number: 1,
       server_time: DateTime.now.utc,
       start_time: DateTime.now.utc,
+      duration: duration,
+      session_type: session_type,
       course_id: course.id,
       course_name: course.title,
       session_items: [],
@@ -57,7 +61,7 @@ module SessionHelper
 
   # Use a session_type string to get the permitted symbolized
   # session type based on the `course_session_types` array
-  def session_type(session_type)
+  def require_session_type(session_type)
     if session_type.nil? || !course_session_types.include?(session_type.to_sym)
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end

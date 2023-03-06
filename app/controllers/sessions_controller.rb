@@ -20,11 +20,11 @@ class SessionsController < ApplicationController
       end
     end
 
-    session_type = session_type(start_course_session_params[:session_type])
+    session_type = require_session_type(start_course_session_params[:session_type])
 
     case session_type
     when :study
-      session = course_based_session(@course)
+      session = course_based_session(@course, :study)
       questions = @course.questions.published_active_questions.order(created_at: :asc)
     when :quiz, :practice
       session, questions = create_course_based_session(start_course_session_params, @course, current_user.id)
