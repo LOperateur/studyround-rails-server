@@ -148,12 +148,22 @@ class CoursesController < ApplicationController
 
   def top_courses
     # Calculate Bayesian average rating for each course
+    min = ENV["TOP_COURSE_MIN_RATING_COUNT"] || 1
+
     if Course.any?
       average_rating = Course.first.courses_average_rating
-      top_courses = Course.published_active_courses.sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(10)
+      top_courses = Course.published_active_courses.where("rating_count >= ?", min)
+                          .sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(10)
     else
       top_courses = []
     end
+
+    # Sql-only method. TODO: Figure out if this is more efficient than the ruby method above
+    # top_courses = Course.find_by_sql(
+    #   "SELECT *, ((rating * rating_count) + ((SELECT AVG(rating) FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false) * #{min})) / (rating_count + #{min}) AS weighted_rating
+    #   FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
+    #   ORDER BY weighted_rating DESC NULLS LAST LIMIT 10"
+    # )
 
     render json: top_courses, root: :data
   end
@@ -253,11 +263,13 @@ class CoursesController < ApplicationController
 
   def tests
     # Calculate Bayesian average rating for each test
-    min = ENV["TOP_COURSE_MIN_RATING_COUNT"] || 1
+    min = ENV["TOP_TEST_MIN_RATING_COUNT"] || 1
+    published_active_tests = "publish_status = 2 AND course_status = 1 AND private = false AND test = true"
 
+    # Sql-only method
     top_tests = Course.find_by_sql(
-      "SELECT *, ((rating * rating_count) + ((SELECT AVG(rating) FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false) * #{min})) / (rating_count + #{min}) AS weighted_rating
-      FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true
+      "SELECT *, ((rating * rating_count) + ((SELECT AVG(rating) FROM courses WHERE #{published_active_tests}) * #{min})) / (rating_count + #{min}) AS weighted_rating
+      FROM courses WHERE #{published_active_tests} AND rating_count >= #{min}
       ORDER BY weighted_rating DESC NULLS LAST"
     )
 
