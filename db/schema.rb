@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_02_23_103000) do
+ActiveRecord::Schema.define(version: 2023_03_06_182547) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -80,13 +80,13 @@ ActiveRecord::Schema.define(version: 2023_02_23_103000) do
     t.integer "course_status", default: 1
     t.integer "next_edition"
     t.integer "previous_edition"
-    t.float "rating"
+    t.float "rating", default: 0.0
     t.jsonb "instructions"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "question_tags"
     t.datetime "last_publish_date"
-    t.integer "rating_count"
+    t.integer "rating_count", default: 0
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
   end
