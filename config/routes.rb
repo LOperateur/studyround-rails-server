@@ -25,6 +25,7 @@ Rails.application.routes.draw do
 
   get '/courses/categorised', to: "courses#categorised"
   get '/courses/top', to: "courses#top_courses"
+  get '/courses/trending', to: "courses#trending_courses"
   get '/courses/recent', to: "courses#recent_courses"
   get '/courses/my-courses', to: "courses#my_courses"
   get '/courses/tests', to: "courses#tests"

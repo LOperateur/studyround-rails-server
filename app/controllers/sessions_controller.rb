@@ -20,11 +20,11 @@ class SessionsController < ApplicationController
       end
     end
 
-    session_type = session_type(start_course_session_params[:session_type])
+    session_type = require_session_type(start_course_session_params[:session_type])
 
     case session_type
     when :study
-      session = course_based_session(@course)
+      session = course_based_session(@course, :study)
       questions = @course.questions.published_active_questions.order(created_at: :asc)
     when :quiz, :practice
       session, questions = create_course_based_session(start_course_session_params, @course, current_user.id)
@@ -162,6 +162,8 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unknown guest user!", status: 400)
     end
 
+    guest_email = end_course_session_params[:guest_email] || Guest.find(guest_id).email
+
     if end_course_session_params[:session_id].nil?
       raise Errors::BaseError.new(message: "Unknown session!", status: 400)
     end
@@ -189,12 +191,21 @@ class SessionsController < ApplicationController
       # Delete the session
       session.destroy
 
-      # Send the result to the guest
+      # Save the result to the guest
       guest = Guest.find(guest_id)
       guest.update!(result: result.as_json)
     end
 
-    render json: { data: { guest_id: guest_id } }, status: :ok
+    # Send the invite/results email
+    guests_controller = GuestsController.new
+    guests_controller.request = request
+    guests_controller.response = response
+
+    guest_invite_params = { guest_id: guest_id, email: guest_email }
+
+    guests_controller.params = guest_invite_params
+
+    render json: guests_controller.invite
   end
 
   # Tests
@@ -345,7 +356,7 @@ class SessionsController < ApplicationController
   end
 
   def end_course_session_params
-    params.permit(:session_type, :session_id, :questions, :guest_id,
+    params.permit(:session_type, :session_id, :questions, :guest_id, :guest_email,
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 
