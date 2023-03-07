@@ -3,9 +3,22 @@ class CategorisedCourseSerializer < ActiveModel::Serializer
   attributes :id, :name
 
   has_many :courses do
-    # Todo: Use a formula between ratings and rating count before ordering
-    # This will prevent 5-star courses with just 1 review from topping the list
-    # See potential solution here: https://stackoverflow.com/a/1411268/3993638 and https://en.m.wikipedia.org/wiki/IMDb#Rankings
-    object.courses.published_active_courses.limit(12).order("rating desc nulls last")
+    min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
+
+    if Course.any?
+      average_rating = Course.first.courses_average_rating
+      Course.find_by_sql(
+        "SELECT courses.*, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+         FROM courses INNER JOIN categorizations ON courses.id = categorizations.course_id WHERE categorizations.category_id = #{object.id}
+         AND publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
+         ORDER BY weighted_rating DESC NULLS LAST LIMIT 12"
+      )
+    else
+      Course.none
+    end
+
+    # Non Sql method. TODO: Figure out if this is more efficient than the sql method above
+    # object.courses.published_active_courses.where("rating_count >= ?", min)
+    #             .sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(12)
   end
 end

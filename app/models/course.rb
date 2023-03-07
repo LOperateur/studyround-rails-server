@@ -40,6 +40,11 @@ class Course < ApplicationRecord
     publish_status_published: 2,
   }
 
+  # Used to serialize the course model on the go without having to render
+  def serialized_course
+    ActiveModelSerializers::SerializableResource.new(self, serializer: CourseSerializer).as_json
+  end
+
   # Used to serialize the course mini-model on the go without having to render
   def serialized_mini_course
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
@@ -53,6 +58,42 @@ class Course < ApplicationRecord
   # Used to serialize the creator-facing course model on the go without having to render
   def serialized_creators_course
     ActiveModelSerializers::SerializableResource.new(self, serializer: CreatorCourseSerializer).as_json
+  end
+
+  def courses_average_rating
+    Rails.cache.fetch("courses_average_rating", expires_in: 1.hour) do
+      Course.published_active_courses.average(:rating)
+    end
+  end
+
+  def tests_average_rating
+    Rails.cache.fetch("tests_average_rating", expires_in: 1.hour) do
+      Course.published_active_courses.where(test: true).average(:rating)
+    end
+  end
+
+  def bayesian_average_rating(average = courses_average_rating)
+    return 0 if (self.rating_count == 0 || self.rating_count.nil?)
+
+    # We use a formula between ratings and rating count before ordering
+    # This will prevent 5-star courses with just 1 review from topping the list
+    # https://stackoverflow.com/a/1411268/3993638 and https://en.m.wikipedia.org/wiki/IMDb#Rankings
+
+    # Bayesian average rating formula
+    # weighted rating = (R * v + C * m) / (v + m)
+    # R = average rating for the course (mean)
+    # v = number of ratings for the course
+    # m = minimum number of ratings required to be listed in the Top Rated course list
+    # C = the mean rating across all courses
+
+    rating = self.rating # R
+    rating_count = self.rating_count # v
+    minimum_required_rating_count = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1 # m
+    all_courses_average_rating = average # C
+
+    weighted_rating = ((rating * rating_count) + (all_courses_average_rating * minimum_required_rating_count)) / (rating_count + minimum_required_rating_count)
+
+    return weighted_rating
   end
 
   def generated_image_url

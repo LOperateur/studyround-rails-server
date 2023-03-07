@@ -4,7 +4,7 @@ class CoursesController < ApplicationController
   include ActionView::Helpers::DateHelper
   include TestHelper
 
-  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :search]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
 
   wrap_parameters format: []
@@ -147,9 +147,28 @@ class CoursesController < ApplicationController
   end
 
   def top_courses
-    # Todo: Consider using ratings instead of results for top courses
-    #  Then simply change this one to trending courses.
+    # Calculate Bayesian average rating for each course
+    min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
+    if Course.any?
+      average_rating = Course.first.courses_average_rating
+      top_courses = Course.find_by_sql(
+        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+         FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
+         ORDER BY weighted_rating DESC NULLS LAST LIMIT 10"
+      )
+    else
+      top_courses = Course.none
+    end
+
+    # Non sql method. TODO: Figure out if this is more efficient than the sql method above
+    # top_courses = Course.published_active_courses.where("rating_count >= ?", min)
+    #                     .sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(10)
+
+    render json: top_courses, root: :data
+  end
+
+  def trending_courses
     # Firstly, get non-test, published course results created over the past 120 days
     # Passing in the "results." to avoid unambiguity due to the "joins" statement
     results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(1000)
@@ -243,11 +262,36 @@ class CoursesController < ApplicationController
   end
 
   def tests
-    # TODO: Use a formula between ratings and rating count before ordering
-    tests = Course.published_active_courses.where(test: true).order("rating desc nulls last")
+    # Calculate Bayesian average rating for each test
+    min = ENV["TOP_TEST_MIN_RATING_COUNT"].to_i || 1
 
-    paginated_tests = paginate(tests, params)
-    render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
+    # Doing our own pagination here due to the nature of the query (find_by_sql returns an array not an ActiveRecord::Relation)
+    total_rated_tests = Course.published_active_courses.where(test: true).where("rating_count >= ?", min).count
+    limit = (params[:page_size].presence || [10, total_rated_tests].min).to_i
+    page = (params[:page].presence || 1).to_i
+    offset = (page - 1) * limit
+
+    paginated_meta = {
+      page: page,
+      page_size: limit,
+      total: total_rated_tests,
+    }
+
+    if Course.where(test: true).any?
+      average_rating = Course.first.tests_average_rating
+      top_tests = Course.find_by_sql(
+        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+         FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true AND rating_count >= #{min}
+         ORDER BY weighted_rating DESC NULLS LAST LIMIT #{limit} OFFSET #{offset}"
+      )
+    else
+      top_tests = Course.none
+    end
+
+    render json: { data: top_tests.map do |test|
+      test.serialized_course[:course]
+    end
+    }.merge(paginated_meta)
   end
 
   def purchase

@@ -202,7 +202,7 @@ class QuestionsController < ApplicationController
   end
 
   def handle_course_index
-    session_type = session_type(params[:session_type])
+    session_type = require_session_type(params[:session_type])
 
     case session_type
     when :study
