@@ -1,5 +1,9 @@
 class Category < ApplicationRecord
 
+  validates :name, presence: true, uniqueness: true
+
+  belongs_to :parent, class_name: 'Category', foreign_key: :parent_id, optional: true
+
   has_many :interests, dependent: :destroy
   has_many :users, through: :interests
   has_many :categorizations, dependent: :destroy
