@@ -40,6 +40,11 @@ class Course < ApplicationRecord
     publish_status_published: 2,
   }
 
+  # Used to serialize the course model on the go without having to render
+  def serialized_course
+    ActiveModelSerializers::SerializableResource.new(self, serializer: CourseSerializer).as_json
+  end
+
   # Used to serialize the course mini-model on the go without having to render
   def serialized_mini_course
     ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
@@ -58,6 +63,12 @@ class Course < ApplicationRecord
   def courses_average_rating
     Rails.cache.fetch("courses_average_rating", expires_in: 1.hour) do
       Course.published_active_courses.average(:rating)
+    end
+  end
+
+  def tests_average_rating
+    Rails.cache.fetch("tests_average_rating", expires_in: 1.hour) do
+      Course.published_active_courses.where(test: true).average(:rating)
     end
   end
 
