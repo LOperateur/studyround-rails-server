@@ -152,18 +152,18 @@ class CoursesController < ApplicationController
 
     if Course.any?
       average_rating = Course.first.courses_average_rating
-      top_courses = Course.published_active_courses.where("rating_count >= ?", min)
-                          .sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(10)
+      top_courses = Course.find_by_sql(
+        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+         FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
+         ORDER BY weighted_rating DESC NULLS LAST LIMIT 10"
+      )
     else
-      top_courses = []
+      top_courses = Course.none
     end
 
-    # Sql-only method. TODO: Figure out if this is more efficient than the ruby method above
-    # top_courses = Course.find_by_sql(
-    #   "SELECT *, ((rating * rating_count) + ((SELECT AVG(rating) FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false) * #{min})) / (rating_count + #{min}) AS weighted_rating
-    #   FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
-    #   ORDER BY weighted_rating DESC NULLS LAST LIMIT 10"
-    # )
+    # Non sql method. TODO: Figure out if this is more efficient than the sql method above
+    # top_courses = Course.published_active_courses.where("rating_count >= ?", min)
+    #                     .sort_by { |course| course.bayesian_average_rating(average_rating) }.reverse.take(10)
 
     render json: top_courses, root: :data
   end
@@ -264,17 +264,34 @@ class CoursesController < ApplicationController
   def tests
     # Calculate Bayesian average rating for each test
     min = ENV["TOP_TEST_MIN_RATING_COUNT"].to_i || 1
-    published_active_tests = "publish_status = 2 AND course_status = 1 AND private = false AND test = true"
 
-    # Sql-only method
-    top_tests = Course.find_by_sql(
-      "SELECT *, ((rating * rating_count) + ((SELECT AVG(rating) FROM courses WHERE #{published_active_tests}) * #{min})) / (rating_count + #{min}) AS weighted_rating
-      FROM courses WHERE #{published_active_tests} AND rating_count >= #{min}
-      ORDER BY weighted_rating DESC NULLS LAST"
-    )
+    # Doing our own pagination here due to the nature of the query (find_by_sql returns an array not an ActiveRecord::Relation)
+    total_rated_tests = Course.published_active_courses.where(test: true).where("rating_count >= ?", min).count
+    limit = (params[:page_size].presence || [10, total_rated_tests].min).to_i
+    page = (params[:page].presence || 1).to_i
+    offset = (page - 1) * limit
 
-    paginated_tests = paginate(top_tests, params)
-    render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
+    paginated_meta = {
+      page: page,
+      page_size: limit,
+      total: total_rated_tests,
+    }
+
+    if Course.where(test: true).any?
+      average_rating = Course.first.tests_average_rating
+      top_tests = Course.find_by_sql(
+        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+         FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true AND rating_count >= #{min}
+         ORDER BY weighted_rating DESC NULLS LAST LIMIT #{limit} OFFSET #{offset}"
+      )
+    else
+      top_tests = Course.none
+    end
+
+    render json: { data: top_tests.map do |test|
+      test.serialized_course[:course]
+    end
+    }.merge(paginated_meta)
   end
 
   def purchase
