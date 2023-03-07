@@ -5,7 +5,7 @@ class CategorisedCourseSerializer < ActiveModel::Serializer
   has_many :courses do
     min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
-    if Course.any?
+    if Course.published_active_courses.any?
       average_rating = Course.first.courses_average_rating
       Course.find_by_sql(
         "SELECT courses.*, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating

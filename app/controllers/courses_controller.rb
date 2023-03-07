@@ -150,7 +150,7 @@ class CoursesController < ApplicationController
     # Calculate Bayesian average rating for each course
     min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
-    if Course.any?
+    if Course.published_active_courses.any?
       average_rating = Course.first.courses_average_rating
       top_courses = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
@@ -277,7 +277,7 @@ class CoursesController < ApplicationController
       total: total_rated_tests,
     }
 
-    if Course.where(test: true).any?
+    if Course.published_active_courses.where(test: true).any?
       average_rating = Course.first.tests_average_rating
       top_tests = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
