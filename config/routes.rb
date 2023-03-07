@@ -1,8 +1,6 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
-  get 'guests/create'
-  get 'guests/update'
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
 
   mount Sidekiq::Web => '/sidekiq'
@@ -19,7 +17,7 @@ Rails.application.routes.draw do
   post '/user/interests', to: "users#create_interests"
   resources :users, only: [:show]
 
-  resources :categories, only: [:index] do
+  resources :categories, only: [:index, :show, :create, :update, :destroy] do
     get '/courses', to: "courses#per_category"
   end
 

@@ -25,12 +25,17 @@ module ErrorHandler
 
     # Add a message if there's one available
     mapped_error.message = e.message if e.message.present?
-    
+
     # If it's a not-found error, simplify the error message by removing the params after "with"
     if mapped_error.is_a? Errors::NotFoundError
       mapped_error.message = mapped_error.message.split(" with").first
     end
-    
+
+    # If it's an invalid error, add the record's errors to the mapped error
+    if mapped_error.is_a? Errors::InvalidError
+      mapped_error.errors = e.record.errors.to_h if (mapped_error.errors.blank? && e.record.present? && e.record.errors.present?)
+    end
+
     render_error(mapped_error)
   end
 

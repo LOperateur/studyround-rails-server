@@ -16,10 +16,6 @@ module Errors
       end
     end
 
-    attr_accessor :status, :message
-
-    private
-
-    attr_reader :errors
+    attr_accessor :errors, :status, :message
   end
 end
