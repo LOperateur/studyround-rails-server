@@ -1,5 +1,6 @@
 module TestHelper
   include SessionHelper
+  include UserInterest
 
   def init_test_instructions(user, course)
     @user = user
@@ -173,6 +174,9 @@ module TestHelper
 
       # Delete the session after all is done
       session.destroy
+
+      # Register interest in the course's categories
+      register_interest(user, course.categories.pluck(:id))
 
     elsif params_session_id.present?
       # If for some reason, the session no longer exists or has been destroyed
