@@ -1,4 +1,6 @@
 module TestHelper
+  extend ActiveSupport::Concern
+
   include SessionHelper
   include UserInterest
 
