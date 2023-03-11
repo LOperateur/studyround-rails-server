@@ -80,4 +80,6 @@ Rails.application.routes.draw do
   resources :guests, only: [:create] do
     post '/invite', to: "guests#invite"
   end
+
+  get '/faqs', to: "faqs#index"
 end
