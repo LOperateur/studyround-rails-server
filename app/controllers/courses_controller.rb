@@ -198,7 +198,7 @@ class CoursesController < ApplicationController
     category_filter_query = params[:category]
 
     if category_filter_query.present?
-      category = Category.find_by(name: category_filter_query)
+      category = Category.find_by(id: category_filter_query)
     else
       category = nil
     end
