@@ -18,6 +18,15 @@ class Course < ApplicationRecord
   scope :visible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired], private: false) }
   scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
 
+  scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
+  scope :filtered_by_category, -> (category_id) { joins(:categorizations).where(categorizations: { category_id: category_id }) }
+
+  scope :ordered_by_result_count, -> { left_joins(:results).group(:id).order('COUNT(results.id) DESC') }
+
+  # Don't change the order of 1 and 2, referenced in migration
+  # 20220418091257_change_course_draft_to_integer.rb
+  # 20220418100048_rename_question_course_status.rb
+
   enum sale_status: {
     sale_status_free: 1,
     sale_status_explanations: 2,

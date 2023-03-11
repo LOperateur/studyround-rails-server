@@ -169,15 +169,12 @@ class CoursesController < ApplicationController
   end
 
   def trending_courses
-    # Firstly, get non-test, published course results created over the past 120 days
-    # Passing in the "results." to avoid unambiguity due to the "joins" statement
-    results = Result.created_after(120.days.ago, "results.").published_active_course_results.where.not(session_type: :test).limit(1000)
+    # Get published courses having results created over the past 120 days
+    # Then sort those courses by the result count
+    courses = Course.published_active_courses.left_joins(:results).group(:id)
+                    .where('results.created_at > ?', 120.days.ago).order('COUNT(results.id) DESC').limit(10)
 
-    # Group the results by their courses then sort based on the number of results per course
-    grouped_courses = results.group(:course).order('count_all desc').count.take(10).to_h.keys
-    # grouped_courses = results.group(:course).count.sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
-
-    render json: grouped_courses, root: :data
+    render json: courses, root: :data
   end
 
   def recent_courses
@@ -198,14 +195,32 @@ class CoursesController < ApplicationController
 
   def search
     search_query = params[:q]
-    if search_query.blank?
-      found_courses = Course.none
+    category_filter_query = params[:category]
+
+    if category_filter_query.present?
+      category = Category.find_by(name: category_filter_query)
     else
-      found_courses = Course.visible_courses.order(created_at: :desc)
-                            .where("lower(title) LIKE ? ", "%#{search_query.downcase}%")
+      category = nil
     end
 
-    courses = paginate(found_courses, params)
+    # Ordered by relevance (result count)
+    if search_query.blank?
+      if category
+        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_category(category.id)
+      else
+        found_courses = Course.none
+      end
+    else
+      if category
+        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_category(category.id)
+                              .filtered_by_search(search_query.downcase)
+      else
+        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_search(search_query.downcase)
+      end
+    end
+
+    # Specifying entry count here due to the result group count query which returns a hash of grouped courses -> result count
+    courses = paginate(found_courses, params, entries = found_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
 

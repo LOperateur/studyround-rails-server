@@ -4,9 +4,7 @@ class FaqsController < ApplicationController
   def index
     faqs = paginate(faq_list, params)
     render json: {
-      data: {
-        faqs: faqs
-      }
+      data: faqs
     }.merge(paginated_meta(faqs))
   end
 
