@@ -1,4 +1,5 @@
 module SessionHelper
+  extend ActiveSupport::Concern
   # Creates a lightweight session for Quiz and Practice modes
   # It never stores answers nor is it used to mark
   # It's sole purpose is to keep reference to the questions started with as

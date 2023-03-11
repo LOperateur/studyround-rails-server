@@ -1,6 +1,7 @@
 class SessionsController < ApplicationController
   include SessionHelper
   include TestHelper
+  include UserInterest
 
   skip_before_action :authorize!, only: [:start_demo, :end_demo]
   before_action :load_course, except: [:update, :verify_active_session]
@@ -92,6 +93,9 @@ class SessionsController < ApplicationController
 
       # Delete the session
       session.destroy
+
+      # Register interest in the course's categories
+      register_interest(current_user, @course.categories.pluck(:id))
 
     else
       # If for some reason, the session no longer exists or has been destroyed
