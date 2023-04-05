@@ -18,6 +18,9 @@ module ErrorHandler
   private
 
   def handle_error(e)
+    # Log the error
+    logger.error e
+
     mapped_error = map_error(e)
 
     # Default to Base Error if not mapped

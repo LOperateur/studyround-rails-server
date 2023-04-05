@@ -58,6 +58,9 @@ gem 'bootsnap', '>= 1.1.0', require: false
 # Generating Idempotent keys
 gem 'digest-murmurhash'
 
+# For cleaner logging
+gem 'lograge'
+
 group :development, :test do
   gem 'rspec-rails', '~> 4.0.2'
   gem 'factory_bot_rails'
