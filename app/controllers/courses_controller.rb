@@ -341,6 +341,7 @@ class CoursesController < ApplicationController
                                         .order(completed_at: :desc)
                                         .course_based_transactions.transaction_status_completed
                                         .map { |transaction| transaction["purchase_item_id"] }
+                                        .uniq
     purchased_courses = Course.where(id: course_transaction_ids).where(test: false).sort_by { |i| course_transaction_ids.index(i.id) }
 
     paginated_purchased_courses = paginate(purchased_courses, params)
@@ -353,6 +354,7 @@ class CoursesController < ApplicationController
                                         .order(completed_at: :desc)
                                         .course_based_transactions.transaction_status_completed
                                         .map { |transaction| transaction["purchase_item_id"] }
+                                        .uniq
     purchased_tests = Course.where(id: course_transaction_ids).where(test: true).sort_by { |i| course_transaction_ids.index(i.id) }
 
     paginated_purchased_tests = paginate(purchased_tests, params)
