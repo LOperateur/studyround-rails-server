@@ -27,4 +27,24 @@ module Paginable
     end
   end
 
+  # This is a custom pagination method that returns the limit, offset and metadata
+  # Use this when dealing with non-relation objects where the total count depends
+  # on a different query and the limit and offset are directly passed to the current query.
+  # This is useful when dealing with complex and/or large queries.
+  def custom_paginate(total, params = {})
+    page_param = params[:page]
+    page_size_param = params[:page_size]
+
+    limit = (page_size_param.presence || [10, total].min).to_i
+    page = (page_param.presence || 1).to_i
+    offset = (page - 1) * limit
+
+    paginated_metadata = {
+      page: page,
+      page_size: limit,
+      total: total,
+    }
+
+    return limit, offset, paginated_metadata
+  end
 end

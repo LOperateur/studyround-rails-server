@@ -34,6 +34,10 @@ class Question < ApplicationRecord
     ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionAnswerSerializer).as_json
   end
 
+  def serialized_creator_question_list_item
+    ActiveModelSerializers::SerializableResource.new(self, serializer: CreatorQuestionListSerializer).as_json
+  end
+
   def generated_question_image_url
     begin
       path = rails_blob_path(self.question_image, only_path: true)

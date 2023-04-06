@@ -50,10 +50,32 @@ class QuestionsController < ApplicationController
   # From a Creator's point of view
 
   def questions
-    questions = @course.questions.non_deleted_questions.order(created_at: :asc)
-    paginated_questions = paginate(questions, params)
+    # Custom pagination for find_by_sql
+    total_questions = @course.questions.non_deleted_questions.count
+    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
-    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions), each_serializer: CreatorQuestionListSerializer
+    # Recursive CTE to get questions in order
+    cte_query = <<-SQL
+    WITH RECURSIVE ordered_questions AS (
+      SELECT * FROM questions
+      WHERE course_id = ?
+      AND previous_id IS NULL
+
+      UNION ALL
+
+      SELECT q.* FROM questions q
+      INNER JOIN ordered_questions oq ON q.previous_id = oq.id
+    )
+    SELECT * FROM ordered_questions LIMIT ? OFFSET ?
+    SQL
+
+    questions = Question.find_by_sql([cte_query, @course.id, limit, offset])
+
+    render json: { data: questions.map do |question|
+      question.serialized_creator_question_list_item[:question]
+    end
+    }.merge(paginated_metadata)
+
   end
 
   def show
