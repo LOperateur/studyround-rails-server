@@ -19,7 +19,11 @@ module ErrorHandler
 
   def handle_error(e)
     # Log the error
-    logger.error e
+    if e.is_a? Errors::InvalidError
+      logger.error e.to_h
+    else
+      logger.error e
+    end
 
     mapped_error = map_error(e)
 

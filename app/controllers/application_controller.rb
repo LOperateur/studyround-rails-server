@@ -30,4 +30,10 @@ class ApplicationController < ActionController::API
   def authorize!
     raise Errors::AuthorizationError unless current_user
   end
+
+  # Add user_id to lograge payload
+  def append_info_to_payload(payload)
+    super
+    payload[:user_id] = current_user&.id
+  end
 end
