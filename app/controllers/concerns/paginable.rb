@@ -1,24 +1,25 @@
 module Paginable
   extend ActiveSupport::Concern
 
-  def paginate(record, params = {}, entries = record.count)
-    record.paginate(
+  # Paginates an ActiveRecord relation object (or any object that responds to paginate, e.g. an array)
+  def paginate(relation, params = {}, entries = relation.count)
+    relation.paginate(
       page: params[:page],
       per_page: per_page(params, total: entries),
       total_entries: entries,
     )
   end
 
-  def paginated_meta(relation)
+  # Returns the pagination metadata for a paginated relation
+  def paginated_meta(paginated_relation)
     {
-      page: relation.current_page,
-      page_size: relation.per_page,
-      total: relation.total_entries
+      page: paginated_relation.current_page,
+      page_size: paginated_relation.per_page,
+      total: paginated_relation.total_entries
     }
   end
 
-  private
-
+  # Returns the per_page value from the params or the default
   def per_page(params = {}, total: 0, default_per_page: 10)
     if params[:page_size].present? && params[:page_size].to_i > 0
       params[:page_size]
@@ -27,10 +28,13 @@ module Paginable
     end
   end
 
-  # This is a custom pagination method that returns the limit, offset and metadata
-  # Use this when dealing with non-relation objects where the total count depends
-  # on a different query and the limit and offset are directly passed to the current query.
-  # This is useful when dealing with complex and/or large queries.
+  # This is a custom pagination method that returns the limit, offset and metadata.
+  # It doesn't make use of the will_paginate gem.
+  #
+  # Use this when dealing with non-relation objects where the total count is known or depends
+  # on a different query. Here, the limit and offset are directly passed to the current query.
+  # This is useful when dealing with complex and/or large SQL queries to avoid loading large
+  # datasets into memory.
   def custom_paginate(total, params = {})
     page_param = params[:page]
     page_size_param = params[:page_size]

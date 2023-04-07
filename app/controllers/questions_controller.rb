@@ -228,7 +228,12 @@ class QuestionsController < ApplicationController
 
     case session_type
     when :study
-      questions = @course.questions.publish_status_published.order(created_at: :asc)
+      questions, paginated_metadata = published_active_ordered_questions(@course, params)
+      render json: { data: questions.map do |question|
+        question.serialized_question_with_answer[:question]
+      end
+      }.merge(paginated_metadata)
+      return # Return early to prevent double render
     when :quiz, :practice
       session = Session.find(params[:session_id])
       question_ids = session.session_items.map { |session_item| session_item["question_id"] }
@@ -258,10 +263,11 @@ class QuestionsController < ApplicationController
       raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
-    questions = @course.questions.publish_status_published.order(created_at: :asc)
-
-    paginated_questions = paginate(questions, params)
-    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
+    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    render json: { data: questions.map do |question|
+      question.serialized_question[:question]
+    end
+    }.merge(paginated_metadata)
   end
 
   def raise_ended_test_error(course)
