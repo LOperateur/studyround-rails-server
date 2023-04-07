@@ -267,50 +267,52 @@ class QuestionsController < ApplicationController
   end
 
   def establish_position_and_save(question, position)
-    if position.nil? || position.to_i < 0
-      # Question position is not specified, so we will use the last position
-      last_question = @course.questions.non_deleted_questions.last
+    Question.transaction do
+      if position.nil? || position.to_i < 0
+        # Question position is not specified, so we will use the last position
+        last_question = @course.questions.non_deleted_questions.last
 
-      question.previous_id = last_question&.id
-      question.save!
+        question.previous_id = last_question&.id
+        question.save!
 
-      if last_question.present?
-        last_question.next_id = question.id
-        last_question.save!
-      end
-    else
-      # Find the target question based on the specified position
-      position_query = <<-SQL
-      WITH RECURSIVE question_position AS (
-        SELECT *, 0 AS position
-        FROM questions
-        WHERE previous_id IS NULL AND course_id = ?
-  
-        UNION ALL
-  
-        SELECT q.*, qp.position + 1
-        FROM questions q
-        INNER JOIN question_position qp ON q.previous_id = qp.id
-      )
-      SELECT * FROM question_position WHERE position = ?
-      SQL
+        if last_question.present?
+          last_question.next_id = question.id
+          last_question.save!
+        end
+      else
+        # Find the target question based on the specified position
+        position_query = <<-SQL
+        WITH RECURSIVE question_position AS (
+          SELECT *, 0 AS position
+          FROM questions
+          WHERE previous_id IS NULL AND course_id = ?
+    
+          UNION ALL
+    
+          SELECT q.*, qp.position + 1
+          FROM questions q
+          INNER JOIN question_position qp ON q.previous_id = qp.id
+        )
+        SELECT * FROM question_position WHERE position = ?
+        SQL
 
-      target_question = Question.find_by_sql([position_query, @course.id, position]).first
+        target_question = Question.find_by_sql([position_query, @course.id, position]).first
 
-      # Now we have the target question, we can set the next and previous pointers
-      # The question will be inserted before the target question
-      question.next_id = target_question&.id
-      question.previous_id = target_question&.previous_id
-      question.save!
+        # Now we have the target question, we can set the next and previous pointers
+        # The question will be inserted before the target question
+        question.next_id = target_question&.id
+        question.previous_id = target_question&.previous_id
+        question.save!
 
-      if target_question.present?
-        target_question.previous_id = question.id
-        target_question.save!
-      end
+        if target_question.present?
+          target_question.previous_id = question.id
+          target_question.save!
+        end
 
-      if question.previous.present?
-        question.previous.next_id = question.id
-        question.previous.save!
+        if question.previous.present?
+          question.previous.next_id = question.id
+          question.previous.save!
+        end
       end
     end
   end
