@@ -95,11 +95,7 @@ class QuestionsController < ApplicationController
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
-    begin
-      question.save!
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(question.errors.to_h)
-    end
+    establish_position_and_save(question, create_question_params[:position])
 
     render json: question, root: :data, serializer: CreatorQuestionSerializer
   end
@@ -270,6 +266,55 @@ class QuestionsController < ApplicationController
     }.merge(paginated_metadata)
   end
 
+  def establish_position_and_save(question, position)
+    if position.nil? || position.to_i < 0
+      # Question position is not specified, so we will use the last position
+      last_question = @course.questions.non_deleted_questions.last
+
+      question.previous_id = last_question&.id
+      question.save!
+
+      if last_question.present?
+        last_question.next_id = question.id
+        last_question.save!
+      end
+    else
+      # Find the target question based on the specified position
+      position_query = <<-SQL
+      WITH RECURSIVE question_position AS (
+        SELECT *, 0 AS position
+        FROM questions
+        WHERE previous_id IS NULL AND course_id = ?
+  
+        UNION ALL
+  
+        SELECT q.*, qp.position + 1
+        FROM questions q
+        INNER JOIN question_position qp ON q.previous_id = qp.id
+      )
+      SELECT * FROM question_position WHERE position = ?
+      SQL
+
+      target_question = Question.find_by_sql([position_query, @course.id, position]).first
+
+      # Now we have the target question, we can set the next and previous pointers
+      # The question will be inserted before the target question
+      question.next_id = target_question&.id
+      question.previous_id = target_question&.previous_id
+      question.save!
+
+      if target_question.present?
+        target_question.previous_id = question.id
+        target_question.save!
+      end
+
+      if question.previous.present?
+        question.previous.next_id = question.id
+        question.previous.save!
+      end
+    end
+  end
+
   def raise_ended_test_error(course)
     # Calculate and return result in the data of the surfaced error
     result = get_end_test_result(
@@ -308,7 +353,8 @@ class QuestionsController < ApplicationController
     # Attach the image files in the create/update methods instead
     question = @course.questions.build(
       question_params.except(
-        :question_image, :question_image_url, :explanation_image, :explanation_image_url, :option_images
+        :question_image, :question_image_url, :explanation_image,
+        :explanation_image_url, :option_images, :position
       )
     )
 
@@ -390,7 +436,7 @@ class QuestionsController < ApplicationController
 
   def create_question_params
     params.permit(:question, :question_raw, :question_image,
-                  :explanation, :explanation_raw, :explanation_image,
+                  :explanation, :explanation_raw, :explanation_image, :position,
                   :options, :answer, :multi_answer, :multiplier, :option_images
     )
   end
