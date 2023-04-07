@@ -132,17 +132,16 @@ module SessionHelper
       SELECT * FROM questions
       WHERE course_id = ?
       AND previous_id IS NULL
-      AND publish_status = 2
-      AND question_status = 1
 
       UNION ALL
 
       SELECT q.* FROM questions q
       INNER JOIN ordered_questions oq ON q.previous_id = oq.id
-      AND q.publish_status = 2
-      AND q.question_status = 1
     )
-    SELECT * FROM ordered_questions LIMIT ? OFFSET ?
+    SELECT * FROM ordered_questions
+    WHERE publish_status = 2
+    AND question_status = 1
+    LIMIT ? OFFSET ?
     SQL
 
     questions = Question.find_by_sql([cte_query, course.id, limit, offset])
