@@ -2,6 +2,9 @@ class Question < ApplicationRecord
   include Rails.application.routes.url_helpers
   belongs_to :course
 
+  belongs_to :previous, class_name: "Question", foreign_key: :previous_id, optional: true
+  belongs_to :next, class_name: "Question", foreign_key: :next_id, optional: true
+
   validates_with QuestionValidator
 
   has_one_attached :question_image, dependent: :detach # Retain history of published attachments
