@@ -66,7 +66,8 @@ class QuestionsController < ApplicationController
       SELECT q.* FROM questions q
       INNER JOIN ordered_questions oq ON q.previous_id = oq.id
     )
-    SELECT * FROM ordered_questions LIMIT ? OFFSET ?
+    SELECT * FROM ordered_questions 
+    WHERE NOT question_status = 3 LIMIT ? OFFSET ?
     SQL
 
     questions = Question.find_by_sql([cte_query, @course.id, limit, offset])
@@ -183,19 +184,32 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
-    # If Question has never been published, hard delete it
-    if @question.question.nil?
-      @question.destroy!
-    else
-      begin
+    Question.transaction do
+      # Update position of adjacent questions before this deletion
+      previous_question = @question.previous
+      next_question = @question.next
+
+      if previous_question
+        previous_question.update!(next_id: @question.next_id)
+      end
+
+      if next_question
+        next_question.update!(previous_id: @question.previous_id)
+      end
+
+      # If Question has never been published, hard delete it
+      if @question.question.nil?
+        @question.destroy!
+      else
         # Also delete any drafts if soft-deleting
         @question.draft = nil
         @question.question_image_draft.purge_later
         @question.explanation_image_draft.purge_later
 
+        @question.previous_id = nil
+        @question.next_id = nil
+
         @question.question_status_deleted!
-      rescue
-        raise Errors::InvalidError.new(@question.errors.to_h)
       end
     end
 
@@ -269,8 +283,9 @@ class QuestionsController < ApplicationController
   def establish_position_and_save(question, position)
     Question.transaction do
       if position.nil? || position.to_i < 0
-        # Question position is not specified, so we will use the last position
-        last_question = @course.questions.non_deleted_questions.last
+        # Question position is not specified, so we will use the last
+        # question's position which has a next_id of nil. This could be nil
+        last_question = @course.questions.non_deleted_questions.find_by(next_id: nil)
 
         question.previous_id = last_question&.id
         question.save!
@@ -280,6 +295,10 @@ class QuestionsController < ApplicationController
           last_question.save!
         end
       else
+        if position.to_i > @course.questions.non_deleted_questions.count - 1
+          raise Errors::BaseError.new(message: "Invalid insert position", status: 400)
+        end
+
         # Find the target question based on the specified position
         position_query = <<-SQL
         WITH RECURSIVE question_position AS (
@@ -293,7 +312,9 @@ class QuestionsController < ApplicationController
           FROM questions q
           INNER JOIN question_position qp ON q.previous_id = qp.id
         )
-        SELECT * FROM question_position WHERE position = ?
+        SELECT * FROM question_position 
+        WHERE position = ?
+        AND NOT question_status = 3
         SQL
 
         target_question = Question.find_by_sql([position_query, @course.id, position]).first
