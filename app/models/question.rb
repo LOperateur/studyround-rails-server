@@ -2,6 +2,9 @@ class Question < ApplicationRecord
   include Rails.application.routes.url_helpers
   belongs_to :course
 
+  belongs_to :previous, class_name: "Question", foreign_key: :previous_id, optional: true
+  belongs_to :next, class_name: "Question", foreign_key: :next_id, optional: true
+
   validates_with QuestionValidator
 
   has_one_attached :question_image, dependent: :detach # Retain history of published attachments
@@ -32,6 +35,10 @@ class Question < ApplicationRecord
 
   def serialized_question_with_answer
     ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionAnswerSerializer).as_json
+  end
+
+  def serialized_creator_question_list_item
+    ActiveModelSerializers::SerializableResource.new(self, serializer: CreatorQuestionListSerializer).as_json
   end
 
   def generated_question_image_url

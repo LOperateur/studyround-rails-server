@@ -15,8 +15,8 @@ class StaleSessionSubmissionJob < ApplicationJob
           # Finished sessions for quiz/practice should just be deleted
           session.destroy
         end
-      rescue
-        # TODO: Report this
+      rescue => e
+        logger.error("StaleSessionSubmissionJob for session_id #{session.id} with error: #{e}")
       end
     end
   end

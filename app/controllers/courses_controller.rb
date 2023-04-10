@@ -282,15 +282,7 @@ class CoursesController < ApplicationController
 
     # Doing our own pagination here due to the nature of the query (find_by_sql returns an array not an ActiveRecord::Relation)
     total_rated_tests = Course.published_active_courses.where(test: true).where("rating_count >= ?", min).count
-    limit = (params[:page_size].presence || [10, total_rated_tests].min).to_i
-    page = (params[:page].presence || 1).to_i
-    offset = (page - 1) * limit
-
-    paginated_meta = {
-      page: page,
-      page_size: limit,
-      total: total_rated_tests,
-    }
+    limit, offset, paginated_metadata = custom_paginate(total_rated_tests, params)
 
     if Course.published_active_courses.where(test: true).any?
       average_rating = Course.first.tests_average_rating
@@ -306,7 +298,7 @@ class CoursesController < ApplicationController
     render json: { data: top_tests.map do |test|
       test.serialized_course[:course]
     end
-    }.merge(paginated_meta)
+    }.merge(paginated_metadata)
   end
 
   def purchase

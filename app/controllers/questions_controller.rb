@@ -50,10 +50,33 @@ class QuestionsController < ApplicationController
   # From a Creator's point of view
 
   def questions
-    questions = @course.questions.non_deleted_questions.order(created_at: :asc)
-    paginated_questions = paginate(questions, params)
+    # Custom pagination for find_by_sql
+    total_questions = @course.questions.non_deleted_questions.count
+    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
-    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions), each_serializer: CreatorQuestionListSerializer
+    # Recursive CTE to get questions in order
+    cte_query = <<-SQL
+    WITH RECURSIVE ordered_questions AS (
+      SELECT * FROM questions
+      WHERE course_id = ?
+      AND previous_id IS NULL
+
+      UNION ALL
+
+      SELECT q.* FROM questions q
+      INNER JOIN ordered_questions oq ON q.previous_id = oq.id
+    )
+    SELECT * FROM ordered_questions 
+    WHERE NOT question_status = 3 LIMIT ? OFFSET ?
+    SQL
+
+    questions = Question.find_by_sql([cte_query, @course.id, limit, offset])
+
+    render json: { data: questions.map do |question|
+      question.serialized_creator_question_list_item[:question]
+    end
+    }.merge(paginated_metadata)
+
   end
 
   def show
@@ -73,11 +96,7 @@ class QuestionsController < ApplicationController
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
-    begin
-      question.save!
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(question.errors.to_h)
-    end
+    establish_position_and_save(question, create_question_params[:position])
 
     render json: question, root: :data, serializer: CreatorQuestionSerializer
   end
@@ -165,19 +184,32 @@ class QuestionsController < ApplicationController
   end
 
   def destroy
-    # If Question has never been published, hard delete it
-    if @question.question.nil?
-      @question.destroy!
-    else
-      begin
+    Question.transaction do
+      # Update position of adjacent questions before this deletion
+      previous_question = @question.previous
+      next_question = @question.next
+
+      if previous_question
+        previous_question.update!(next_id: @question.next_id)
+      end
+
+      if next_question
+        next_question.update!(previous_id: @question.previous_id)
+      end
+
+      # If Question has never been published, hard delete it
+      if @question.question.nil?
+        @question.destroy!
+      else
         # Also delete any drafts if soft-deleting
         @question.draft = nil
         @question.question_image_draft.purge_later
         @question.explanation_image_draft.purge_later
 
+        @question.previous_id = nil
+        @question.next_id = nil
+
         @question.question_status_deleted!
-      rescue
-        raise Errors::InvalidError.new(@question.errors.to_h)
       end
     end
 
@@ -206,7 +238,12 @@ class QuestionsController < ApplicationController
 
     case session_type
     when :study
-      questions = @course.questions.publish_status_published.order(created_at: :asc)
+      questions, paginated_metadata = published_active_ordered_questions(@course, params)
+      render json: { data: questions.map do |question|
+        question.serialized_question_with_answer[:question]
+      end
+      }.merge(paginated_metadata)
+      return # Return early to prevent double render
     when :quiz, :practice
       session = Session.find(params[:session_id])
       question_ids = session.session_items.map { |session_item| session_item["question_id"] }
@@ -236,10 +273,69 @@ class QuestionsController < ApplicationController
       raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
-    questions = @course.questions.publish_status_published.order(created_at: :asc)
+    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    render json: { data: questions.map do |question|
+      question.serialized_question[:question]
+    end
+    }.merge(paginated_metadata)
+  end
 
-    paginated_questions = paginate(questions, params)
-    render json: paginated_questions, root: :data, meta: paginated_meta(paginated_questions)
+  def establish_position_and_save(question, position)
+    Question.transaction do
+      if position.nil? || position.to_i < 0
+        # Question position is not specified, so we will use the last
+        # question's position which has a next_id of nil. This could be nil
+        last_question = @course.questions.non_deleted_questions.find_by(next_id: nil)
+
+        question.previous_id = last_question&.id
+        question.save!
+
+        if last_question.present?
+          last_question.next_id = question.id
+          last_question.save!
+        end
+      else
+        if position.to_i > @course.questions.non_deleted_questions.count - 1
+          raise Errors::BaseError.new(message: "Invalid insert position", status: 400)
+        end
+
+        # Find the target question based on the specified position
+        position_query = <<-SQL
+        WITH RECURSIVE question_position AS (
+          SELECT *, 0 AS position
+          FROM questions
+          WHERE previous_id IS NULL AND course_id = ?
+    
+          UNION ALL
+    
+          SELECT q.*, qp.position + 1
+          FROM questions q
+          INNER JOIN question_position qp ON q.previous_id = qp.id
+        )
+        SELECT * FROM question_position 
+        WHERE position = ?
+        AND NOT question_status = 3
+        SQL
+
+        target_question = Question.find_by_sql([position_query, @course.id, position]).first
+
+        # Now we have the target question, we can set the next and previous pointers
+        # The question will be inserted before the target question
+        question.next_id = target_question&.id
+        question.previous_id = target_question&.previous_id
+        question.save!
+
+        if target_question.present?
+          target_question.previous_id = question.id
+          target_question.save!
+        end
+
+        if question.previous.present?
+          question.previous.next_id = question.id
+          question.previous.save!
+        end
+      end
+    end
   end
 
   def raise_ended_test_error(course)
@@ -280,7 +376,8 @@ class QuestionsController < ApplicationController
     # Attach the image files in the create/update methods instead
     question = @course.questions.build(
       question_params.except(
-        :question_image, :question_image_url, :explanation_image, :explanation_image_url, :option_images
+        :question_image, :question_image_url, :explanation_image,
+        :explanation_image_url, :option_images, :position
       )
     )
 
@@ -362,7 +459,7 @@ class QuestionsController < ApplicationController
 
   def create_question_params
     params.permit(:question, :question_raw, :question_image,
-                  :explanation, :explanation_raw, :explanation_image,
+                  :explanation, :explanation_raw, :explanation_image, :position,
                   :options, :answer, :multi_answer, :multiplier, :option_images
     )
   end
