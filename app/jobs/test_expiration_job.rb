@@ -11,8 +11,8 @@ class TestExpirationJob < ApplicationJob
 
         # Handle email notifications
         test.send_test_status_emails
-      rescue
-        # TODO: Report this
+      rescue => e
+        logger.error("TestExpirationJob for test_id #{test.id} with error: #{e}")
       end
     end
   end

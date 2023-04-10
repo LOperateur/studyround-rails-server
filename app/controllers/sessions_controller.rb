@@ -26,14 +26,17 @@ class SessionsController < ApplicationController
     case session_type
     when :study
       session = course_based_session(@course, :study)
-      questions = @course.questions.published_active_questions.order(created_at: :asc)
+      questions, paginated_metadata = published_active_ordered_questions(@course, params)
+      render_session_data(session, questions, false, paginated_metadata)
+      return # Return early to avoid the rest of the method
     when :quiz, :practice
       session, questions = create_course_based_session(start_course_session_params, @course, current_user.id)
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
-    # Converting to array to calculate the offset page data w.r.t num_questions
+    # Converting to array to calculate the offset page data w.r.t `num_questions`
+    # This is because we call `limit` on the questions to get the first `num_questions`
     paginated_questions = paginate(questions.to_a)
 
     render_session_data(session, paginated_questions, false)
@@ -244,11 +247,8 @@ class SessionsController < ApplicationController
     # If session_param already has an id, return the existing session, otherwise, create a new one
     session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
 
-    questions = @course.questions.publish_status_published.order(created_at: :asc)
-
-    paginated_questions = paginate(questions)
-
-    render_session_data(session.serialized_session[:session], paginated_questions, true)
+    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    render_session_data(session.serialized_session[:session], questions, true, paginated_metadata)
   end
 
   def end_test

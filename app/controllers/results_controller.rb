@@ -51,15 +51,7 @@ class ResultsController < ApplicationController
 
     # Doing our own pagination here due to the nature of the query
     total_questions = result.session_items.size
-    limit = (params[:page_size].presence || [10, total_questions].min).to_i
-    page = (params[:page].presence || 1).to_i
-    offset = (page - 1) * limit
-
-    paginated_meta = {
-      page: page,
-      page_size: limit,
-      total: total_questions,
-    }
+    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
     result_session = result.session_items.to_a.drop(offset).take(limit)
     question_ids = result_session.map { |session_item| session_item["question_id"] }.join(",")
@@ -77,7 +69,7 @@ class ResultsController < ApplicationController
       end
     }.compact
 
-    render json: { data: session_questions }.merge(paginated_meta)
+    render json: { data: session_questions }.merge(paginated_metadata)
   end
 
   def recent

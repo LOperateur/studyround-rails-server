@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_03_06_182547) do
+ActiveRecord::Schema.define(version: 2023_04_06_175558) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -163,6 +163,8 @@ ActiveRecord::Schema.define(version: 2023_03_06_182547) do
     t.jsonb "explanation_raw"
     t.integer "question_status", default: 1
     t.jsonb "draft"
+    t.bigint "previous_id"
+    t.bigint "next_id"
     t.index ["course_id"], name: "index_questions_on_course_id"
   end
 
@@ -273,6 +275,8 @@ ActiveRecord::Schema.define(version: 2023_03_06_182547) do
   add_foreign_key "interests", "users"
   add_foreign_key "notifications", "users"
   add_foreign_key "questions", "courses"
+  add_foreign_key "questions", "questions", column: "next_id"
+  add_foreign_key "questions", "questions", column: "previous_id"
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "results", "courses"
   add_foreign_key "results", "users"
