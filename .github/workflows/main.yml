@@ -6,30 +6,42 @@ on:
   pull_request:
     branches: [staging]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      - name: Docker Login
-        env:
-          DOCKER_USER: ${{secrets.DOCKER_USER}}
-          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        run: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - name: Build Ulearn backend docker image
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{secrets.AWS_ROLE}}
+          aws-region: ${{secrets.AWS_REGION}}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build and push image to Amazon ECR staging repo
         if: ${{ github.base_ref == 'staging' || github.ref == 'refs/heads/staging' }}
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: caleb42/u-learn-ruby-backend-staging:${{ github.sha }},caleb42/u-learn-ruby-backend-staging:latest
-      - name: Build Ulearn backend docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ulearn-staging/ruby-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY --all-tags
+      - name: Build and push image to Amazon ECR production repo
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: caleb42/u-learn-ruby-backend-production:${{ github.sha }},caleb42/u-learn-ruby-backend-production:latest
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ulearn-production/ruby-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY --all-tags
   deploy:
     runs-on: ubuntu-latest
     needs: build
