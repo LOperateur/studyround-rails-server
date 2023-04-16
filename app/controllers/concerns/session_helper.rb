@@ -93,15 +93,20 @@ module SessionHelper
     total = 0
 
     session_items_with_answers.each do |answer|
+      # Default to false
+      answer[:correct] = false
+
       is_german_obj = answer[:correct_answer][0].instance_of? String
       total += answer[:multiplier]
 
       if is_german_obj
         if !answer[:user_answer].empty? && answer[:correct_answer].map {|ans| ans.downcase.strip}.include?(answer[:user_answer][0].downcase.strip)
+          answer[:correct] = true
           score += answer[:multiplier]
         end
       else
         if answer[:user_answer].sort == answer[:correct_answer].sort
+          answer[:correct] = true
           score += answer[:multiplier]
         end
       end
