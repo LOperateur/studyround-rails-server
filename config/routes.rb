@@ -84,4 +84,10 @@ Rails.application.routes.draw do
   end
 
   get '/faqs', to: "faqs#index"
+
+  # Route for root endpoint
+  root to: "health_check#index", via: :all
+
+  # Catch all route for not-found endpoints
+  match '*path', to: "application#endpoint_not_found", via: :all
 end
