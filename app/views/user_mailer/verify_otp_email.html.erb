@@ -1,37 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <title>U-Learn Verification Email</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
   <style>
-      body {
-          background-color: rgba(255, 128, 81, 0.2);
-          font-family: 'Open Sans', sans-serif;
-          margin: 0;
+      /* Resets */
+      body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+      img { -ms-interpolation-mode: bicubic; }
+      body { font-family: 'Open Sans', sans-serif; margin: 0; padding: 0; }
+
+      /* Responsive */
+      @media only screen and (max-width: 600px) {
+          table.wrapper {
+              width: calc(100% - 20px) !important;
+              max-width: calc(100% - 20px) !important;
+          }
       }
 
-      table {
+      /* Styles */
+      body {
+          background-color: rgba(255, 128, 81, 0.2);
+      }
+
+      table.wrapper {
           background-color: white;
           border-radius: 10px;
           box-shadow: 0px 0px 10px 0px lightgray;
-          margin: auto auto;
-          display: table;
+          margin: 30px auto;
           width: 580px;
-          height: 100%;
-          padding: 10px 10px 10px 10px;
-      }
-
-      .content {
-          display: block;
-          margin: 50px auto !important;
-          /* makes it centered */
-          max-width: 600px;
-          width: 100%;
       }
 
       h1 {
           margin: 0;
+          display: inline;
       }
 
       a {
@@ -47,31 +51,35 @@
   </style>
 </head>
 <body>
-<div class="content">
-  <table>
+<div style="text-align: center;">
+  <table border="0" cellpadding="0" cellspacing="0" class="wrapper" width="100%" style="max-width: 600px;">
     <tr>
-      <td style="padding: 20px; width: 100px; height: 100px; ">
-        <img src="https://production-ulearn-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" alt="U-learn Logo" width="100" height="100">
+      <td align="left" valign="middle" style="padding: 20px;">
+        <img src="https://production-ulearn-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" alt="U-learn Logo" width="100" height="100" style="display: inline-block;">
       </td>
     </tr>
     <tr>
-      <td style="padding: 20px 20px 0 20px;">
-        <h1 style="font-size: 24px; color: #333; text-align: center;">Email OTP Verification</h1>
-        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px; text-align: center">
+      <td align="center" valign="middle">
+        <h1 style="font-size: 24px; font-weight: 600; color: #333;">Email OTP Verification</h1>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" style="padding: 0 20px;">
+        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
           Verify your email <%= @email %>, for U-Learn.
         </p>
-        <p style="font-size: 16px; text-align: center;">
+        <p style="font-size: 16px;">
           Your OTP is:
         </p>
-        <p style="font-size: 48px; color: #333; text-align: center;">
+        <p style="font-size: 48px; font-weight: 600; color: #333;">
           <strong><%= @otp %></strong>
         </p>
       </td>
     </tr>
   </table>
+  <p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px;">
+    Copyright © 2023 L'Operateur Ltd. Nigeria
+  </p>
 </div>
-<p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px; text-align: center">
-  Copyright © 2023 L'Operateur Ltd. Nigeria
-</p>
 </body>
 </html>
