@@ -51,7 +51,7 @@ class GuestsController < ApplicationController
 
     pass_token = JsonWebToken.encode({ guest_id: guest_id }, 1.year.from_now)
 
-    UserMailer.with(
+    ResultMailer.with(
       email: email,
       score: score,
       title: course.title,
