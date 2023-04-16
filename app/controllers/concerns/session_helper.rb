@@ -97,7 +97,7 @@ module SessionHelper
       total += answer[:multiplier]
 
       if is_german_obj
-        if !answer[:user_answer].empty? && answer[:correct_answer].map(&:downcase).include?(answer[:user_answer][0].downcase)
+        if !answer[:user_answer].empty? && answer[:correct_answer].map {|ans| ans.downcase.strip}.include?(answer[:user_answer][0].downcase.strip)
           score += answer[:multiplier]
         end
       else
