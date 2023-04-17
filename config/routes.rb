@@ -89,5 +89,5 @@ Rails.application.routes.draw do
   root to: "health_check#index", via: :all
 
   # Catch all route for not-found endpoints
-  match '*path', to: "application#endpoint_not_found", via: :all
+  # match '*path', to: "application#endpoint_not_found", via: :all
 end
