@@ -43,11 +43,7 @@ class CoursesController < ApplicationController
     course_params = prepare_received_course_params(create_course_params)
     course = current_user.courses.build(course_params)
 
-    begin
-      course.save!
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(course.errors.to_h)
-    end
+    course.save!
     render json: course, root: :data, serializer: CreatorCourseSerializer
   end
 
@@ -77,12 +73,8 @@ class CoursesController < ApplicationController
     handle_image_update(course_params)
     @course.assign_attributes(course_params.except(:image_url))
 
-    begin
-      @course.save!
-      render json: @course, root: :data, serializer: CreatorCourseSerializer
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(@course.errors.to_h)
-    end
+    @course.save!
+    render json: @course, root: :data, serializer: CreatorCourseSerializer
   end
 
   def publish
@@ -90,17 +82,12 @@ class CoursesController < ApplicationController
       raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is already published!")
     end
 
-    begin
-      @course.publish_status = :publish_status_published
-      @course.version = @course.version + 1
-      @course.last_publish_date = Time.now
-      @course.save!
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(@course.errors.to_h)
-    end
+    @course.publish_status = :publish_status_published
+    @course.version = @course.version + 1
+    @course.last_publish_date = Time.now
+    @course.save!
 
-    render json: @course, root: :data, meta: { message: "Published successfully" },
-           serializer: CreatorCourseSerializer
+    render json: @course, root: :data, meta: { message: "Published successfully" }, serializer: CreatorCourseSerializer
   end
 
   def destroy
@@ -114,11 +101,7 @@ class CoursesController < ApplicationController
     if @course.last_publish_date.nil?
       @course.destroy!
     else
-      begin
-        @course.course_status_deleted!
-      rescue ActiveRecord::RecordInvalid
-        raise Errors::InvalidError.new(@course.errors.to_h)
-      end
+      @course.course_status_deleted!
     end
 
     render json: { message: "Deleted successfully", data: {} }, status: 200
@@ -252,11 +235,7 @@ class CoursesController < ApplicationController
     end
 
     # Close the test
-    begin
-      course.course_status_closed!
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(course.errors.to_h)
-    end
+    course.course_status_closed!
 
     # Send an email to all test-takers
     TestResultsEmailSendJob.perform_later(course)
