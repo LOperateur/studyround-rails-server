@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <title>U-Learn Test Close Notification!</title>
+  <title>U-Learn Test Results</title>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
   <style>
       /* Resets */
@@ -60,20 +60,35 @@
     </tr>
     <tr>
       <td align="center" valign="middle">
-        <h1 style="font-size: 24px; font-weight: 600; color: #333;"><%= @title %> can now be Closed!</h1>
+        <h1 style="font-size: 24px; font-weight: 600; color: #333;"><%= @title %> Results!</h1>
       </td>
     </tr>
     <tr>
       <td align="center" valign="top" style="padding: 0 20px;">
-        <p style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
-          Your test, '<%= @title %>' is done and you can now close it.
+        <p style="font-size: 16px; color: #555; line-height: 1.5;">
+          The test, '<%= @title %>' has been closed by the creator.<br/>
+          Your score was:
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle">
+        <p style="font-size: 36px; color: #333;">
+          <strong><%= @score %></strong>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" style="padding: 0 20px;">
+        <p style="font-size: 16px; color: #555; line-height: 1.5;">
+          Click here to view more details about your result:
         </p>
       </td>
     </tr>
     <tr>
       <td align="center" valign="middle" style="padding: 0 20px 20px 20px;">
         <p>
-          <a href="<%= ENV['HOST_URL'] %>/tests/<%= @course_id %>/submissions" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">View Test</a>
+          <a href="<%= ENV['HOST_URL'] %>/result/<%= @result_id %>/review" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">Review Performance</a>
         </p>
       </td>
     </tr>

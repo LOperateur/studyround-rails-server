@@ -15,12 +15,4 @@ class TestMailer < ApplicationMailer
     @course_id = params[:course_id]
     mail(to: @email, subject: 'Time to close your U-Learn Test!')
   end
-
-  def test_results_email
-    @email = params[:email]
-    @title = params[:title]
-    @score = params[:score]
-    @result_id = params[:result_id]
-    mail(to: @email, subject: 'Your U-Learn Test Results!')
-  end
 end
