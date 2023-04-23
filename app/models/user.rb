@@ -23,6 +23,7 @@ class User < ApplicationRecord
 
   # This is a bare-bones implementation for this
   # We'll revisit the logic for permissions and user types later
+  # Todo: Implement better access permission levels
   enum user_type: {
     default: 1,
     admin: 2,

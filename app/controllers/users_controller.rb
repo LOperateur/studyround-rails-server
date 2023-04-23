@@ -5,9 +5,10 @@ class UsersController < ApplicationController
 
   def admin_index
     if current_user.user_type == :admin
-      user_type_filter = params[:user_type].to_sym
+      user_type_filter = params[:user_type]&.to_sym
 
       # Bare-bones implementation of filtering by user type
+      # Todo: Implement better access permission levels
       case user_type_filter
       when :admin
         users = User.where("email = ?", "admin@myulearn.com")
@@ -19,7 +20,7 @@ class UsersController < ApplicationController
         users = User.all
       end
 
-      paginated_users = paginate(users, params)
+      paginated_users = paginate(users.order(created_at: :asc), params)
       render json: paginated_users, root: :data, meta: paginated_meta(paginated_users), each_serializer: ProfileSerializer
     else
       raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")

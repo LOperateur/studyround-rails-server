@@ -1,9 +1,13 @@
 class UserSerializer < ActiveModel::Serializer
   attributes :id, :username, :email, :first_name, :last_name,
              :other_name, :date_of_birth, :creator, :pro_account,
-             :occupation, :country, :profile_image_url, :about
+             :occupation, :country, :profile_image_url, :user_type, :about
 
   def profile_image_url
     object.generated_profile_image_url
+  end
+
+  def user_type
+    object.user_type
   end
 end
