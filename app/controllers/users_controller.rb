@@ -27,6 +27,20 @@ class UsersController < ApplicationController
     end
   end
 
+  def assign_course
+    if current_user.user_type == :admin
+      user = User.find(params[:user_id])
+      course = Course.non_deleted_courses.find(params[:course_id])
+
+      course.creator = user
+      course.save!
+
+      render json: course, root: :data, status: :ok
+    else
+      raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
+    end
+  end
+
   def show
     render json: User.find(params[:id]), root: :data
   end
@@ -102,5 +116,9 @@ class UsersController < ApplicationController
 
   def create_interests_params
     params.permit(:category_ids => [])
+  end
+
+  def assign_course_params
+    params.permit(:course_id, :user_id)
   end
 end
