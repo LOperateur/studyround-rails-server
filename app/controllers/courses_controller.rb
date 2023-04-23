@@ -28,7 +28,7 @@ class CoursesController < ApplicationController
       purchase_status[:sale_status_explanations] = current_user.present? && current_user.has_purchased_item(@course)
     end
 
-    if current_user.nil? || @course.creator != current_user
+    if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
       if @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is unavailable")
       end
@@ -348,7 +348,7 @@ class CoursesController < ApplicationController
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:id])
-    if @course.creator != current_user
+    if @course.creator != current_user && current_user.user_type != :admin
       raise Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
     end
   end

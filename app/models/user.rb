@@ -21,6 +21,24 @@ class User < ApplicationRecord
   has_many :financial_cards
   has_one_attached :profile_image
 
+  # This is a bare-bones implementation for this
+  # We'll revisit the logic for permissions and user types later
+  enum user_type: {
+    default: 1,
+    admin: 2,
+    content_support: 3,
+  }, _prefix: true
+
+  def user_type
+    if self.email == "admin@myulearn.com"
+      return :admin
+    elsif self.email.starts_with?("content") && self.email.ends_with?("@myulearn.com")
+      return :content_support
+    else
+      return :default
+    end
+  end
+
   def downcase_fields
     self.username.downcase!
     # self.email.downcase! Not necessary anymore

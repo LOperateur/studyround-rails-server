@@ -185,6 +185,36 @@ class AuthController < ApplicationController
 
     user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
 
+    if user.user_type == :content_support
+      raise Errors::AuthenticationError.new(message: "You cannot login as a content support user here, please use the support login page")
+    end
+
+    if user && user.authenticate(login_params[:password])
+      access_token = create_access_token(user)
+      refresh_token = create_refresh_token(user)
+
+      render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+    else
+      raise Errors::AuthenticationError.new(message: "Incorrect login details")
+    end
+  end
+
+  def login_content_support
+    email_or_username = login_params[:user_identity].downcase
+    is_email = email_or_username.include? "@"
+
+    if is_email
+      raise Errors::AuthenticationError.new(message: "Email does not exist") unless User.exists?(email: email_or_username)
+    else
+      raise Errors::AuthenticationError.new(message: "User does not exist") unless User.exists?(username: email_or_username)
+    end
+
+    user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
+
+    if !(user.user_type == :content_support || user.user_type == :admin)
+      raise Errors::AuthenticationError.new(message: "You are not a content support user, please use the normal login page")
+    end
+
     if user && user.authenticate(login_params[:password])
       access_token = create_access_token(user)
       refresh_token = create_refresh_token(user)
