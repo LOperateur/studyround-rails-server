@@ -14,7 +14,7 @@ class UsersController < ApplicationController
         users = User.where("email = ?", "admin@myulearn.com")
       when :content_support
         users = User.where("email LIKE ?", "content%@myulearn.com")
-      when :default
+      when :standard
         users = User.where("email != ? AND email NOT LIKE ?", "admin@myulearn.com", "content%@myulearn.com")
       else
         users = User.all

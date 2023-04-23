@@ -25,7 +25,7 @@ class User < ApplicationRecord
   # We'll revisit the logic for permissions and user types later
   # Todo: Implement better access permission levels
   enum user_type: {
-    default: 1,
+    standard: 1,
     admin: 2,
     content_support: 3,
   }, _prefix: true
@@ -36,7 +36,7 @@ class User < ApplicationRecord
     elsif self.email.starts_with?("content") && self.email.ends_with?("@myulearn.com")
       return :content_support
     else
-      return :default
+      return :standard
     end
   end
 
