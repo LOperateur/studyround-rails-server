@@ -3,6 +3,29 @@ class UsersController < ApplicationController
 
   wrap_parameters format: []
 
+  def admin_index
+    if current_user.user_type == :admin
+      user_type_filter = params[:user_type].to_sym
+
+      # Bare-bones implementation of filtering by user type
+      case user_type_filter
+      when :admin
+        users = User.where("email = ?", "admin@myulearn.com")
+      when :content_support
+        users = User.where("email LIKE ?", "content%@myulearn.com")
+      when :default
+        users = User.where("email != ? AND email NOT LIKE ?", "admin@myulearn.com", "content%@myulearn.com")
+      else
+        users = User.all
+      end
+
+      paginated_users = paginate(users, params)
+      render json: paginated_users, root: :data, meta: paginated_meta(paginated_users), each_serializer: ProfileSerializer
+    else
+      raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
+    end
+  end
+
   def show
     render json: User.find(params[:id]), root: :data
   end

@@ -19,6 +19,7 @@ Rails.application.routes.draw do
   get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
   resources :users, only: [:show]
+  get '/admin/users', to: "users#admin_index"
 
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
     get '/courses', to: "courses#per_category"
