@@ -6,9 +6,10 @@ Rails.application.routes.draw do
   get '/health-check', to: "health_check#index"
 
   mount Sidekiq::Web => '/sidekiq'
-  post 'auth/signup'
-  post 'auth/login'
-  post 'auth/reset'
+  post '/auth/signup', to: "auth#signup"
+  post '/auth/login', to: "auth#login"
+  post '/auth/support/login', to: "auth#login_content_support"
+  post '/auth/reset', to: "auth#reset"
   post '/auth/refresh-token', to: "auth#refresh_token"
   post '/otp/generate', to: "auth#generate_otp"
   post '/otp/validate', to: "auth#validate_otp"
@@ -18,6 +19,8 @@ Rails.application.routes.draw do
   get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
   resources :users, only: [:show]
+  get '/admin/users', to: "users#admin_index"
+  post '/admin/assign-course', to: "users#assign_course"
 
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
     get '/courses', to: "courses#per_category"
