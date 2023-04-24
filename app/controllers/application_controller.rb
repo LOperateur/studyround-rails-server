@@ -2,14 +2,14 @@ class ApplicationController < ActionController::API
   include ErrorHandler
   include Paginable
 
-  before_action :authorize!, except: [:endpoint_not_found]
+  before_action :authorize!, except: [:route_not_found]
 
   def index
     render json: {}
   end
 
-  def endpoint_not_found
-    raise Errors::NotFoundError.new(message: "This endpoint does not exist", source: { pointer: request.path })
+  def route_not_found
+    raise Errors::NotFoundError.new(message: "This route does not exist", source: { pointer: request.path })
   end
 
   private
