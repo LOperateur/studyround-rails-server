@@ -91,6 +91,6 @@ Rails.application.routes.draw do
   # Route for root endpoint
   root to: "health_check#index", via: :all
 
-  # Catch all route for not-found endpoints
-  match '*path', to: "application#endpoint_not_found", via: :all
+  # Catch all route for non-existent routes (excluding our active storage routes)
+  match '*path', to: "application#route_not_found", via: :all, constraints: -> (req) { !req.path.start_with?('/rails/active_storage/') }
 end
