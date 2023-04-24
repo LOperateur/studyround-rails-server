@@ -220,7 +220,7 @@ class QuestionsController < ApplicationController
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:course_id])
-    if @course.creator != current_user
+    if @course.creator != current_user && current_user.user_type != :admin
       raise Errors::ForbiddenError.new(message: "You don't have the authority to manage questions in this course.")
     end
   end
