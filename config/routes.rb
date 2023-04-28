@@ -19,8 +19,6 @@ Rails.application.routes.draw do
   get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
   resources :users, only: [:show]
-  get '/admin/users', to: "users#admin_index"
-  post '/admin/assign-course', to: "users#assign_course"
 
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
     get '/courses', to: "courses#per_category"
@@ -85,6 +83,10 @@ Rails.application.routes.draw do
   resources :guests, only: [:create] do
     post '/invite', to: "guests#invite"
   end
+
+  get '/admin/users', to: "admin#users"
+  get '/admin/courses', to: "admin#courses"
+  post '/admin/assign-course', to: "admin#assign_course"
 
   get '/faqs', to: "faqs#index"
 
