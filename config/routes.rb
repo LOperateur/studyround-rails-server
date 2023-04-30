@@ -14,10 +14,11 @@ Rails.application.routes.draw do
   post '/otp/generate', to: "auth#generate_otp"
   post '/otp/validate', to: "auth#validate_otp"
 
-  get '/user', to: "users#profile"
+  get '/user', to: "users#show_current_user"
   put '/user', to: "users#update"
   get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
+  patch '/user/onboard', to: "users#onboard"
   resources :users, only: [:show]
 
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
@@ -87,6 +88,7 @@ Rails.application.routes.draw do
   get '/admin/users', to: "admin#users"
   get '/admin/courses', to: "admin#courses"
   post '/admin/assign-course', to: "admin#assign_course"
+  post '/admin/merge-courses', to: "admin#merge_courses"
 
   get '/faqs', to: "faqs#index"
 
