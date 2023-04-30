@@ -1,7 +1,7 @@
 class CourseValidator < ActiveModel::Validator
   def validate(record)
     if record.sale_status_paid? || record.sale_status_explanations?
-      if record.price.nil?
+      if record.price.nil? || record.price.zero?
         record.errors.add :price, "must be set for paid #{course_or_test(record)}s"
       end
 

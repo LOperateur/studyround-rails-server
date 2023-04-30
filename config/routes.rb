@@ -87,6 +87,7 @@ Rails.application.routes.draw do
   get '/admin/users', to: "admin#users"
   get '/admin/courses', to: "admin#courses"
   post '/admin/assign-course', to: "admin#assign_course"
+  post '/admin/merge-courses', to: "admin#merge_courses"
 
   get '/faqs', to: "faqs#index"
 

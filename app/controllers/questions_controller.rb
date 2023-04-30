@@ -374,6 +374,7 @@ class QuestionsController < ApplicationController
     end
 
     # Attach the image files in the create/update methods instead
+    # Position and next/previous id's have no relevance in the draft JSON
     question = @course.questions.build(
       question_params.except(
         :question_image, :question_image_url, :explanation_image,
@@ -454,7 +455,8 @@ class QuestionsController < ApplicationController
 
   def strip_non_draft_fields(draft)
     return draft.symbolize_keys.except(:id, :course_id, :order, :tags, :version, :publish_status,
-                                       :question_status, :draft, :created_at, :updated_at)
+                                       :question_status, :previous_id, :next_id,
+                                       :draft, :created_at, :updated_at)
   end
 
   def create_question_params
