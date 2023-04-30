@@ -7,7 +7,7 @@ class UsersController < ApplicationController
     render json: User.find(params[:id]), root: :data
   end
 
-  def profile
+  def show_current_user
     render json: current_user, root: :data
   end
 
@@ -34,6 +34,17 @@ class UsersController < ApplicationController
     register_interest(current_user, categories)
 
     render json: { message: "Registered interest!" }, status: :created
+  end
+
+  def onboard
+    onboarding_data = current_user.onboarding
+    onboard_user_params.each do |key, value|
+      onboarding_data[key] = value
+    end
+
+    current_user.update!(onboarding: onboarding_data)
+
+    render json: current_user, root: :data
   end
 
   private
@@ -78,5 +89,9 @@ class UsersController < ApplicationController
 
   def create_interests_params
     params.permit(:category_ids => [])
+  end
+
+  def onboard_user_params
+    params.permit(:dashboard, :course_list, :session_start, :manage_course, :manage_question)
   end
 end

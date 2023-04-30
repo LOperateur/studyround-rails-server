@@ -148,6 +148,7 @@ class QuestionsController < ApplicationController
       @question.answer = draft[:answer]
       @question.multiplier = draft[:multiplier]
       @question.multi_answer = draft[:multi_answer]
+      @question.year = draft[:year]
 
       @question.version = @question.version + 1
       @question.draft = nil
@@ -462,14 +463,14 @@ class QuestionsController < ApplicationController
   def create_question_params
     params.permit(:question, :question_raw, :question_image,
                   :explanation, :explanation_raw, :explanation_image, :position,
-                  :options, :answer, :multi_answer, :multiplier, :option_images
+                  :options, :answer, :multi_answer, :multiplier, :option_images, :year
     )
   end
 
   def update_question_params
     params.permit(:question, :question_raw, :question_image, :question_image_url,
                   :explanation, :explanation_raw, :explanation_image, :explanation_image_url,
-                  :options, :answer, :multi_answer, :multiplier, :option_images
+                  :options, :answer, :multi_answer, :multiplier, :option_images, :year
     )
   end
 end
