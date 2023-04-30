@@ -1,5 +1,6 @@
 class CategoriesController < ApplicationController
   skip_before_action :authorize!, only: [:index]
+  before_action :check_admin, except: [:index]
 
   wrap_parameters format: []
 
@@ -8,7 +9,7 @@ class CategoriesController < ApplicationController
     render json: categories, root: :data, meta: paginated_meta(categories)
   end
 
-  # TODO: Protect all category routes
+  # All other category routes are admin-only
 
   def show
     category = Category.find(params[:id])
@@ -49,6 +50,12 @@ class CategoriesController < ApplicationController
   end
 
   private
+
+  def check_admin
+    if current_user.user_type != :admin
+      raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
+    end
+  end
 
   def create_update_category_params
     params.permit(:name, :level, :parent_category, :image_url)

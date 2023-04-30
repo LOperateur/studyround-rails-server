@@ -47,6 +47,53 @@ class AdminController < ApplicationController
     render json: course, root: :data, status: :ok
   end
 
+  def merge_courses
+    main_course = Course.non_deleted_courses.find(merge_courses_params[:main_course_id])
+    merge_course = Course.non_deleted_courses.find(merge_courses_params[:merge_course_id])
+
+    if merge_course.test || main_course.test
+      raise Errors::BaseError.new(message: "Tests cannot be merged", status: 400)
+    end
+
+    # Check if the merge course has been published previously
+    if merge_course.last_publish_date.present?
+      raise Errors::BaseError.new(message: "You cannot merge in a course that has been published", status: 400)
+    end
+
+    # Check question counts
+    if main_course.questions.non_deleted_questions.count == 0
+      raise Errors::BaseError.new(message: "The course you want to merge to has no questions", status: 400)
+    end
+
+    if merge_course.questions.non_deleted_questions.count == 0
+      raise Errors::BaseError.new(message: "The course you want to merge has no questions", status: 400)
+    end
+
+    # Now attempt to merge the courses by moving the questions
+    # Start a transaction to ensure that all operations are atomic
+    ApplicationRecord.transaction do
+      last_main_course_question =
+        main_course.questions.non_deleted_questions.find_by!(course_id: main_course.id, next_id: nil)
+
+      first_merge_course_question =
+        merge_course.questions.non_deleted_questions.find_by!(course_id: merge_course.id, previous_id: nil)
+
+      # Update the last question of the main course to point to the first question of the merge course
+      last_main_course_question.update!(next_id: first_merge_course_question.id)
+
+      # Update the first question of the merge course to point to the last question of the main course
+      first_merge_course_question.update!(previous_id: last_main_course_question.id)
+
+      # Move the questions to the main course
+      Question.where(course_id: merge_course.id).update_all(course_id: main_course.id)
+
+      # Delete the merged course
+      merge_course.destroy!
+    end
+
+    render json: main_course, root: :data, status: :ok
+  end
+
   private
 
   def check_admin
@@ -57,5 +104,9 @@ class AdminController < ApplicationController
 
   def assign_course_params
     params.permit(:course_id, :user_id)
+  end
+
+  def merge_courses_params
+    params.permit(:main_course_id, :merge_course_id)
   end
 end

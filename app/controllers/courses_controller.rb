@@ -335,7 +335,7 @@ class CoursesController < ApplicationController
   def created_courses
     courses = current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc)
     paginated_courses = paginate(courses, params)
-    render json: courses, root: :data, meta: paginated_meta(paginated_courses)
+    render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
   end
 
   def created_tests
