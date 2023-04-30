@@ -48,8 +48,8 @@ class AdminController < ApplicationController
   end
 
   def merge_courses
-    main_course = Course.non_deleted_courses.find(params[:main_course_id])
-    merge_course = Course.non_deleted_courses.find(params[:merge_course_id])
+    main_course = Course.non_deleted_courses.find(merge_courses_params[:main_course_id])
+    merge_course = Course.non_deleted_courses.find(merge_courses_params[:merge_course_id])
 
     if merge_course.test || main_course.test
       raise Errors::BaseError.new(message: "Tests cannot be merged", status: 400)
@@ -58,6 +58,15 @@ class AdminController < ApplicationController
     # Check if the merge course has been published previously
     if merge_course.last_publish_date.present?
       raise Errors::BaseError.new(message: "You cannot merge in a course that has been published", status: 400)
+    end
+
+    # Check question counts
+    if main_course.questions.non_deleted_questions.count == 0
+      raise Errors::BaseError.new(message: "The course you want to merge to has no questions", status: 400)
+    end
+
+    if merge_course.questions.non_deleted_questions.count == 0
+      raise Errors::BaseError.new(message: "The course you want to merge has no questions", status: 400)
     end
 
     # Now attempt to merge the courses by moving the questions
@@ -95,5 +104,9 @@ class AdminController < ApplicationController
 
   def assign_course_params
     params.permit(:course_id, :user_id)
+  end
+
+  def merge_courses_params
+    params.permit(:main_course_id, :merge_course_id)
   end
 end
