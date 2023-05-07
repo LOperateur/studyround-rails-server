@@ -64,8 +64,7 @@ class CoursesController < ApplicationController
 
       # If changing the price/currency and the price/currency is different from what was there before
       if (!new_price.nil? && @course.price != new_price) || (!new_currency.nil? && @course.currency != new_currency)
-        render json: { message: "Please contact us to change the price or currency", data: {} }, status: 200
-        return
+        raise Errors::BaseError.new(message: "Please contact us to change the price or currency", status: 400)
       end
     end
 
@@ -377,6 +376,14 @@ class CoursesController < ApplicationController
     if received_params.key?(:category_ids)
       category_json = JSON.parse(received_params[:category_ids])
       course_params[:category_ids] = category_json
+    end
+
+    # Prevent non-admin users to send in a price or sale_status
+    # TODO: For now, only admins can set these values
+    if current_user.user_type != :admin
+      course_params.delete(:price)
+      course_params.delete(:currency)
+      course_params.delete(:sale_status)
     end
 
     return course_params
