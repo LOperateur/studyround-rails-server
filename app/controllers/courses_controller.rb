@@ -243,15 +243,43 @@ class CoursesController < ApplicationController
   end
 
   def my_courses
-    # TODO: Use a more bespoke mechanism in future
-    user_result_ids = current_user.results.select(:course_id)
-                                  .published_active_course_results
-                                  .limit(500).order("results.created_at desc")
-                                  .map { |result| result["course_id"] }
-    my_courses = Course.where(id: user_result_ids).where(test: false).sort_by { |i| user_result_ids.index(i.id) }
+    # TODO: Also include interests in this query
+    # Raw SQL query for fetching courses prioritized by user results
+    # -- This SQL query fetches all courses with two additional columns: sort_order and total_results.
+    # -- sort_order prioritizes courses with the user's results, and total_results counts all results per course.
+    # -- A subquery gets the most recent result for each course for the current user.
+    # -- The query sorts courses based on the user's results, most recent user result, and total course results.
+    sql = <<-SQL
+      WITH user_results AS (
+        SELECT DISTINCT ON (course_id) results.*
+        FROM results
+        WHERE user_id = ?
+        ORDER BY course_id, created_at DESC
+      )
+      SELECT courses.*, 
+        CASE WHEN user_results.user_id = ? THEN 0 ELSE 1 END AS sort_order,
+        COUNT(all_results.id) AS total_results
+      FROM courses
+      LEFT OUTER JOIN user_results ON user_results.course_id = courses.id
+      LEFT OUTER JOIN results AS all_results ON all_results.course_id = courses.id
+      WHERE courses.publish_status = 2
+      AND courses.course_status = 1
+      AND courses.test = false
+      GROUP BY courses.id, user_results.user_id, user_results.created_at
+      ORDER BY sort_order, user_results.created_at DESC, total_results DESC, courses.id
+      LIMIT ? OFFSET ?
+    SQL
 
-    paginated_my_courses = paginate(my_courses, params)
-    render json: paginated_my_courses, root: :data, meta: paginated_meta(paginated_my_courses)
+    total_published_active_courses = Course.published_active_courses.where(test: false).count
+    limit, offset, paginated_metadata = custom_paginate(total_published_active_courses, params)
+
+    # Fetch courses using find_by_sql
+    my_courses = Course.find_by_sql([sql, current_user.id, current_user.id, limit, offset])
+
+    render json: { data: my_courses.map do |course|
+      course.serialized_course[:course]
+    end
+    }.merge(paginated_metadata)
   end
 
   def tests

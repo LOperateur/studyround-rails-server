@@ -71,13 +71,13 @@ class Course < ApplicationRecord
 
   def courses_average_rating
     Rails.cache.fetch("courses_average_rating", expires_in: 1.hour) do
-      Course.published_active_courses.average(:rating)
+      Course.published_active_courses.where.not(rating: [0, nil]).average(:rating)
     end
   end
 
   def tests_average_rating
     Rails.cache.fetch("tests_average_rating", expires_in: 1.hour) do
-      Course.published_active_courses.where(test: true).average(:rating)
+      Course.published_active_courses.where(test: true).where.not(rating: [0, nil]).average(:rating)
     end
   end
 
