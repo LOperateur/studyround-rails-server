@@ -1,4 +1,6 @@
 class CourseSerializer < ActiveModel::Serializer
+  include CurrencyHelper
+
   attributes :id, :title, :rating, :image_url, :currency, :price,
              :formatted_price, :sale_status, :version, :test
 
@@ -21,19 +23,7 @@ class CourseSerializer < ActiveModel::Serializer
     if object.sale_status_free?
       return 'Free'
     else
-      case object.currency
-      when 'NGN'
-        price = "₦#{object.price}"
-      when 'USD'
-        price = "$#{object.price}"
-      when 'EUR'
-        price = "€#{object.price}"
-      when 'GBP'
-        price = "£#{object.price}"
-      else
-        price = "#{object.currency} #{object.price}"
-      end
-
+      price = format_with_currency(object.price, object.currency)
       if object.sale_status_explanations?
         price += " - Explanations"
       end
