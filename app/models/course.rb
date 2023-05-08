@@ -71,13 +71,13 @@ class Course < ApplicationRecord
 
   def courses_average_rating
     Rails.cache.fetch("courses_average_rating", expires_in: 1.hour) do
-      Course.published_active_courses.where.not(rating: [0, nil]).average(:rating)
+      Course.published_active_courses.where.not(rating: [0, nil]).average(:rating) || 0
     end
   end
 
   def tests_average_rating
     Rails.cache.fetch("tests_average_rating", expires_in: 1.hour) do
-      Course.published_active_courses.where(test: true).where.not(rating: [0, nil]).average(:rating)
+      Course.published_active_courses.where(test: true).where.not(rating: [0, nil]).average(:rating) || 0
     end
   end
 
@@ -95,12 +95,12 @@ class Course < ApplicationRecord
     # m = minimum number of ratings required to be listed in the Top Rated course list
     # C = the mean rating across all courses
 
-    rating = self.rating # R
-    rating_count = self.rating_count # v
+    rating = self.rating || 0# R
+    rating_count = self.rating_count || 0 # v
     minimum_required_rating_count = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1 # m
     all_courses_average_rating = average # C
 
-    weighted_rating = ((rating * rating_count) + (all_courses_average_rating * minimum_required_rating_count)) / (rating_count + minimum_required_rating_count)
+    weighted_rating = ((rating * rating_count) + (all_courses_average_rating * minimum_required_rating_count)) / [(rating_count + minimum_required_rating_count), 1].max
 
     return weighted_rating
   end

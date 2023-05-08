@@ -8,7 +8,7 @@ class CategorisedCourseSerializer < ActiveModel::Serializer
     if Course.published_active_courses.any?
       average_rating = Course.first.courses_average_rating
       Course.find_by_sql(
-        "SELECT courses.*, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+        "SELECT courses.*, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses INNER JOIN categorizations ON courses.id = categorizations.course_id WHERE categorizations.category_id = #{object.id}
          AND publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
          ORDER BY weighted_rating DESC NULLS LAST LIMIT 12"

@@ -135,7 +135,7 @@ class CoursesController < ApplicationController
     if Course.published_active_courses.any?
       average_rating = Course.first.courses_average_rating
       top_courses = Course.find_by_sql(
-        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
          ORDER BY weighted_rating DESC NULLS LAST LIMIT 10"
       )
@@ -293,7 +293,7 @@ class CoursesController < ApplicationController
     if Course.published_active_courses.where(test: true).any?
       average_rating = Course.first.tests_average_rating
       top_tests = Course.find_by_sql(
-        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / (rating_count + #{min}) AS weighted_rating
+        "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true AND rating_count >= #{min}
          ORDER BY weighted_rating DESC NULLS LAST LIMIT #{limit} OFFSET #{offset}"
       )
