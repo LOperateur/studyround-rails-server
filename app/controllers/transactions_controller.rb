@@ -83,6 +83,18 @@ class TransactionsController < ApplicationController
     end
   end
 
+  def index
+    transactions = current_user.transactions.order(created_at: :desc)
+    paginated_transactions = paginate(transactions, params)
+
+    render json: paginated_transactions, root: :data, meta: paginated_meta(paginated_transactions), status: :ok
+  end
+
+  def show
+    transaction = current_user.transactions.find(params[:id])
+    render json: transaction, root: :data, status: :ok
+  end
+
   private
 
   def generate_transaction_ref

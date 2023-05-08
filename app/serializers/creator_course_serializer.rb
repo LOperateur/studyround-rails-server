@@ -2,7 +2,16 @@
 # specifically reserved for the viewership of the creator only.
 class CreatorCourseSerializer < UserCourseSerializer
   type :course
-  attributes :instructions, :private, :publish_status, :course_status, :last_publish_date, :test_statistics
+  attributes :instructions, :private, :publish_status, :course_status,
+             :num_questions_draft, :num_explanations_draft, :last_publish_date, :test_statistics
+
+  def num_questions_draft
+    object.questions.non_deleted_questions.count
+  end
+
+  def num_explanations_draft
+    object.questions.non_deleted_questions.where.not(explanation: nil).count
+  end
 
   def test_statistics
     if object.test
