@@ -9,7 +9,8 @@ class UserMailer < ApplicationMailer
 
   def creator_consent_email
     @email = params[:email]
-    bcc = ["info@myulearn.com"]
-    mail(to: @email, bcc: bcc, from: 'U-Learn Creators <noreply@myulearn.com>', subject: 'Creator Consent')
+    # Send email to the user and the admin
+    recipients = [@email, ENV['ADMIN_CONSENT_EMAIL']]
+    mail(to: recipients, from: 'U-Learn Creators <noreply@myulearn.com>', subject: 'Creator Consent')
   end
 end
