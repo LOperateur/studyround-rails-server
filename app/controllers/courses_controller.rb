@@ -5,6 +5,7 @@ class CoursesController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
+  before_action :check_creators_consent, only: [:create]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
 
   wrap_parameters format: []
@@ -377,6 +378,12 @@ class CoursesController < ApplicationController
     @course = Course.non_deleted_courses.find(params[:id])
     if @course.creator != current_user && current_user.user_type != :admin
       raise Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
+    end
+  end
+
+  def check_creators_consent
+    if !current_user.creator
+      raise Errors::ForbiddenError.new(message: "You must agree to the creator terms before you can create a course")
     end
   end
 
