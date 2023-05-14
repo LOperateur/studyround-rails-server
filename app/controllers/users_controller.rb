@@ -95,7 +95,7 @@ class UsersController < ApplicationController
   end
 
   def update_profile_params
-    params.permit(:first_name, :last_name, :other_name, :date_of_birth, :creator,
+    params.permit(:first_name, :last_name, :other_name, :date_of_birth,
                   :pro_account, :occupation, :about, :country, :profile_image, :profile_image_url)
   end
 
