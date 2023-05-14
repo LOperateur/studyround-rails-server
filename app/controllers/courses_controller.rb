@@ -5,6 +5,7 @@ class CoursesController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
+  before_action :check_creators_consent, only: [:create]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
 
   wrap_parameters format: []
@@ -54,21 +55,26 @@ class CoursesController < ApplicationController
       end
     end
 
+    course_params = prepare_received_course_params(update_course_params)
+
     # If a course has been published, prevent any changes to price/currency
     # Making it free will be allowed automatically, however, making it paid at a different
     # price from what was originally published will require us to take action first.
     # This will be checked in the validator since going from free->paid will throw an error if price is null.
     if @course.last_publish_date.present?
-      new_price = update_course_params[:price]
-      new_currency = update_course_params[:currency]
+      new_price = course_params[:price]
+      new_currency = course_params[:currency]
 
       # If changing the price/currency and the price/currency is different from what was there before
-      if (!new_price.nil? && @course.price != new_price) || (!new_currency.nil? && @course.currency != new_currency)
-        raise Errors::BaseError.new(message: "Please contact us to change the price or currency", status: 400)
+      if !new_price.nil? && @course.price != new_price.to_d
+        raise Errors::BaseError.new(message: "Please contact us to change the price", status: 400)
+      end
+
+      if !new_currency.nil? && @course.currency != new_currency
+        raise Errors::BaseError.new(message: "Please contact us to change the currency", status: 400)
       end
     end
 
-    course_params = prepare_received_course_params(update_course_params)
     handle_image_update(course_params)
     @course.assign_attributes(course_params.except(:image_url))
 
@@ -377,6 +383,12 @@ class CoursesController < ApplicationController
     @course = Course.non_deleted_courses.find(params[:id])
     if @course.creator != current_user && current_user.user_type != :admin
       raise Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
+    end
+  end
+
+  def check_creators_consent
+    if !current_user.creator
+      raise Errors::ForbiddenError.new(message: "You must agree to the creator terms before you can create a course")
     end
   end
 
