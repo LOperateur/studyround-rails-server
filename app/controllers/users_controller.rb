@@ -47,6 +47,18 @@ class UsersController < ApplicationController
     render json: current_user, root: :data
   end
 
+  def creator_consent
+    if !current_user.creator
+      # Update the user's creator status indicating they can create content
+      current_user.update!(creator: true)
+
+      # Send an email to the user to confirm their creator's consent
+      UserMailer.with(email: current_user.email).creator_consent_email.deliver_later
+    end
+
+    render json: current_user, root: :data
+  end
+
   private
 
   def prepare_received_profile_params(received_params)
@@ -83,7 +95,7 @@ class UsersController < ApplicationController
   end
 
   def update_profile_params
-    params.permit(:first_name, :last_name, :other_name, :date_of_birth, :creator,
+    params.permit(:first_name, :last_name, :other_name, :date_of_birth,
                   :pro_account, :occupation, :about, :country, :profile_image, :profile_image_url)
   end
 

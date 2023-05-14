@@ -19,6 +19,7 @@ Rails.application.routes.draw do
   get '/user/interests', to: "users#interested_categories"
   post '/user/interests', to: "users#create_interests"
   patch '/user/onboard', to: "users#onboard"
+  patch '/user/creator-consent', to: "users#creator_consent"
   resources :users, only: [:show]
 
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
