@@ -91,7 +91,7 @@ Rails.application.routes.draw do
   get '/admin/courses', to: "admin#courses"
   post '/admin/assign-course', to: "admin#assign_course"
   post '/admin/merge-courses', to: "admin#merge_courses"
-  post '/admin/suspend-course', to: "admin#suspend_course"
+  patch '/admin/suspend-course', to: "admin#suspend_course"
 
   get '/faqs', to: "faqs#index"
 
