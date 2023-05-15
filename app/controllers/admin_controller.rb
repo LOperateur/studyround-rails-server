@@ -94,6 +94,30 @@ class AdminController < ApplicationController
     render json: main_course, root: :data, status: :ok
   end
 
+  def suspend_course
+    course = Course.non_deleted_courses.find(suspend_courses_params[:course_id])
+    if course.test && course.course_status_closed?
+      raise Errors::BaseError.new(message: "This Test is over! Further action cannot be taken", status: 400)
+    end
+
+    if suspend_course_params[:suspend] == true
+      course.course_status_suspended!
+    else
+      # Firstly check if the test is expired
+      if course.test
+        expired = Time.now > course.test_expiration
+        if expired
+          course.course_status_expired!
+          raise Errors::BaseError.new(message: "This Test is now expired!", status: 400)
+        end
+      end
+
+      course.course_status_active!
+    end
+
+    render json: course, root: :data, status: :ok
+  end
+
   private
 
   def check_admin
@@ -108,5 +132,9 @@ class AdminController < ApplicationController
 
   def merge_courses_params
     params.permit(:main_course_id, :merge_course_id)
+  end
+
+  def suspend_course_params
+    params.permit(:course_id, :suspend)
   end
 end

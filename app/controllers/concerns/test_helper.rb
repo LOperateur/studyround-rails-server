@@ -368,14 +368,10 @@ module TestHelper
     # If the time indicates it's expired but the course doesn't
     # have an expired or closed status, then expire the course.
     if expired && !(@course.course_status_expired? || @course.course_status_closed?)
-      begin
-        @course.course_status_expired!
+      @course.course_status_expired!
 
-        # Handle email notifications
-        @course.send_test_status_emails
-      rescue ActiveRecord::RecordInvalid
-        # Todo: Report this
-      end
+      # Handle email notifications
+      @course.send_test_status_emails
     end
 
     return expired

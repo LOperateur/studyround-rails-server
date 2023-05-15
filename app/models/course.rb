@@ -23,10 +23,6 @@ class Course < ApplicationRecord
 
   scope :ordered_by_result_count, -> { left_joins(:results).group(:id).order('COUNT(results.id) DESC') }
 
-  # Don't change the order of 1 and 2, referenced in migration
-  # 20220418091257_change_course_draft_to_integer.rb
-  # 20220418100048_rename_question_course_status.rb
-
   enum sale_status: {
     sale_status_free: 1,
     sale_status_explanations: 2,
