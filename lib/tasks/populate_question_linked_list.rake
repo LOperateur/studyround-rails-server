@@ -4,7 +4,7 @@ namespace :question do
     puts 'Populating linked list fields for questions...'
 
     Course.non_deleted_courses.each do |course|
-      course.non_deleted_questions.order(:created_at).each_cons(2) do |previous_question, next_question|
+      course.questions.non_deleted_questions.order(:created_at).each_cons(2) do |previous_question, next_question|
         previous_question.update(next_id: next_question.id)
         next_question.update(previous_id: previous_question.id)
       end
