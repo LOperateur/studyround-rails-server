@@ -3,6 +3,8 @@ class CreatorQuestionSerializer < QuestionAnswerSerializer
   attributes :previous_question_id, :next_question_id, :question_raw, :explanation,
              :explanation_image_url, :explanation_raw, :remaining_edits, :draft
 
+  belongs_to :creator, serializer: MiniProfileSerializer
+
   def previous_question_id
     object.previous_id
   end

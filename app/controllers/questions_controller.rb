@@ -96,6 +96,8 @@ class QuestionsController < ApplicationController
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
+    question.creator_id = current_user.id
+
     establish_position_and_save(question, create_question_params[:position])
 
     render json: question, root: :data, serializer: CreatorQuestionSerializer
