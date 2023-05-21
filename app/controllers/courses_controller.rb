@@ -31,7 +31,7 @@ class CoursesController < ApplicationController
 
     if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
-        raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable")
+        raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
       end
 
       render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status) }

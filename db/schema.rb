@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_04_30_172152) do
+ActiveRecord::Schema.define(version: 2023_05_20_212431) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -166,7 +166,10 @@ ActiveRecord::Schema.define(version: 2023_04_30_172152) do
     t.bigint "previous_id"
     t.bigint "next_id"
     t.string "year"
+    t.bigint "creator_id"
+    t.jsonb "notes"
     t.index ["course_id"], name: "index_questions_on_course_id"
+    t.index ["creator_id"], name: "index_questions_on_creator_id"
   end
 
   create_table "refresh_tokens", force: :cascade do |t|
@@ -279,6 +282,7 @@ ActiveRecord::Schema.define(version: 2023_04_30_172152) do
   add_foreign_key "questions", "courses"
   add_foreign_key "questions", "questions", column: "next_id"
   add_foreign_key "questions", "questions", column: "previous_id"
+  add_foreign_key "questions", "users", column: "creator_id"
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "results", "courses"
   add_foreign_key "results", "users"

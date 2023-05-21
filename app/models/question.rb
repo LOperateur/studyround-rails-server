@@ -4,6 +4,7 @@ class Question < ApplicationRecord
 
   belongs_to :previous, class_name: "Question", foreign_key: :previous_id, optional: true
   belongs_to :next, class_name: "Question", foreign_key: :next_id, optional: true
+  belongs_to :creator, class_name: "User", foreign_key: :creator_id, optional: true
 
   validates_with QuestionValidator
 
