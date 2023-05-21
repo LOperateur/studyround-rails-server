@@ -49,6 +49,8 @@ Rails.application.routes.draw do
   get '/creator/courses/:course_id/questions/:id', to: "questions#show"
   put '/creator/courses/:course_id/questions/:id', to: "questions#update"
   patch '/creator/courses/:course_id/questions/:id/publish', to: "questions#publish"
+  patch '/creator/courses/:course_id/questions/:id/add-note', to: "questions#add_note"
+  delete '/creator/courses/:course_id/questions/:id/remove-note', to: "questions#remove_note"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
 
   resources :questions do
