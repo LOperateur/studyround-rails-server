@@ -3,7 +3,7 @@ class QuestionsController < ApplicationController
   include TestHelper
 
   before_action :load_creators_course, except: [:index, :explanation]
-  before_action :load_question, only: [:show, :update, :publish, :destroy]
+  before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
   wrap_parameters format: []
@@ -217,6 +217,40 @@ class QuestionsController < ApplicationController
     end
 
     render json: { message: "Deleted successfully", data: {} }, status: 200
+  end
+
+  # Question Notes implementation
+
+  def add_note
+    note = @question.notes
+    if note.present?
+      note[current_user.username] = create_note_params[:note]
+    else
+      note = { current_user.username => create_note_params[:note] }
+    end
+
+    @question.notes = note
+    @question.save!
+
+    render json: @question, root: :data, meta: { message: "Note Added" }, serializer: CreatorQuestionSerializer
+  end
+
+  def remove_note
+    note = @question.notes
+    if note.present?
+      # Remove the note with the current user's username
+      note.delete(current_user.username)
+
+      # If there are no more notes, set notes to nil
+      if note.empty?
+        note = nil
+      end
+    end
+
+    @question.notes = note
+    @question.save!
+
+    render json: @question, root: :data, serializer: CreatorQuestionSerializer
   end
 
   private
@@ -474,5 +508,9 @@ class QuestionsController < ApplicationController
                   :explanation, :explanation_raw, :explanation_image, :explanation_image_url,
                   :options, :answer, :multi_answer, :multiplier, :option_images, :year
     )
+  end
+
+  def create_note_params
+    params.permit(:note)
   end
 end
