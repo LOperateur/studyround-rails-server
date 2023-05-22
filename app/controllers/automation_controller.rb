@@ -2,7 +2,7 @@ class AutomationController < ApplicationController
   skip_before_action :authorize!
 
   def assign_course
-    creator_username, reviewer_username = parse_trello_course_desc(assign_course_params[:description])
+    creator_username, reviewer_username = parse_trello_course_desc(assign_course_params[:description].gsub("\n", " "))
 
     creator = User.find_by(username: creator_username)
     reviewer = User.find_by(username: reviewer_username)
