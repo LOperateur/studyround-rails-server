@@ -95,6 +95,8 @@ Rails.application.routes.draw do
   post '/admin/merge-courses', to: "admin#merge_courses"
   patch '/admin/suspend-course', to: "admin#suspend_course"
 
+  post '/automation/assign-course', to: "automation#assign_course"
+
   get '/faqs', to: "faqs#index"
 
   # Route for root endpoint
