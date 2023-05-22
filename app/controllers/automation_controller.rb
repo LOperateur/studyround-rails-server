@@ -14,6 +14,8 @@ class AutomationController < ApplicationController
       course.creator = creator
     elsif assignment == "reviewer"
       course.creator = reviewer
+    else
+      course.creator = User.find_by(email: "admin@myulearn.com")
     end
 
     course.save!
