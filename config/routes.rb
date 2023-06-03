@@ -96,6 +96,7 @@ Rails.application.routes.draw do
   patch '/admin/suspend-course', to: "admin#suspend_course"
 
   post '/automation/assign-course', to: "automation#assign_course"
+  post '/automation/create-course', to: "automation#create_course"
 
   get '/faqs', to: "faqs#index"
 
