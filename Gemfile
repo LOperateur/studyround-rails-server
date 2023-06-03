@@ -61,6 +61,9 @@ gem 'digest-murmurhash'
 # For cleaner logging
 gem 'lograge'
 
+# For Rest API calls
+gem 'faraday'
+
 group :development, :test do
   gem 'rspec-rails', '~> 4.0.2'
   gem 'factory_bot_rails'
