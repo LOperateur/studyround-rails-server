@@ -90,6 +90,9 @@ Rails.application.routes.draw do
   end
 
   get '/admin/users', to: "admin#users"
+  patch '/admin/suspend-user', to: "admin#suspend_user"
+  patch '/admin/delete-user', to: "admin#delete_user"
+  patch '/admin/activate-users', to: "admin#temporary_user_update"
   get '/admin/courses', to: "admin#courses"
   post '/admin/assign-course', to: "admin#assign_course"
   post '/admin/merge-courses', to: "admin#merge_courses"

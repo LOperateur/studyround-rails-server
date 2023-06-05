@@ -34,13 +34,13 @@ class AutomationController < ApplicationController
       req.params['token'] = ENV['TRELLO_API_TOKEN']
     end
 
-    render json: {}, root: :data, status: :ok
+    render json: { id: course.id }, status: :ok
   end
 
   def create_course
-    User.find_by(email: "admin@myulearn.com").courses.create!(title: create_course_params[:title], about: create_course_params[:title])
+    course = User.find_by(email: "admin@myulearn.com").courses.create!(title: create_course_params[:title], about: create_course_params[:title])
 
-    render json: {}, root: :data, status: :created
+    render json: { id: course.id }, status: :created
   end
 
   private
@@ -56,10 +56,17 @@ class AutomationController < ApplicationController
 
   def username_to_trello_id_map
     {
+      # Admins
       "ulearn": "5d7fca71118a894284ce5818",
       "mofeejegi": "5b83d7af75612b1212f3a7f1",
       "caleb": "5d478ab77a6be628c6573af0",
       "karo": "6473baa1ae62fda376e8cc60",
+
+      # Managers
+      "jolomi.pm": "647cbc0ca4b63ce23b371917",
+      "chika.pm": "5c0699f0c7832e592fa13101",
+
+      # Content Providers
       "abram.ekhator.cp": "634c6827017a99006f9cfb67",
       "debby.becky.cp": "646c7dff1b89f0436877e0fe",
       "ebu.excellent.cp": "646cbb9302e5ce43be681b20",

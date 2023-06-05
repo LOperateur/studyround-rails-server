@@ -10,17 +10,44 @@ class AdminController < ApplicationController
     # Todo: Implement better access permission levels
     case user_type_filter
     when :admin
-      users = User.where("email = ?", "admin@myulearn.com")
+      users = User.active_users.where("email LIKE ?", "admin%@myulearn.com")
     when :content_support
-      users = User.where("email LIKE ?", "content%@myulearn.com")
+      users = User.active_users.where("email LIKE ?", "content%@myulearn.com")
     when :standard
-      users = User.where("email != ? AND email NOT LIKE ?", "admin@myulearn.com", "content%@myulearn.com")
+      users = User.active_users.where("email NOT LIKE ? AND email NOT LIKE ?", "admin%@myulearn.com", "content%@myulearn.com")
     else
-      users = User.all
+      users = User.active_users.all
     end
 
     paginated_users = paginate(users.order(created_at: :asc), params)
     render json: paginated_users, root: :data, meta: paginated_meta(paginated_users), each_serializer: ProfileSerializer
+  end
+
+  def suspend_user
+    user = User.non_deleted_users.find(suspend_user_params[:user_id])
+    if suspend_user_params[:remove_suspension] == true
+      user.user_status_active!
+      message = "Suspension lifted!"
+    else
+      user.user_status_suspended!
+      message = "Suspension placed on user!"
+    end
+    render json: user, root: :data, status: :ok, meta: { message: message }
+  end
+
+  def delete_user
+    user = User.non_deleted_users.find(delete_user_params[:user_id])
+    user.user_status_deleted!
+    render json: user, root: :data, status: :ok, meta: { message: "User deleted!" }
+  end
+
+  # TODO: Delete this method later
+  def temporary_user_update
+    User.find_each do |user|
+      user.user_status_active!
+    end
+
+    render json: { message: "Done" }, status: :ok
   end
 
   def courses
@@ -126,6 +153,14 @@ class AdminController < ApplicationController
     if current_user.user_type != :admin
       raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
     end
+  end
+
+  def suspend_user_params
+    params.permit(:user_id, :remove_suspension)
+  end
+
+  def delete_user_params
+    params.permit(:user_id)
   end
 
   def assign_course_params
