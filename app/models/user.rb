@@ -32,7 +32,7 @@ class User < ApplicationRecord
   }, _prefix: true
 
   def user_type
-    if self.email == "admin@myulearn.com"
+    if self.email.starts_with?("admin") && self.email.ends_with?("@myulearn.com")
       return :admin
     elsif self.email.starts_with?("content") && self.email.ends_with?("@myulearn.com")
       return :content_support

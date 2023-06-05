@@ -10,11 +10,11 @@ class AdminController < ApplicationController
     # Todo: Implement better access permission levels
     case user_type_filter
     when :admin
-      users = User.where("email = ?", "admin@myulearn.com")
+      users = User.where("email LIKE ?", "admin%@myulearn.com")
     when :content_support
       users = User.where("email LIKE ?", "content%@myulearn.com")
     when :standard
-      users = User.where("email != ? AND email NOT LIKE ?", "admin@myulearn.com", "content%@myulearn.com")
+      users = User.where("email NOT LIKE ? AND email NOT LIKE ?", "admin%@myulearn.com", "content%@myulearn.com")
     else
       users = User.all
     end
