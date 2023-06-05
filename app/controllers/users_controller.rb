@@ -4,7 +4,7 @@ class UsersController < ApplicationController
   wrap_parameters format: []
 
   def show
-    render json: User.find(params[:id]), root: :data
+    render json: User.non_deleted_users.find(params[:id]), root: :data
   end
 
   def show_current_user
