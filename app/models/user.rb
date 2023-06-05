@@ -22,6 +22,15 @@ class User < ApplicationRecord
   has_many :financial_cards
   has_one_attached :profile_image
 
+  scope :active_users, -> { where(user_status: :user_status_active) }
+  scope :non_deleted_users, -> { where.not(user_status: :user_status_deleted) }
+
+  enum user_status: {
+    user_status_active: 1,
+    user_status_suspended: 2,
+    user_status_deleted: 3,
+  }
+
   # This is a bare-bones implementation for this
   # We'll revisit the logic for permissions and user types later
   # Todo: Implement better access permission levels
