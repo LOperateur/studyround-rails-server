@@ -41,15 +41,6 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :ok, meta: { message: "User deleted!" }
   end
 
-  # TODO: Delete this method later
-  def temporary_user_update
-    User.find_each do |user|
-      user.user_status_active!
-    end
-
-    render json: { message: "Done" }, status: :ok
-  end
-
   def courses
     if params[:creator_id].present?
       # Get courses by creator
