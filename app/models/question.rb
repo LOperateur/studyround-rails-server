@@ -6,6 +6,9 @@ class Question < ApplicationRecord
   belongs_to :next, class_name: "Question", foreign_key: :next_id, optional: true
   belongs_to :creator, class_name: "User", foreign_key: :creator_id, optional: true
 
+  has_many :question_asset_references, dependent: :destroy # Delete all asset references if question is deleted
+  has_many :question_assets, through: :question_asset_references
+
   validates_with QuestionValidator
 
   has_one_attached :question_image, dependent: :detach # Retain history of published attachments

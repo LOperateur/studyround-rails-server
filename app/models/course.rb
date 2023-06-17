@@ -10,6 +10,7 @@ class Course < ApplicationRecord
   has_many :categories, through: :categorizations
   has_many :results
   has_many :questions, dependent: :delete_all # Doing this instead of destroy because questions are self-referential
+  has_many :question_assets, dependent: :destroy
   has_many :reviews, dependent: :destroy
   has_many :sessions
   has_one_attached :image
