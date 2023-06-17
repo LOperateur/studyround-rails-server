@@ -29,13 +29,16 @@ class QuestionsController < ApplicationController
       if current_user.has_purchased_item(course)
         explanation = question.explanation
         explanation_image_url = question.generated_explanation_image_url
+        explanation_image_asset = question.explanation_image_asset
       else
         explanation = "Please purchase these explanations to view them."
         explanation_image_url = nil
+        explanation_image_asset = nil
       end
     else
       explanation = question.explanation
       explanation_image_url = question.generated_explanation_image_url
+      explanation_image_asset = question.explanation_image_asset
     end
 
     render json: {
@@ -43,6 +46,7 @@ class QuestionsController < ApplicationController
         question_id: question.id,
         explanation: explanation,
         explanation_image_url: explanation_image_url,
+        explanation_image_asset: explanation_image_asset,
       }
     }
   end

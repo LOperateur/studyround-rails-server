@@ -1,7 +1,8 @@
 class CreatorQuestionSerializer < QuestionAnswerSerializer
   type :question
   attributes :previous_question_id, :next_question_id, :question_raw, :explanation,
-             :explanation_image_url, :explanation_raw, :remaining_edits, :notes, :draft
+             :explanation_image_url, :explanation_image_asset, :explanation_raw,
+             :remaining_edits, :notes, :draft
 
   belongs_to :creator, serializer: MiniProfileSerializer
 
@@ -15,6 +16,10 @@ class CreatorQuestionSerializer < QuestionAnswerSerializer
 
   def explanation_image_url
     object.generated_explanation_image_url
+  end
+
+  def explanation_image_asset
+    object.explanation_image_asset
   end
 
   def remaining_edits
