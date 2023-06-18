@@ -42,6 +42,7 @@ Rails.application.routes.draw do
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
+    resources :question_assets, only: [:index, :create, :update, :show, :destroy]
   end
 
   get '/creator/courses/:course_id/questions', to: "questions#questions"

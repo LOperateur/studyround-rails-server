@@ -276,6 +276,10 @@ class QuestionsController < ApplicationController
   end
 
   def resolve_notes
+    if current_user.user_type != :admin
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to resolve notes in this course.")
+    end
+
     # Just delete all notes
     @question.notes = nil
     @question.save!
@@ -507,10 +511,13 @@ class QuestionsController < ApplicationController
   def publish_asset_references(question)
     # Remove all previously published references
     # Todo: Check if they are different from the draft references to avoid unnecessary DB calls
-    question.question_asset_references.where(reference_type: :reference_type_question_image).destroy_all
-    question.question_asset_references.where(reference_type: :reference_type_explanation_image).destroy_all
-    question.question_asset_references.where(reference_type: :reference_type_option_image).destroy_all
-    question.question_asset_references.where(reference_type: :reference_type_passage).destroy_all
+    # Only make this call if there are any assets referenced by the question
+    if question.question_asset.exists?
+      question.question_asset_references.where(reference_type: :reference_type_question_image).destroy_all
+      question.question_asset_references.where(reference_type: :reference_type_explanation_image).destroy_all
+      question.question_asset_references.where(reference_type: :reference_type_option_image).destroy_all
+      question.question_asset_references.where(reference_type: :reference_type_passage).destroy_all
+    end
 
     # Change the reference types from draft to published
     question.question_asset_references.where(reference_type: :reference_type_question_image_draft)
