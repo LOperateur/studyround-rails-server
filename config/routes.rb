@@ -51,6 +51,7 @@ Rails.application.routes.draw do
   patch '/creator/courses/:course_id/questions/:id/publish', to: "questions#publish"
   patch '/creator/courses/:course_id/questions/:id/add-note', to: "questions#add_note"
   delete '/creator/courses/:course_id/questions/:id/remove-note', to: "questions#remove_note"
+  post '/creator/courses/:course_id/questions/:id/resolve-notes', to: "questions#resolve_notes"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
 
   resources :questions do

@@ -10,5 +10,6 @@ class QuestionAssetReference < ApplicationRecord
     reference_type_option_image: 5,
     reference_type_option_image_draft: 6,
     reference_type_passage: 7,
+    reference_type_passage_draft: 8,
   }
 end
