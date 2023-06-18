@@ -100,11 +100,6 @@ class QuestionsController < ApplicationController
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
-    # Add the referenced assets to the draft json
-    question.draft["question_image_asset"] = @course.question_assets.find(create_question_params[:question_image_asset_id]).serialized_question_asset if create_question_params.key?(:question_image_asset_id)
-    question.draft["explanation_image_asset"] = @course.question_assets.find(create_question_params[:explanation_image_asset_id]).serialized_question_asset if create_question_params.key?(:explanation_image_asset_id)
-    question.draft["passage_asset"] = @course.question_assets.find(create_question_params[:passage_asset_id]).serialized_question_asset if create_question_params.key?(:passage_asset_id)
-
     question.creator_id = current_user.id
 
     Question.transaction do
@@ -131,11 +126,6 @@ class QuestionsController < ApplicationController
     # Add generated urls to draft json
     @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
     @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
-
-    # Update the referenced assets in the draft json
-    @question.draft["question_image_asset"] = @course.question_assets.find(update_question_params[:question_image_asset_id]).serialized_question_asset if update_question_params.key?(:question_image_asset_id)
-    @question.draft["explanation_image_asset"] = @course.question_assets.find(update_question_params[:explanation_image_asset_id]).serialized_question_asset if update_question_params.key?(:explanation_image_asset_id)
-    @question.draft["passage_asset"] = @course.question_assets.find(update_question_params[:passage_asset_id]).serialized_question_asset if update_question_params.key?(:passage_asset_id)
 
     Question.transaction do
       # Reference Assets and update the question
@@ -444,7 +434,6 @@ class QuestionsController < ApplicationController
       question_params[:answer] = answer_json
     end
 
-    # Attach the assets in the create/update methods instead
     # Position and next/previous id's have no relevance in the draft JSON
     question = @course.questions.build(
       question_params.except(
@@ -456,48 +445,66 @@ class QuestionsController < ApplicationController
 
     rough_draft = question.as_json
 
+    # Indicate the Asset ID's for the draft
+    rough_draft["question_image_asset_id"] = question_params[:question_image_asset_id] if update_question_params.key?(:question_image_asset_id)
+    rough_draft["explanation_image_asset_id"] = question_params[:explanation_image_asset_id] if update_question_params.key?(:explanation_image_asset_id)
+    rough_draft["passage_asset_id"] = question_params[:passage_asset_id] if update_question_params.key?(:passage_asset_id)
+
     return strip_non_draft_fields(rough_draft)
   end
 
   def build_asset_references(question_params, question)
     # Handle the assets if they are present in the request parameters.
+    # Ideally, when building references, the params should always have the assets id's
+    # regardless of whether they are being updated or not. However, if they
+    # aren't present, we take no action.
 
-    if question_params[:question_image_asset_id]
+    if question_params.key?(:question_image_asset_id)
+      # Delete the old reference if it exists
       reference_type = :reference_type_question_image_draft
-      # Delete the old reference if it exists
       question.question_asset_references.where(reference_type: reference_type).destroy_all
-      question.question_asset_references.build(
-        question_asset_id: question_params[:question_image_asset_id],
-        reference_type: reference_type,
-      )
+
+      if question_params[:question_image_asset_id].present?
+        question.question_asset_references.build(
+          question_asset_id: question_params[:question_image_asset_id],
+          reference_type: reference_type,
+        )
+      end
     end
 
-    if question_params[:explanation_image_asset_id]
+    if question_params.key?(:explanation_image_asset_id)
+      # Delete the old reference if it exists
       reference_type = :reference_type_explanation_image_draft
-      # Delete the old reference if it exists
       question.question_asset_references.where(reference_type: reference_type).destroy_all
-      question.question_asset_references.build(
-        question_asset_id: question_params[:explanation_image_asset_id],
-        reference_type: reference_type,
-      )
+
+      if question_params[:explanation_image_asset_id].present?
+        question.question_asset_references.build(
+          question_asset_id: question_params[:explanation_image_asset_id],
+          reference_type: reference_type,
+        )
+      end
     end
 
-    if question_params[:passage_asset_id]
-      reference_type = :reference_type_passage_draft
+    if question_params.key?(:passage_asset_id)
       # Delete the old reference if it exists
+      reference_type = :reference_type_passage_draft
       question.question_asset_references.where(reference_type: reference_type).destroy_all
-      question.question_asset_references.build(
-        question_asset_id: question_params[:passage_asset_id],
-        reference_type: reference_type,
-      )
+
+      if question_params[:passage_asset_id].present?
+        question.question_asset_references.build(
+          question_asset_id: question_params[:passage_asset_id],
+          reference_type: reference_type,
+        )
+      end
     end
 
     # Option image assets are handled differently as they are nested in the options JSON
+    # Delete all old options references if any exists
+    reference_type = :reference_type_option_image_draft
+    question.question_asset_references.where(reference_type: reference_type).destroy_all
+
     question.draft["option"].each do |option|
       if option["option_image_asset_id"].present?
-        reference_type = :reference_type_option_image_draft
-        # Delete all old references if any exists
-        question.question_asset_references.where(reference_type: reference_type).destroy_all
         question.question_asset_references.build(
           question_asset_id: option["option_image_asset_id"],
           reference_type: reference_type,
