@@ -4,7 +4,7 @@ class QuestionAsset < ApplicationRecord
   belongs_to :course
   has_many :question_asset_references, dependent: :restrict_with_exception # Prevent deletion if referenced by a question
   has_many :questions, through: :question_asset_references
-  has_one_attached :file, dependent: :destroy # If the asset is deleted, delete the file
+  has_one_attached :file, dependent: :purge_later # Purge the file if the asset is deleted
 
   enum asset_type: {
     asset_type_image: 1,
