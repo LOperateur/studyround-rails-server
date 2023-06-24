@@ -25,16 +25,10 @@ class QuestionsController < ApplicationController
     question = Question.find(params[:question_id])
     course = question.course
 
-    if course.sale_status_explanations?
-      if current_user.has_purchased_item(course)
-        explanation = question.explanation
-        explanation_image_url = question.generated_explanation_image_url
-        explanation_image_asset = question.explanation_image_asset
-      else
-        explanation = "Please purchase these explanations to view them."
-        explanation_image_url = nil
-        explanation_image_asset = nil
-      end
+    if course.sale_status_explanations? && !current_user.has_purchased_item(course)
+      explanation = "Please purchase these explanations to view them."
+      explanation_image_url = nil
+      explanation_image_asset = nil
     else
       explanation = question.explanation
       explanation_image_url = question.generated_explanation_image_url

@@ -170,4 +170,30 @@ module SessionHelper
       }
     }
   end
+
+  # Populate the session items from the post body with the current question in full
+  # This is to keep a reference to the content the user took at the time.
+  def flesh_out_session_items(session_items)
+    # Fetch all the questions in one query
+    question_ids = session_items.map { |session_item| session_item["question_id"] }
+    questions = Question.where(id: question_ids)
+
+    full_session_items = []
+
+    session_items.map do |session_item|
+      # Get the question from the array of questions
+      question = questions.find { |fetched_question| fetched_question.id == session_item["question_id"] }
+      #If the question is not found, just skip it
+      next if question.nil?
+      # Merge the question data into the session item
+      session_item.merge!(question.serialized_question)
+      # Todo: Consider adding the explanation data (would be hidden when rendering session items)
+      # session_item[:explanation] = { explanation: question.explanation, explanation_image_asset: question.explanation_image_asset }
+      # Then add the full session item to the array
+      full_session_items << session_item
+    end
+
+    full_session_items
+  end
+
 end
