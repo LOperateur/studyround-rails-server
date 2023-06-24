@@ -53,7 +53,7 @@ class QuestionAssetsController < ApplicationController
     if question_asset.asset_type_passage? && update_question_asset_params[:content].present?
       question_asset.update!(content: update_question_asset_params[:content])
     elsif question_asset.asset_type_image? && update_question_asset_params[:file].present?
-      question_asset.file.purge_later
+      # ActiveStorage will automatically purge the old file
       question_asset.file.attach(update_question_asset_params[:file])
     else
       raise Errors::BaseError.new(message: "Invalid asset configuration", status: 400)
