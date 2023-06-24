@@ -56,6 +56,10 @@ class ResultsController < ApplicationController
     result_session = result.session_items.to_a.drop(offset).take(limit)
     question_ids = result_session.map { |session_item| session_item["question_id"] }.join(",")
 
+    # Todo: Use json access for non-tests
+    #  Also check at the start if session items is nil, then just raise an error
+    #  We'll delete the json every three months
+    #  If the non-test ones still have the old session items data, then raise an error with the same error message
     questions = Question.where("id IN (#{question_ids})")
 
     # Append the question to the session item using the question_id to match

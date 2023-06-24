@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_06_05_095701) do
+ActiveRecord::Schema.define(version: 2023_06_17_133630) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -143,6 +143,25 @@ ActiveRecord::Schema.define(version: 2023_06_05_095701) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_identity"], name: "index_otps_on_user_identity", unique: true
+  end
+
+  create_table "question_asset_references", force: :cascade do |t|
+    t.bigint "question_id"
+    t.bigint "question_asset_id"
+    t.integer "reference_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["question_asset_id"], name: "index_question_asset_references_on_question_asset_id"
+    t.index ["question_id"], name: "index_question_asset_references_on_question_id"
+  end
+
+  create_table "question_assets", force: :cascade do |t|
+    t.bigint "course_id"
+    t.text "content"
+    t.integer "asset_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_question_assets_on_course_id"
   end
 
   create_table "questions", force: :cascade do |t|
@@ -279,6 +298,9 @@ ActiveRecord::Schema.define(version: 2023_06_05_095701) do
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
   add_foreign_key "notifications", "users"
+  add_foreign_key "question_asset_references", "question_assets"
+  add_foreign_key "question_asset_references", "questions"
+  add_foreign_key "question_assets", "courses"
   add_foreign_key "questions", "courses"
   add_foreign_key "questions", "questions", column: "next_id"
   add_foreign_key "questions", "questions", column: "previous_id"
