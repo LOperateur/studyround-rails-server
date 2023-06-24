@@ -104,7 +104,7 @@ class QuestionsController < ApplicationController
 
     Question.transaction do
       # Reference Assets and save the question
-      build_asset_references(create_question_params, question)
+      build_asset_references(question)
       establish_position_and_save(question, create_question_params[:position])
     end
 
@@ -129,7 +129,7 @@ class QuestionsController < ApplicationController
 
     Question.transaction do
       # Reference Assets and update the question
-      build_asset_references(update_question_params, @question)
+      build_asset_references(@question)
       @question.save!
     end
 
@@ -147,52 +147,45 @@ class QuestionsController < ApplicationController
 
     draft = @question.draft.symbolize_keys
 
-    begin
-      @question.question = draft[:question]
-      @question.question_raw = draft[:question_raw]
+    @question.question = draft[:question]
+    @question.question_raw = draft[:question_raw]
 
-      @question.explanation = draft[:explanation]
-      @question.explanation_raw = draft[:explanation_raw]
+    @question.explanation = draft[:explanation]
+    @question.explanation_raw = draft[:explanation_raw]
 
-      @question.options = draft[:options]
-      @question.answer = draft[:answer]
-      @question.multiplier = draft[:multiplier]
-      @question.multi_answer = draft[:multi_answer]
-      @question.year = draft[:year]
+    @question.options = draft[:options]
+    @question.answer = draft[:answer]
+    @question.multiplier = draft[:multiplier]
+    @question.multi_answer = draft[:multi_answer]
+    @question.year = draft[:year]
 
-      @question.version = @question.version + 1
-      @question.draft = nil
-      @question.publish_status = :publish_status_published
+    @question.version = @question.version + 1
+    @question.draft = nil
+    @question.publish_status = :publish_status_published
 
-      Question.transaction do
-        publish_asset_references(@question)
-        @question.save!
-      end
-
-      # Handle images if save was successful
-
-      # Todo: deprecated - Remove direct question image attachments
-      # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
-      if @question.question_image_draft.attached?
-        copy_attachment(@question.question_image_draft, @question.question_image)
-      else
-        @question.question_image.detach
-      end
-
-      if @question.explanation_image_draft.attached?
-        copy_attachment(@question.explanation_image_draft, @question.explanation_image)
-      else
-        @question.explanation_image.detach
-      end
-
-      @question.question_image_draft.purge_later
-      @question.explanation_image_draft.purge_later
-
-      # TODO: Move previous version to version history when implemented
-
-    rescue
-      raise Errors::InvalidError.new(@question.errors.to_h)
+    Question.transaction do
+      publish_asset_references(@question)
+      @question.save!
     end
+
+    # Handle images if save was successful
+
+    # Todo: deprecated - Remove direct question image attachments
+    # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
+    if @question.question_image_draft.attached?
+      copy_attachment(@question.question_image_draft, @question.question_image)
+    else
+      @question.question_image.detach
+    end
+
+    if @question.explanation_image_draft.attached?
+      copy_attachment(@question.explanation_image_draft, @question.explanation_image)
+    else
+      @question.explanation_image.detach
+    end
+
+    @question.question_image_draft.purge_later
+    @question.explanation_image_draft.purge_later
 
     render json: @question, root: :data, meta: { message: "Published successfully" },
            serializer: CreatorQuestionSerializer
@@ -434,6 +427,7 @@ class QuestionsController < ApplicationController
       question_params[:answer] = answer_json
     end
 
+    # Attach the assets in the create/update methods instead
     # Position and next/previous id's have no relevance in the draft JSON
     question = @course.questions.build(
       question_params.except(
@@ -453,46 +447,45 @@ class QuestionsController < ApplicationController
     return strip_non_draft_fields(rough_draft)
   end
 
-  def build_asset_references(question_params, question)
+  def build_asset_references(question)
     # Handle the assets if they are present in the request parameters.
     # Ideally, when building references, the params should always have the assets id's
-    # regardless of whether they are being updated or not. However, if they
-    # aren't present, we take no action.
+    # regardless of whether they are being updated or not.
 
-    if question_params.key?(:question_image_asset_id)
+    if question.draft.key?("question_image_asset_id")
       # Delete the old reference if it exists
       reference_type = :reference_type_question_image_draft
       question.question_asset_references.where(reference_type: reference_type).destroy_all
 
-      if question_params[:question_image_asset_id].present?
+      if question.draft["question_image_asset_id"].present?
         question.question_asset_references.build(
-          question_asset_id: question_params[:question_image_asset_id],
+          question_asset_id: question.draft["question_image_asset_id"],
           reference_type: reference_type,
         )
       end
     end
 
-    if question_params.key?(:explanation_image_asset_id)
+    if question.draft.key?("explanation_image_asset_id")
       # Delete the old reference if it exists
       reference_type = :reference_type_explanation_image_draft
       question.question_asset_references.where(reference_type: reference_type).destroy_all
 
-      if question_params[:explanation_image_asset_id].present?
+      if question.draft["explanation_image_asset_id"].present?
         question.question_asset_references.build(
-          question_asset_id: question_params[:explanation_image_asset_id],
+          question_asset_id: question.draft["explanation_image_asset_id"],
           reference_type: reference_type,
         )
       end
     end
 
-    if question_params.key?(:passage_asset_id)
+    if question.draft.key?("passage_asset_id")
       # Delete the old reference if it exists
       reference_type = :reference_type_passage_draft
       question.question_asset_references.where(reference_type: reference_type).destroy_all
 
-      if question_params[:passage_asset_id].present?
+      if question.draft["passage_asset_id"].present?
         question.question_asset_references.build(
-          question_asset_id: question_params[:passage_asset_id],
+          question_asset_id: question.draft["passage_asset_id"],
           reference_type: reference_type,
         )
       end
@@ -503,14 +496,12 @@ class QuestionsController < ApplicationController
     reference_type = :reference_type_option_image_draft
     question.question_asset_references.where(reference_type: reference_type).destroy_all
 
-    question.draft["option"].each do |option|
+    question.draft["options"].each do |option|
       if option["option_image_asset_id"].present?
         question.question_asset_references.build(
           question_asset_id: option["option_image_asset_id"],
           reference_type: reference_type,
         )
-        # Attach the asset to the option JSON
-        option["option_image_asset"] = @course.question_assets.find(option["option_image_asset_id"]).serialized_question_asset
       end
     end
   end
@@ -519,7 +510,7 @@ class QuestionsController < ApplicationController
     # Remove all previously published references
     # Todo: Check if they are different from the draft references to avoid unnecessary DB calls
     # Only make this call if there are any assets referenced by the question
-    if question.question_asset.exists?
+    if question.question_assets.exists?
       question.question_asset_references.where(reference_type: :reference_type_question_image).destroy_all
       question.question_asset_references.where(reference_type: :reference_type_explanation_image).destroy_all
       question.question_asset_references.where(reference_type: :reference_type_option_image).destroy_all

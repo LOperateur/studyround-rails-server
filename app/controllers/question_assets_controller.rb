@@ -20,7 +20,11 @@ class QuestionAssetsController < ApplicationController
   end
 
   def create
-    question_asset = QuestionAsset.new
+    if @course.test && @course.publish_status_published?
+      raise Errors::ForbiddenError.new(message: "You cannot create new question assets for a published test.")
+    end
+
+    question_asset = @course.question_assets.build
 
     if create_question_asset_params[:asset_type] == "passage"
       question_asset.assign_attributes(
@@ -40,6 +44,10 @@ class QuestionAssetsController < ApplicationController
   end
 
   def update
+    if @course.test && @course.publish_status_published?
+      raise Errors::ForbiddenError.new(message: "You cannot edit question assets for a published test.")
+    end
+
     question_asset = @course.question_assets.find(params[:id])
 
     if question_asset.asset_type_passage? && update_question_asset_params[:content].present?
@@ -62,8 +70,17 @@ class QuestionAssetsController < ApplicationController
   end
 
   def destroy
+    if @course.test && @course.publish_status_published?
+      raise Errors::ForbiddenError.new(message: "You cannot make question asset changes to a published test.")
+    end
+
     question_asset = @course.question_assets.find(params[:id])
-    question_asset.destroy!
+
+    begin
+      question_asset.destroy!
+    rescue ActiveRecord::DeleteRestrictionError
+      raise Errors::BaseError.new(message: "Cannot delete question asset that is in use", status: 400)
+    end
 
     render json: question_asset, root: :data, status: :ok
   end

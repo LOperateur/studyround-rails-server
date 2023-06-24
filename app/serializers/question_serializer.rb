@@ -13,4 +13,18 @@ class QuestionSerializer < ActiveModel::Serializer
   def passage_asset
     object.passage_asset
   end
+
+  def options
+    # Expand the asset id's to dynamically include the option assets
+    options_w_assets = object.options
+    course = object.course
+
+    options_w_assets&.each do |option|
+      if option["option_image_asset_id"].present?
+        option.merge!({ option_image_asset: course.question_assets.find_by(id: option["option_image_asset_id"])&.serialized_question_asset })
+      end
+    end
+
+    return options_w_assets
+  end
 end

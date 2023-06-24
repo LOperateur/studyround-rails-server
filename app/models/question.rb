@@ -48,18 +48,17 @@ class Question < ApplicationRecord
   # Assets
   def question_image_asset
     # Get the question asset with a reference type of reference_type_question_image
-    self.question_asset_references.find_by(reference_type: :reference_type_question_image)&.question_asset.serialized_question_asset
+    self.question_asset_references.find_by(reference_type: :reference_type_question_image)&.question_asset&.serialized_question_asset
   end
 
   def explanation_image_asset
     # Get the question asset with a reference type of reference_type_explanation_image
-    self.question_asset_references.find_by(reference_type: :reference_type_explanation_image)&.question_asset.serialized_question_asset
+    self.question_asset_references.find_by(reference_type: :reference_type_explanation_image)&.question_asset&.serialized_question_asset
   end
 
   def passage_asset
     # Get the question asset with a reference type of reference_type_passage
-    # object.question_asset_references.find_by(reference_type: :reference_type_passage)&.question_asset
-    self.question_assets.find_by(asset_type: :asset_type_passage)&.first.serialized_question_asset
+    self.question_asset_references.find_by(reference_type: :reference_type_passage)&.question_asset&.serialized_question_asset
   end
 
   @deprecated # Use question_assets instead
