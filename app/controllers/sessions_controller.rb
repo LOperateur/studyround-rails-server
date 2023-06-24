@@ -52,6 +52,7 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
+    # Todo: Include the question json data here
     session_items_with_answers = end_course_session_params[:answers]
     num_questions = end_course_session_params[:questions]
 
@@ -155,6 +156,7 @@ class SessionsController < ApplicationController
     session_type = :practice
     num_questions = 10
 
+    # Todo: Include the question json data here
     session_items_with_answers = end_course_session_params[:answers]
 
     begin
