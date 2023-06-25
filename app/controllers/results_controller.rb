@@ -1,4 +1,6 @@
 class ResultsController < ApplicationController
+  include SessionHelper
+
   wrap_parameters format: []
 
   def show
@@ -49,29 +51,26 @@ class ResultsController < ApplicationController
       end
     end
 
+    if !result.session_type_test?
+      # For non-test sessions, if session items is nil, then just raise an error
+      # Also, check if there is no question in the session items, this is for backwards incompatible sessions
+      if result.session_items.blank? || result.session_items.first['question'].nil?
+        raise Errors::BaseError.new(message: "This result session is no longer available", status: 400)
+      end
+    end
+
     # Doing our own pagination here due to the nature of the query
     total_questions = result.session_items.size
     limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
-    result_session = result.session_items.to_a.drop(offset).take(limit)
-    question_ids = result_session.map { |session_item| session_item["question_id"] }.join(",")
+    result_session_items = result.session_items.to_a.drop(offset).take(limit)
 
-    # Todo: Use json access for non-tests
-    #  Also check at the start if session items is nil, then just raise an error
-    #  We'll delete the json every three months
-    #  If the non-test ones still have the old session items data, then raise an error with the same error message
-    questions = Question.where("id IN (#{question_ids})")
-
-    # Append the question to the session item using the question_id to match
-    # If no matching question is found in the db, skip it
-    session_questions = result_session.map.with_index(1) { |session_item, order|
-      matching_question = questions.find { |question| question.id == session_item["question_id"] }
-      if matching_question
-        session_item.merge(matching_question.serialized_question, order: order)
-      else
-        nil
-      end
-    }.compact
+    if result.session_type_test?
+      session_questions = flesh_out_session_items(result_session_items)
+    else
+      # Non-test session items should already be fleshed out
+      session_questions = result_session_items
+    end
 
     render json: { data: session_questions }.merge(paginated_metadata)
   end
