@@ -40,6 +40,6 @@ class CreatorCourseSerializer < UserCourseSerializer
   end
 
   def sources
-    object.questions.non_deleted_questions.published_active_questions.distinct.pluck(:source).compact
+    object.questions.non_deleted_questions.distinct.pluck(:source).compact
   end
 end
