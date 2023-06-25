@@ -6,7 +6,7 @@ class CoursesController < ApplicationController
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
   before_action :check_creators_consent, only: [:create]
-  before_action :load_creators_course, only: [:update, :publish, :destroy]
+  before_action :load_creators_course, only: [:update, :publish, :destroy, :set_source]
 
   wrap_parameters format: []
 
@@ -110,6 +110,14 @@ class CoursesController < ApplicationController
     end
 
     render json: { message: "Deleted successfully", data: {} }, status: 200
+  end
+
+  def set_source
+    # Source can be nil but if it is blank, we still want to set it to nil
+    source = set_source_params[:source].presence
+
+    @course.questions.non_deleted_questions.update_all(source: source)
+    render json: @course, meta: { message: "Question sources updated" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def categorised
@@ -463,6 +471,10 @@ class CoursesController < ApplicationController
 
   def purchase_course_params
     params.permit(:card_id)
+  end
+
+  def set_source_params
+    params.permit(:source)
   end
 
 end

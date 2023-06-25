@@ -2,8 +2,8 @@
 # specifically reserved for the viewership of the creator only.
 class CreatorCourseSerializer < UserCourseSerializer
   type :course
-  attributes :instructions, :private, :publish_status, :course_status,
-             :num_questions_draft, :num_explanations_draft, :last_publish_date, :test_statistics
+  attributes :instructions, :private, :publish_status, :course_status, :num_questions_draft,
+             :num_explanations_draft, :last_publish_date, :test_statistics, :sources
 
   def num_questions_draft
     object.questions.non_deleted_questions.count
@@ -37,5 +37,9 @@ class CreatorCourseSerializer < UserCourseSerializer
     else
       nil
     end
+  end
+
+  def sources
+    object.questions.non_deleted_questions.published_active_questions.distinct.pluck(:source).compact
   end
 end
