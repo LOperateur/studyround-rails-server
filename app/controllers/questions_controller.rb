@@ -140,7 +140,7 @@ class QuestionsController < ApplicationController
     end
 
     # Handle the publishing
-    publish_compact @question
+    publish_question @question
 
     # Todo: deprecated - Remove direct question image attachments
     # Handle images if save was successful
@@ -164,9 +164,8 @@ class QuestionsController < ApplicationController
            serializer: CreatorQuestionSerializer
   end
 
-  # Same as publish but throws no errors and ignores deprecated image fields
-  # Used for publishing multiple questions at once
-  def publish_compact(question)
+  # Publish the question while ignoring deprecated image fields
+  def publish_question(question)
     draft = question.draft.symbolize_keys
 
     question.question = draft[:question]

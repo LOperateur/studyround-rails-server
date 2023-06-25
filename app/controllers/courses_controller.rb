@@ -114,7 +114,7 @@ class CoursesController < ApplicationController
     @course.questions.each do |question|
       if question.publish_status_draft?
         begin
-          questions_controller.publish_compact question
+          questions_controller.publish_question question
           publish_success_count += 1
         rescue
           publish_errors_count += 1
