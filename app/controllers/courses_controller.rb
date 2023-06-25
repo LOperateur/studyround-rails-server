@@ -112,7 +112,7 @@ class CoursesController < ApplicationController
 
     # Publish all the valid questions in the course
     @course.questions.each do |question|
-      if question.publish_status_draft?
+      if question.draft.present?
         begin
           questions_controller.publish_question question
           publish_success_count += 1
