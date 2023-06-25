@@ -38,7 +38,9 @@ Rails.application.routes.draw do
   get '/courses/tests/purchased', to: "courses#purchased_tests"
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
+  post '/courses/:id/publish-questions', to: "courses#publish_questions"
   post '/courses/:id/purchase', to: "courses#purchase"
+  post '/courses/:id/set-source', to: "courses#set_source"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
