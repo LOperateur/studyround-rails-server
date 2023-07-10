@@ -40,5 +40,6 @@
 .env
 .dockerignore
 docker-compose.yml
+db.sql
 
 .DS_STORE

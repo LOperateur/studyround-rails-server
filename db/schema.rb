@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_06_17_133630) do
+ActiveRecord::Schema.define(version: 2023_06_25_130708) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -187,6 +187,7 @@ ActiveRecord::Schema.define(version: 2023_06_17_133630) do
     t.string "year"
     t.bigint "creator_id"
     t.jsonb "notes"
+    t.text "source"
     t.index ["course_id"], name: "index_questions_on_course_id"
     t.index ["creator_id"], name: "index_questions_on_creator_id"
   end

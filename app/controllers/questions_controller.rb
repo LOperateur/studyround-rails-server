@@ -139,32 +139,11 @@ class QuestionsController < ApplicationController
       end
     end
 
-    draft = @question.draft.symbolize_keys
-
-    @question.question = draft[:question]
-    @question.question_raw = draft[:question_raw]
-
-    @question.explanation = draft[:explanation]
-    @question.explanation_raw = draft[:explanation_raw]
-
-    @question.options = draft[:options]
-    @question.answer = draft[:answer]
-    @question.multiplier = draft[:multiplier]
-    @question.multi_answer = draft[:multi_answer]
-    @question.year = draft[:year]
-
-    @question.version = @question.version + 1
-    @question.draft = nil
-    @question.publish_status = :publish_status_published
-
-    Question.transaction do
-      publish_asset_references(@question)
-      @question.save!
-    end
-
-    # Handle images if save was successful
+    # Handle the publishing
+    publish_question @question
 
     # Todo: deprecated - Remove direct question image attachments
+    # Handle images if save was successful
     # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
     if @question.question_image_draft.attached?
       copy_attachment(@question.question_image_draft, @question.question_image)
@@ -183,6 +162,32 @@ class QuestionsController < ApplicationController
 
     render json: @question, root: :data, meta: { message: "Published successfully" },
            serializer: CreatorQuestionSerializer
+  end
+
+  # Publish the question while ignoring deprecated image fields
+  def publish_question(question)
+    draft = question.draft.symbolize_keys
+
+    question.question = draft[:question]
+    question.question_raw = draft[:question_raw]
+
+    question.explanation = draft[:explanation]
+    question.explanation_raw = draft[:explanation_raw]
+
+    question.options = draft[:options]
+    question.answer = draft[:answer]
+    question.multiplier = draft[:multiplier]
+    question.multi_answer = draft[:multi_answer]
+    question.year = draft[:year]
+
+    question.version = question.version + 1
+    question.draft = nil
+    question.publish_status = :publish_status_published
+
+    Question.transaction do
+      publish_asset_references(question)
+      question.save!
+    end
   end
 
   def destroy
