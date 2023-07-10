@@ -1,4 +1,3 @@
-
 class MarketingMetricsController < ApplicationController
   def source
     conn = Faraday.new(
