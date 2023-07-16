@@ -52,7 +52,8 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
 
-    session_items_with_answers = end_course_session_params[:answers]
+    # Include the question json data here to save
+    session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
     num_questions = end_course_session_params[:questions]
 
     begin
@@ -155,7 +156,8 @@ class SessionsController < ApplicationController
     session_type = :practice
     num_questions = 10
 
-    session_items_with_answers = end_course_session_params[:answers]
+    # Include the question json data here
+    session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
 
     begin
       score, total = mark(session_items_with_answers)

@@ -49,7 +49,7 @@ class GuestsController < ApplicationController
 
     course = Course.find(guest.result['course_id'])
 
-    pass_token = JsonWebToken.encode({ guest_id: guest_id }, 1.year.from_now)
+    pass_token = JsonWebToken.encode({ guest_id: guest_id }, 30.days.from_now)
 
     ResultMailer.with(
       email: email,

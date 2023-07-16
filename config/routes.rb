@@ -38,10 +38,13 @@ Rails.application.routes.draw do
   get '/courses/tests/purchased', to: "courses#purchased_tests"
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
+  post '/courses/:id/publish-questions', to: "courses#publish_questions"
   post '/courses/:id/purchase', to: "courses#purchase"
+  post '/courses/:id/set-source', to: "courses#set_source"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
+    resources :question_assets, only: [:index, :create, :update, :show, :destroy]
   end
 
   get '/creator/courses/:course_id/questions', to: "questions#questions"
@@ -51,6 +54,7 @@ Rails.application.routes.draw do
   patch '/creator/courses/:course_id/questions/:id/publish', to: "questions#publish"
   patch '/creator/courses/:course_id/questions/:id/add-note', to: "questions#add_note"
   delete '/creator/courses/:course_id/questions/:id/remove-note', to: "questions#remove_note"
+  post '/creator/courses/:course_id/questions/:id/resolve-notes', to: "questions#resolve_notes"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
 
   resources :questions do
@@ -102,6 +106,7 @@ Rails.application.routes.draw do
 
   get '/faqs', to: "faqs#index"
 
+  post 'marketing_metrics/source', to: "marketing_metrics#source"
   # Route for root endpoint
   root to: "health_check#index", via: :all
 
