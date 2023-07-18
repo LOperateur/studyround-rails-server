@@ -390,6 +390,19 @@ class CoursesController < ApplicationController
     render json: transactions_controller.process_transaction
   end
 
+  def enrolled_courses
+    course_transaction_ids = Transaction.select(:purchase_item_id)
+                                        .where("buyer_id = ?", current_user.id)
+                                        .order(completed_at: :desc)
+                                        .course_based_transactions.transaction_status_completed
+                                        .map { |transaction| transaction["purchase_item_id"] }
+                                        .uniq
+    purchased_courses = Course.where(id: course_transaction_ids).sort_by { |i| course_transaction_ids.index(i.id) }
+
+    paginated_purchased_courses = paginate(purchased_courses, params)
+    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
+  end
+
   def purchased_courses
     course_transaction_ids = Transaction.select(:purchase_item_id)
                                         .where("buyer_id = ?", current_user.id)
