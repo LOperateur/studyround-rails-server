@@ -11,8 +11,15 @@ class CoursesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    courses = paginate(Course.published_active_courses, params)
-    render json: courses, root: :data, meta: paginated_meta(courses)
+    search_query = params[:q]
+    courses = Course.published_active_courses
+    
+    if search_query.present?
+      courses = courses.filtered_by_search(search_query.downcase)
+    end
+
+    paginatedCourses = paginate(courses, params)
+    render json: paginatedCourses, root: :data, meta: paginated_meta(paginatedCourses)
   end
 
   def show
@@ -388,6 +395,25 @@ class CoursesController < ApplicationController
     transactions_controller.params = purchase_params
 
     render json: transactions_controller.process_transaction
+  end
+
+  def enrolled_courses
+    course_transaction_ids = Transaction.select(:purchase_item_id)
+                                        .where("buyer_id = ?", current_user.id)
+                                        .order(completed_at: :desc)
+                                        .course_based_transactions.transaction_status_completed
+                                        .map { |transaction| transaction["purchase_item_id"] }
+                                        .uniq
+    purchased_courses = Course.where(id: course_transaction_ids).sort_by { |i| course_transaction_ids.index(i.id) }
+
+    search_query = params[:q]
+    
+    if search_query.present?
+      purchased_courses = purchased_courses.filtered_by_search(search_query.downcase)
+    end
+
+    paginated_purchased_courses = paginate(purchased_courses, params)
+    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
   end
 
   def purchased_courses
