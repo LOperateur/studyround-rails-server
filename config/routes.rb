@@ -34,6 +34,7 @@ Rails.application.routes.draw do
   get '/courses/tests', to: "courses#tests"
   get '/courses/created', to: "courses#created_courses"
   get '/courses/tests/created', to: "courses#created_tests"
+  get '/courses/enrolled', to: "courses#enrolled_courses"
   get '/courses/purchased', to: "courses#purchased_courses"
   get '/courses/tests/purchased', to: "courses#purchased_tests"
   get '/search', to: "courses#search"
@@ -106,6 +107,7 @@ Rails.application.routes.draw do
 
   get '/faqs', to: "faqs#index"
 
+  post 'marketing_metrics/source', to: "marketing_metrics#source"
   # Route for root endpoint
   root to: "health_check#index", via: :all
 
