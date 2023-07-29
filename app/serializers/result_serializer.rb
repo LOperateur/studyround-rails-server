@@ -1,5 +1,5 @@
 class ResultSerializer < ActiveModel::Serializer
-  attributes :id, :score, :total, :percent, :elapsed_time, :created_at, :can_reveal_answers
+  attributes :id, :score, :total, :percent, :elapsed_time, :created_at, :can_reveal_answers, :has_session_items
 
   belongs_to :course, serializer: MiniCourseSerializer
 
@@ -8,8 +8,8 @@ class ResultSerializer < ActiveModel::Serializer
   end
 
   def has_session_items
-    # Tests never have theirs deleted
-    object.session_items.blank?
+    # Tests never have their session items deleted
+    object.session_items.present?
   end
 
   def can_reveal_answers
