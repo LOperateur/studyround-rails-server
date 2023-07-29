@@ -171,6 +171,7 @@ class CoursesController < ApplicationController
   end
 
   def categorised
+    # Todo: If no categories are selected by the user, then default to signed out behaviour
     if current_user.nil?
       # Use left_joins for when you want Categories with 0 courses. Not want we want here, so we use joins
       # Answer gotten from: https://stackoverflow.com/questions/16996618/rails-order-by-results-count-of-has-many-association
