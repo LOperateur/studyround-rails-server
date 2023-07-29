@@ -48,8 +48,15 @@ class QuestionsController < ApplicationController
   # From a Creator's point of view
 
   def questions
+    # Filter by year if present
+    year = validate_year(params[:year])
+
     # Custom pagination for find_by_sql
-    total_questions = @course.questions.non_deleted_questions.count
+    if year.present?
+      total_questions = @course.questions.non_deleted_questions.filtered_by_year(year).count
+    else
+      total_questions = @course.questions.non_deleted_questions.count
+    end
     limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
     # Recursive CTE to get questions in order
@@ -65,10 +72,11 @@ class QuestionsController < ApplicationController
       INNER JOIN ordered_questions oq ON q.previous_id = oq.id
     )
     SELECT * FROM ordered_questions 
-    WHERE NOT question_status = 3 LIMIT ? OFFSET ?
+    WHERE NOT question_status = 3 
+    AND (? IS NULL OR year = ?) LIMIT ? OFFSET ?
     SQL
 
-    questions = Question.find_by_sql([cte_query, @course.id, limit, offset])
+    questions = Question.find_by_sql([cte_query, @course.id, year, year, limit, offset])
 
     render json: { data: questions.map do |question|
       question.serialized_creator_question_list_item[:question]

@@ -196,4 +196,16 @@ module SessionHelper
     full_session_items
   end
 
+  def validate_year(year)
+    if year.blank?
+      return nil
+    end
+
+    if year =~ /^\d{4}$/
+      year
+    else
+      nil
+    end
+  end
+
 end

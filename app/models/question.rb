@@ -32,6 +32,8 @@ class Question < ApplicationRecord
   scope :published_active_questions, -> { where(publish_status: :publish_status_published, question_status: :question_status_active) }
   scope :non_deleted_questions, -> { where.not(question_status: :question_status_deleted) }
 
+  scope :filtered_by_year, -> (year) { where(year: year) }
+
   # Used to serialize the question model on the go without having to render
   def serialized_question
     ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionSerializer).as_json
