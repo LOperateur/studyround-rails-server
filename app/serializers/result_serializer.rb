@@ -7,6 +7,11 @@ class ResultSerializer < ActiveModel::Serializer
     ((object.score.to_f / object.total.to_f) * 100).round(2)
   end
 
+  def has_session_items
+    # Tests never have theirs deleted
+    object.session_items.blank?
+  end
+
   def can_reveal_answers
     can_reveal_answers = true
     if object.session_type_test?
