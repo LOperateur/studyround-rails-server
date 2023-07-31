@@ -189,13 +189,17 @@ class AuthController < ApplicationController
       raise Errors::AuthenticationError.new(message: "You cannot login as a content support user here, please use the support login page")
     end
 
-    if user && user.authenticate(login_params[:password])
-      access_token = create_access_token(user)
-      refresh_token = create_refresh_token(user)
+    begin
+      if user && user.authenticate(login_params[:password])
+        access_token = create_access_token(user)
+        refresh_token = create_refresh_token(user)
 
-      render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
-    else
-      raise Errors::AuthenticationError.new(message: "Incorrect login details")
+        render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+      else
+        raise Errors::AuthenticationError.new(message: "Incorrect login details")
+      end
+    rescue BCrypt::Errors::InvalidHash
+      raise Errors::AuthenticationError.new(message: "Please login with another method or reset your password")
     end
   end
 

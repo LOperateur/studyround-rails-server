@@ -46,12 +46,16 @@ class User < ApplicationRecord
   }, _prefix: true
 
   def password_required?
-    return false if self.in_oauth_creation_flow
+    # Passwords are not required if the user is in the oauth creation flow
+    return false if in_oauth_creation_flow
 
-    return true if self.in_reset_password_flow
+    # Next, passwords are required if the user is in the password reset flow
+    return true if in_reset_password_flow
 
-    # Passwords are required if the user has no prior social login auth_providers
-    self.auth_providers.where.not(auth_provider: :auth_provider_password).empty?
+    # return false if auth_providers.where.not(auth_provider: :auth_provider_password).any?
+
+    # Lastly, if the user is being created or the password is being changed, the password is required
+    new_record? || password.present?
   end
 
   def user_type
