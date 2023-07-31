@@ -5,9 +5,13 @@ class User < ApplicationRecord
   validates :username, presence: true, uniqueness: true, format: { with: /\A[-a-z0-9_.]+\Z/i }
   validates :email, presence: true, uniqueness: true
 
-  has_secure_password
-  validates :password, presence: true, length: { minimum: 8 }, allow_nil: true
-  validates :password_confirmation, presence: true, length: { minimum: 8 }, allow_nil: true
+  has_secure_password validations: false # To avoid the password validation for social logins
+  validates :password, presence: true, length: { minimum: 8 }, confirmation: true, if: :password_required?
+
+  # This is to avoid the password validation for social signups
+  attr_accessor :in_oauth_creation_flow
+  # This is to mandate password validation for the password reset flow
+  attr_accessor :in_reset_password_flow
 
   has_one :refresh_token, dependent: :destroy
   has_many :courses, dependent: :destroy, class_name: "Course", foreign_key: :creator_id
@@ -20,6 +24,7 @@ class User < ApplicationRecord
   has_many :sessions
   has_many :notifications
   has_many :financial_cards
+  has_many :auth_providers
   has_one_attached :profile_image
 
   scope :active_users, -> { where(user_status: :user_status_active) }
@@ -39,6 +44,15 @@ class User < ApplicationRecord
     admin: 2,
     content_support: 3,
   }, _prefix: true
+
+  def password_required?
+    return false if self.in_oauth_creation_flow
+
+    return true if self.in_reset_password_flow
+
+    # Passwords are required if the user has no prior social login auth_providers
+    self.auth_providers.where.not(auth_provider: :auth_provider_password).empty?
+  end
 
   def user_type
     if self.email.starts_with?("admin") && self.email.ends_with?("@myulearn.com")

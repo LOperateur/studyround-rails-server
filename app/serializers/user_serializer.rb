@@ -5,7 +5,8 @@ class UserSerializer < ActiveModel::Serializer
              :onboarding, :about
 
   def profile_image_url
-    object.generated_profile_image_url
+    object.generated_profile_image_url ||
+      object.auth_providers.where.not(auth_provider: :auth_provider_password).first&.metadata&.dig('avatar')
   end
 
   def user_type

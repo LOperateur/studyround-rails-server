@@ -150,7 +150,7 @@ class AuthController < ApplicationController
         user: user,
         auth_provider: :auth_provider_password,
         metadata: { method: :otp },
-        )
+      )
       otp_object.destroy
     else
       # Include additional details for guest signup then destroy the stale guest record
@@ -225,6 +225,108 @@ class AuthController < ApplicationController
     end
   end
 
+  def google_oauth
+    token = params[:code]
+
+    conn = Faraday.new(
+      url: "https://oauth2.googleapis.com",
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    post_data = {
+      code: token,
+      client_id: ENV["GOOGLE_CLIENT_ID"],
+      client_secret: ENV["GOOGLE_CLIENT_SECRET"],
+      redirect_uri: ENV["GOOGLE_REDIRECT_URI"],
+      grant_type: :authorization_code
+    }
+
+    token_response = conn.post("/token") do |req|
+      req.body = post_data.to_json
+    end
+
+    logger.info token_response
+
+    token_data = JSON.parse(token_response.body)
+    access_token = token_data['access_token']
+    id_token = token_data['id_token']
+
+    conn2 = Faraday.new(
+      url: "https://www.googleapis.com",
+      headers: {
+        'Content-Type' => 'application/json',
+        'Authorization' => "Bearer #{id_token}"
+      }
+    )
+
+    profile_response = conn2.get("/oauth2/v1/userinfo?alt=json&access_token=#{access_token}")
+    profile_data = JSON.parse(profile_response.body)
+
+    logger.info profile_data
+
+    email = profile_data["email"]
+    avatar = profile_data["picture"]
+
+    user = User.find_by(email: email)
+
+    if user
+      # If the user already exists, check if an auth provider with google exists
+      auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_google)
+
+      # If it doesn't exist, create it
+      if !auth_provider
+        AuthProvider.create!(
+          user: user,
+          auth_provider: :auth_provider_google,
+          metadata: { avatar: avatar }
+        )
+      end
+
+      first_time = false
+
+    else # Create a new user
+
+      # Get the username from the email and limit it to 20 characters
+      username = email.split('@')[0][0..19]
+      # Check if the username already exists
+      if User.exists?(username: username)
+        # If it exists, append a random 4 digit number to the end of the username
+        username = username + rand(1000..9999).to_s
+      end
+
+      # Get necessary details from the profile data
+      first_name = profile_data["given_name"]
+      last_name = profile_data["family_name"]
+
+      user = User.new(
+        username: username,
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        creator: false,
+      )
+
+      # Indicate that the user is in the oauth creation flow to allow creation of the user without a password
+      user.in_oauth_creation_flow = true
+
+      # Build the auth provider (this will be saved when the NEW user is saved; auto-saving of associations)
+      user.auth_providers.build(
+        user: user,
+        auth_provider: :auth_provider_google,
+        metadata: { avatar: avatar }
+      )
+
+      first_time = true
+    end
+
+    user.save!
+
+    access_token = create_access_token(user)
+    refresh_token = create_refresh_token(user)
+
+    redirect_to "#{ENV['URL']}/google-auth/callback?access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
+  end
+
   def reset
     # Decode the pass token and obtain the email from it
     begin
@@ -243,10 +345,23 @@ class AuthController < ApplicationController
     user = User.find_by(email: email)
     raise Errors::AuthenticationError.new(message: "No existing user with email: #{email}") unless user
 
-    unless user.update_attributes(password: reset_password_params[:password],
-                                  password_confirmation: reset_password_params[:password_confirmation])
-      raise Errors::InvalidError.new(user.errors.to_h)
+    # Create a new auth provider with password if the user doesn't have one
+    auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_password)
+    if !auth_provider
+      AuthProvider.create!(
+        user: user,
+        auth_provider: :auth_provider_password,
+        metadata: { method: :otp },
+      )
     end
+
+    # Indicate that the user is in the reset password flow to mandate password validation
+    user.in_reset_password_flow = true
+
+    user.update_attributes!(
+      password: reset_password_params[:password],
+      password_confirmation: reset_password_params[:password_confirmation]
+    )
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user, true)
