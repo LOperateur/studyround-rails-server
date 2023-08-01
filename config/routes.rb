@@ -5,6 +5,8 @@ Rails.application.routes.draw do
 
   get '/health-check', to: "health_check#index"
 
+  get '/auth/random', to: "auth#random"
+
   mount Sidekiq::Web => '/sidekiq'
   post '/auth/signup', to: "auth#signup"
   post '/auth/login', to: "auth#login"
