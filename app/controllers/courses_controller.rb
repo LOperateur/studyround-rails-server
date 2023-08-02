@@ -40,10 +40,10 @@ class CoursesController < ApplicationController
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
       end
-
       render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status) }
     else
-      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status) }
+      review = @course.reviews.where(user: current_user).take
+      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status, user_review: review) }
     end
   end
 
@@ -54,23 +54,7 @@ class CoursesController < ApplicationController
     course.save!
     render json: course, root: :data, serializer: CreatorCourseSerializer
   end
-
-  def load_user_review
-    @course = Course.non_deleted_courses.find(params[:id])
-
-    if @course.nil?
-      raise Errors::NotFoundError.new(message: "Cannot find course")
-    end
-
-    review = @course.reviews.where(user: current_user).take
-
-    if review.nil?
-      raise Errors::NotFoundError.new(message: "User has no reviews for this course")
-    end
-
-    render json: review, root: :data
-  end
-
+  
   def update
     if @course.test
       if @course.publish_status_published?
