@@ -43,6 +43,7 @@ Rails.application.routes.draw do
   post '/courses/:id/publish-questions', to: "courses#publish_questions"
   post '/courses/:id/purchase', to: "courses#purchase"
   post '/courses/:id/set-source', to: "courses#set_source"
+  get '/courses/:id/review', to: "courses#load_user_review"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews

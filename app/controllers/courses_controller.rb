@@ -55,6 +55,22 @@ class CoursesController < ApplicationController
     render json: course, root: :data, serializer: CreatorCourseSerializer
   end
 
+  def load_user_review
+    @course = Course.non_deleted_courses.find(params[:id])
+
+    if @course.nil?
+      raise Errors::NotFoundError.new(message: "Cannot find course")
+    end
+
+    review = @course.reviews.where(user: current_user).take
+
+    if review.nil?
+      raise Errors::NotFoundError.new(message: "User has no reviews for this course")
+    end
+
+    render json: review, root: :data
+  end
+
   def update
     if @course.test
       if @course.publish_status_published?
