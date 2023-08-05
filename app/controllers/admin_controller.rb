@@ -138,6 +138,29 @@ class AdminController < ApplicationController
     render json: course, root: :data, status: :ok, meta: { message: message }
   end
 
+  # This method is used to approve a user as a creator. It is called when the admin
+  # wants to manually approve the creator request. This differs from the automatic approval
+  # that happens when `/user/creator-consent` is called by the user but they
+  # ultimately do the same thing.
+  def approve_creator
+    user = User.find(approve_creator_params[:user_id])
+    if !user.creator
+      # Update the user's creator status indicating they can create content
+      user.update!(creator: true)
+
+      if approve_creator_params[:primary_creator] == true
+        # Update the user's metadata indicating they are a primarily a creator
+        metadata = user.metadata || {}
+        user.update!(metadata: metadata.merge({ primary_creator: true }))
+      end
+
+      # Send an email to the user to confirm their creator's consent
+      UserMailer.with(email: user.email).creator_consent_email.deliver_later
+    end
+
+    render json: user, root: :data, status: :ok
+  end
+
   private
 
   def check_admin
@@ -164,5 +187,9 @@ class AdminController < ApplicationController
 
   def suspend_course_params
     params.permit(:course_id, :remove_suspension)
+  end
+
+  def approve_creator_params
+    params.permit(:user_id, :primary_creator)
   end
 end

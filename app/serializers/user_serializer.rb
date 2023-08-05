@@ -15,6 +15,7 @@ class UserSerializer < ActiveModel::Serializer
 
   def onboarding
     {
+      interests: false,
       dashboard: false,
       course_list: false,
       session_start: false,
