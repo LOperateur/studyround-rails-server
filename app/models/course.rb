@@ -20,9 +20,13 @@ class Course < ApplicationRecord
   scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
 
   scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
-  scope :filtered_by_category, -> (category_id) { joins(:categorizations).where(categorizations: { category_id: category_id }) }
+  scope :filtered_by_category, -> (category_ids) { joins(:categorizations).where(categorizations: { category_id: category_ids }) }
+  scope :filtered_by_creators, -> (creator_ids) { where(creator_id: creator_ids) }
+  scope :filtered_by_test, -> (test) { where(test: test) }
 
   scope :ordered_by_result_count, -> { left_joins(:results).group(:id).order('COUNT(results.id) DESC') }
+  # joins is more appropriate here than left_joins because we want to exclude courses with no results
+  scope :ordered_by_user_recent_results, -> (user) { joins(:results).where(results: { user: user }).group(:id).order('MAX(results.created_at) DESC') }
 
   enum sale_status: {
     sale_status_free: 1,

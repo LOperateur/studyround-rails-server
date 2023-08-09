@@ -11,15 +11,12 @@ class CoursesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    search_query = params[:q]
-    courses = Course.published_active_courses
-    
-    if search_query.present?
-      courses = courses.filtered_by_search(search_query.downcase)
-    end
+    found_courses = return_searched_data(Course.published_active_courses.ordered_by_result_count)
 
-    paginatedCourses = paginate(courses, params)
-    render json: paginatedCourses, root: :data, meta: paginated_meta(paginatedCourses)
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
+    courses = paginate(found_courses, params, entries = found_courses.count.size)
+    render json: courses, root: :data, meta: paginated_meta(courses)
   end
 
   def show
@@ -241,33 +238,20 @@ class CoursesController < ApplicationController
     render json: combined, root: :data
   end
 
+  def enrolled_courses
+    enrolled_courses = return_searched_data(Course.published_active_courses.ordered_by_user_recent_results(current_user))
+
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
+    paginated_enrolled_courses = paginate(enrolled_courses, params, entries = enrolled_courses.count.size)
+    render json: paginated_enrolled_courses, root: :data, meta: paginated_meta(paginated_enrolled_courses)
+  end
+
   def search
-    search_query = params[:q]
-    category_filter_query = params[:category]
+    found_courses = return_searched_data(Course.visible_courses.ordered_by_result_count)
 
-    if category_filter_query.present?
-      category = Category.find_by(id: category_filter_query)
-    else
-      category = nil
-    end
-
-    # Ordered by relevance (result count)
-    if search_query.blank?
-      if category
-        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_category(category.id)
-      else
-        found_courses = Course.none
-      end
-    else
-      if category
-        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_category(category.id)
-                              .filtered_by_search(search_query.downcase)
-      else
-        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_search(search_query.downcase)
-      end
-    end
-
-    # Specifying entry count here due to the result group count query which returns a hash of grouped courses -> result count
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
     courses = paginate(found_courses, params, entries = found_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
@@ -399,25 +383,6 @@ class CoursesController < ApplicationController
     render json: transactions_controller.process_transaction
   end
 
-  def enrolled_courses
-    course_transaction_ids = Transaction.select(:purchase_item_id)
-                                        .where("buyer_id = ?", current_user.id)
-                                        .order(completed_at: :desc)
-                                        .course_based_transactions.transaction_status_completed
-                                        .map { |transaction| transaction["purchase_item_id"] }
-                                        .uniq
-    purchased_courses = Course.where(id: course_transaction_ids).sort_by { |i| course_transaction_ids.index(i.id) }
-
-    search_query = params[:q]
-    
-    if search_query.present?
-      purchased_courses = purchased_courses.filtered_by_search(search_query.downcase)
-    end
-
-    paginated_purchased_courses = paginate(purchased_courses, params)
-    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
-  end
-
   def purchased_courses
     course_transaction_ids = Transaction.select(:purchase_item_id)
                                         .where("buyer_id = ?", current_user.id)
@@ -469,6 +434,36 @@ class CoursesController < ApplicationController
     if !current_user.creator
       raise Errors::ForbiddenError.new(message: "You must agree to the creator terms before you can create a course")
     end
+  end
+
+  def return_searched_data(courses)
+    search_query = params[:q] || nil
+    category_filters = params[:category] || []
+    creator_filters = params[:creator] || []
+    test_filter = params[:test] || nil
+
+    found_courses = courses
+
+    # Filter by categories, creators, test status and search query if present
+    if search_query.present?
+      found_courses = found_courses.filtered_by_search(search_query)
+    end
+
+    if category_filters.present?
+      category_ids = Category.select(:id).where(name: category_filters)
+      found_courses = found_courses.filtered_by_category(category_ids)
+    end
+
+    if creator_filters.present?
+      creator_ids = User.select(:id).where(username: creator_filters)
+      found_courses = found_courses.filtered_by_creators(creator_ids)
+    end
+
+    if !test_filter.nil?
+      found_courses = found_courses.filtered_by_test(test_filter)
+    end
+
+    return found_courses
   end
 
   def course_or_test(course)
