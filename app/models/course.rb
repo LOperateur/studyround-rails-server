@@ -25,6 +25,8 @@ class Course < ApplicationRecord
   scope :filtered_by_test, -> (test) { where(test: test) }
 
   scope :ordered_by_result_count, -> { left_joins(:results).group(:id).order('COUNT(results.id) DESC') }
+  # joins is more appropriate here than left_joins because we want to exclude courses with no results
+  scope :ordered_by_user_recent_results, -> (user) { joins(:results).where(results: { user: user }).group(:id).order('MAX(results.created_at) DESC') }
 
   enum sale_status: {
     sale_status_free: 1,

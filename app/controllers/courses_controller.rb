@@ -14,6 +14,7 @@ class CoursesController < ApplicationController
     found_courses = return_searched_data(Course.published_active_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
     courses = paginate(found_courses, params, entries = found_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses)
   end
@@ -238,22 +239,19 @@ class CoursesController < ApplicationController
   end
 
   def enrolled_courses
-    # Todo: Fix this
-    # Get recently used course results and apply search params to them
-    results = return_searched_data(current_user.results.published_active_course_results)
+    enrolled_courses = return_searched_data(Course.published_active_courses.ordered_by_user_recent_results(current_user))
 
-    # Group courses selecting the most recent result for each and sorting them in descending order
-    # grouped_courses = results.group(:course).order('maximum_created_at desc').maximum(:created_at).take(10).to_h.keys
-    # grouped_courses = results.group(:course).maximum(:created_at).sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
-
-    paginated_purchased_courses = paginate(purchased_courses, params)
-    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
+    paginated_enrolled_courses = paginate(enrolled_courses, params, entries = enrolled_courses.count.size)
+    render json: paginated_enrolled_courses, root: :data, meta: paginated_meta(paginated_enrolled_courses)
   end
 
   def search
     found_courses = return_searched_data(Course.visible_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
     courses = paginate(found_courses, params, entries = found_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
