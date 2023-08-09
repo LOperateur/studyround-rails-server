@@ -36,14 +36,15 @@ class CoursesController < ApplicationController
       purchase_status[:sale_status_explanations] = current_user.present? && current_user.has_purchased_item(@course)
     end
 
+    review = @course.reviews.where(user: current_user).take
+
     if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
       end
-
-      render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status) }
+      render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status, user_review: review) }
     else
-      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status) }
+      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status, user_review: review) }
     end
   end
 
