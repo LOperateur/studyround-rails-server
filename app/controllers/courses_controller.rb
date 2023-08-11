@@ -196,7 +196,7 @@ class CoursesController < ApplicationController
     min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
     if Course.published_active_courses.any?
-      average_rating = Course.first.courses_average_rating
+      average_rating = Course.take.courses_average_rating
       top_courses = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
@@ -214,10 +214,9 @@ class CoursesController < ApplicationController
   end
 
   def trending_courses
-    # Get published courses having results created over the past 120 days
+    # Get published courses having results created over the past 180 days
     # Then sort those courses by the result count
-    courses = Course.published_active_courses.left_joins(:results).group(:id)
-                    .where('results.created_at > ?', 120.days.ago).order('COUNT(results.id) DESC').limit(10)
+    courses = Course.published_active_courses.ordered_by_recent_result_count.limit(10)
 
     render json: courses, root: :data
   end
@@ -341,7 +340,7 @@ class CoursesController < ApplicationController
     limit, offset, paginated_metadata = custom_paginate(total_rated_tests, params)
 
     if Course.published_active_courses.where(test: true).any?
-      average_rating = Course.first.tests_average_rating
+      average_rating = Course.take.tests_average_rating
       top_tests = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true AND rating_count >= #{min}
