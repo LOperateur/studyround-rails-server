@@ -2,6 +2,7 @@ class CoursesController < ApplicationController
   require 'action_view'
   require 'action_view/helpers'
   include ActionView::Helpers::DateHelper
+  include CourseHelper
   include TestHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
@@ -11,7 +12,7 @@ class CoursesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    found_courses = return_searched_data(Course.published_active_courses.ordered_by_result_count)
+    found_courses = search_and_filter(Course.published_active_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
@@ -196,7 +197,7 @@ class CoursesController < ApplicationController
     min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
     if Course.published_active_courses.any?
-      average_rating = Course.first.courses_average_rating
+      average_rating = Course.take.courses_average_rating
       top_courses = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
@@ -214,10 +215,9 @@ class CoursesController < ApplicationController
   end
 
   def trending_courses
-    # Get published courses having results created over the past 120 days
+    # Get published courses having results created over the past 180 days
     # Then sort those courses by the result count
-    courses = Course.published_active_courses.left_joins(:results).group(:id)
-                    .where('results.created_at > ?', 120.days.ago).order('COUNT(results.id) DESC').limit(10)
+    courses = Course.published_active_courses.ordered_by_recent_result_count.limit(10)
 
     render json: courses, root: :data
   end
@@ -239,7 +239,7 @@ class CoursesController < ApplicationController
   end
 
   def enrolled_courses
-    enrolled_courses = return_searched_data(Course.published_active_courses.ordered_by_user_recent_results(current_user))
+    enrolled_courses = search_and_filter(Course.published_active_courses.ordered_by_user_recent_results(current_user))
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
@@ -248,7 +248,7 @@ class CoursesController < ApplicationController
   end
 
   def search
-    found_courses = return_searched_data(Course.visible_courses.ordered_by_result_count)
+    found_courses = search_and_filter(Course.visible_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
@@ -341,7 +341,7 @@ class CoursesController < ApplicationController
     limit, offset, paginated_metadata = custom_paginate(total_rated_tests, params)
 
     if Course.published_active_courses.where(test: true).any?
-      average_rating = Course.first.tests_average_rating
+      average_rating = Course.take.tests_average_rating
       top_tests = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true AND rating_count >= #{min}
@@ -410,13 +410,13 @@ class CoursesController < ApplicationController
   end
 
   def created_courses
-    courses = current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc)
+    courses = search_and_filter(current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc))
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
   end
 
   def created_tests
-    tests = current_user.courses.non_deleted_courses.where(test: true).order(created_at: :desc)
+    tests = search_and_filter(current_user.courses.non_deleted_courses.where(test: true).order(created_at: :desc))
     paginated_tests = paginate(tests, params)
     render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
   end
@@ -434,51 +434,6 @@ class CoursesController < ApplicationController
     if !current_user.creator
       raise Errors::ForbiddenError.new(message: "You must agree to the creator terms before you can create a course")
     end
-  end
-
-  def return_searched_data(courses)
-    search_query = params[:q] || nil
-    category_filters = params[:category] || []
-    creator_filters = params[:creator] || []
-    test_filter = params[:test] == "true"
-
-    # If strict is set to true, we will only return courses that EXACTLY match the category or creator filters
-    strict_match = params[:strict] == "true"
-
-    found_courses = courses
-
-    # Filter by categories, creators, test status and search query if present
-    if search_query.present?
-      found_courses = found_courses.filtered_by_search(search_query)
-    end
-
-    if category_filters.present?
-      if strict_match
-        category_ids = Category.select(:id).where(name: category_filters)
-      else
-        # "name ILIKE ? OR name ILIKE ? OR name ILIKE ? ..."
-        category_conditions = category_filters.map { "name ILIKE ?" }.join(' OR ')
-        category_ids = Category.select(:id).where(category_conditions, *category_filters.map { |filter| "%#{filter}%" }).limit(10)
-      end
-      found_courses = found_courses.filtered_by_category(category_ids)
-    end
-
-    if creator_filters.present?
-      if strict_match
-        creator_ids = User.select(:id).where(username: creator_filters)
-      else
-        # "username ILIKE ? OR username ILIKE ? OR username ILIKE ? ..."
-        creator_conditions = creator_filters.map { "username ILIKE ?" }.join(' OR ')
-        creator_ids = User.select(:id).where(creator_conditions, *creator_filters.map { |filter| "%#{filter}%" }).limit(10)
-      end
-      found_courses = found_courses.filtered_by_creators(creator_ids)
-    end
-
-    if params.key?(:test)
-      found_courses = found_courses.filtered_by_test(test_filter)
-    end
-
-    return found_courses
   end
 
   def course_or_test(course)

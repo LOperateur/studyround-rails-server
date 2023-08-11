@@ -1,4 +1,6 @@
 class AdminController < ApplicationController
+  include CourseHelper
+
   before_action :check_admin
 
   wrap_parameters format: []
@@ -42,16 +44,10 @@ class AdminController < ApplicationController
   end
 
   def courses
-    if params[:creator_id].present?
-      # Get courses by creator
-      creator = User.find(params[:creator_id])
-      courses = Course.non_deleted_courses.where(creator_id: creator.id)
-    else
-      # Just get all courses
-      courses = Course.non_deleted_courses
-    end
+    # Get all non-deleted courses
+    courses = search_and_filter(Course.non_deleted_courses.order(created_at: :desc))
 
-    paginated_courses = paginate(courses.order(created_at: :desc), params)
+    paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
   end
 
