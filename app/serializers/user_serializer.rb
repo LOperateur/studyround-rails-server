@@ -14,13 +14,9 @@ class UserSerializer < ActiveModel::Serializer
   end
 
   def onboarding
-    {
-      interests: false,
-      dashboard: false,
-      course_list: false,
-      session_start: false,
-      manage_course: false,
-      manage_question: false,
-    }.merge(object.onboarding)
+    # They are currently keys in an env var that's a string delimited by pipes |
+    # An array of pairs can be converted to a hash with `to_h`
+    default_onboarding = ENV['ONBOARDING_PARAMS'].split('|').map { |param| [param, false] }.to_h
+    default_onboarding.merge(object.onboarding)
   end
 end
