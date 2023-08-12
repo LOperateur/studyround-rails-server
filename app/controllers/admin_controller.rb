@@ -134,27 +134,71 @@ class AdminController < ApplicationController
     render json: course, root: :data, status: :ok, meta: { message: message }
   end
 
-  # This method is used to approve a user as a creator. It is called when the admin
-  # wants to manually approve the creator request. This differs from the automatic approval
-  # that happens when `/user/creator-consent` is called by the user but they
-  # ultimately do the same thing.
-  def approve_creator
-    user = User.find(approve_creator_params[:user_id])
-    if !user.creator
-      # Update the user's creator status indicating they can create content
-      user.update!(creator: true)
+  # This method is used to create a new creator user or approve an existing user as a creator.
+  # It is called when the admin wants to manually create or approve the creator request.
+  # This differs from the automatic approval that happens when `/user/creator-consent` is called by the user.
+  def make_or_approve_creator
+    email = approve_creator_params[:email]
 
-      if approve_creator_params[:primary_creator] == true
-        # Update the user's metadata indicating they are a primarily a creator
-        metadata = user.metadata || {}
-        user.update!(metadata: metadata.merge({ primary_creator: true }))
+    if User.exists?(email: email)
+      # Email already exists, approve the user as a creator instead
+      user = User.find_by!(email: email)
+
+      if !user.creator
+        # Update the user's creator status indicating they can create content
+        user.update!(creator: true)
+
+        # Send an email to the user to confirm their creator's consent
+        UserMailer.with(email: user.email).creator_consent_email.deliver_later
+      else
+        raise Errors::BaseError.new(message: "User is already a creator", status: 400)
       end
+
+      render json: user, root: :data, status: :ok, meta: { message: "User is now approved as a creator!" }
+
+    else
+      # User does not exist, create a new user
+
+      # Extract username from email
+      base_username = email.split('@').first
+      # Sanitize username: remove invalid characters, then restrict length to 20 characters
+      username = base_username.gsub(/[^-a-z0-9_.]/i, '').slice(0, 20)
+      # Check if the username already exists
+      if User.exists?(username: username)
+        # If it exists, append a random 4 digit number to the end of the username
+        username = username + rand(1000..9999).to_s
+      end
+
+      # Generate a random password for the user
+      password = SecureRandom.hex(6)
+
+      user = User.new(
+        username: username,
+        email: email,
+        password: password,
+        password_confirmation: password,
+        creator: true,
+        metadata: { primary_creator: true },
+      )
+
+      # Build the auth provider (this will be saved when the NEW user is saved; auto-saving of associations)
+      user.auth_providers.build(
+        user: user,
+        auth_provider: :auth_provider_password,
+        metadata: { method: :admin_creation }
+      )
+
+      user.save!
 
       # Send an email to the user to confirm their creator's consent
       UserMailer.with(email: user.email).creator_consent_email.deliver_later
+
+      # Also send an email containing the user's credentials
+      UserMailer.with(email: email, username: username, password: password).new_creator_email.deliver_later
+
+      render json: user, root: :data, status: :created, meta: { message: "User created and approved as a creator!" }
     end
 
-    render json: user, root: :data, status: :ok
   end
 
   private
@@ -186,6 +230,6 @@ class AdminController < ApplicationController
   end
 
   def approve_creator_params
-    params.permit(:user_id, :primary_creator)
+    params.permit(:email)
   end
 end

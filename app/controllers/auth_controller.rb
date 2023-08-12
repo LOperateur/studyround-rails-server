@@ -287,8 +287,10 @@ class AuthController < ApplicationController
 
     else # Create a new user
 
-      # Get the username from the email and limit it to 20 characters
-      username = email.split('@')[0][0..19]
+      # Extract username from email
+      base_username = email.split('@').first
+      # Sanitize username: remove invalid characters, then restrict length to 20 characters
+      username = base_username.gsub(/[^-a-z0-9_.]/i, '').slice(0, 20)
       # Check if the username already exists
       if User.exists?(username: username)
         # If it exists, append a random 4 digit number to the end of the username
@@ -325,7 +327,7 @@ class AuthController < ApplicationController
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
-    redirect_to "#{ENV['URL']}/google-auth/callback?access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
+    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
   end
 
   def reset
