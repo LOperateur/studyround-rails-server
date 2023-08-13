@@ -20,13 +20,20 @@ class Course < ApplicationRecord
   scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
 
   scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
-  scope :filtered_by_category, -> (category_ids) { joins(:categorizations).where(categorizations: { category_id: category_ids }) }
+  scope :filtered_by_category, -> (category_ids) { joins(:categorizations).where(categorizations: { category_id: category_ids }).distinct }
   scope :filtered_by_creators, -> (creator_ids) { where(creator_id: creator_ids) }
   scope :filtered_by_test, -> (test) { where(test: test) }
 
-  scope :ordered_by_result_count, -> { left_joins(:results).group(:id).order('COUNT(results.id) DESC') }
+  scope :ordered_by_result_count, -> {
+    left_joins(:results).group(:id).order('COUNT(results.id) DESC')
+  }
+  scope :ordered_by_recent_result_count, -> {
+    left_joins(:results).where('results.created_at > ?', 180.days.ago).group(:id).order('COUNT(results.id) DESC')
+  }
   # joins is more appropriate here than left_joins because we want to exclude courses with no results
-  scope :ordered_by_user_recent_results, -> (user) { joins(:results).where(results: { user: user }).group(:id).order('MAX(results.created_at) DESC') }
+  scope :ordered_by_user_recent_results, -> (user) {
+    joins(:results).where(results: { user: user }).group(:id).order('MAX(results.created_at) DESC')
+  }
 
   enum sale_status: {
     sale_status_free: 1,
@@ -71,13 +78,13 @@ class Course < ApplicationRecord
   end
 
   def courses_average_rating
-    Rails.cache.fetch("courses_average_rating", expires_in: 1.hour) do
+    Rails.cache.fetch("courses_average_rating", expires_in: 12.hours) do
       Course.published_active_courses.where.not(rating: [0, nil]).average(:rating) || 0
     end
   end
 
   def tests_average_rating
-    Rails.cache.fetch("tests_average_rating", expires_in: 1.hour) do
+    Rails.cache.fetch("tests_average_rating", expires_in: 12.hours) do
       Course.published_active_courses.where(test: true).where.not(rating: [0, nil]).average(:rating) || 0
     end
   end
