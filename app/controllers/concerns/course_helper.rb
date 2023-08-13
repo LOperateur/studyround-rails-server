@@ -23,7 +23,7 @@ module CourseHelper
       else
         # "name ILIKE ? OR name ILIKE ? OR name ILIKE ? ..."
         category_conditions = category_filters.map { "name ILIKE ?" }.join(' OR ')
-        category_ids = Category.select(:id).where(category_conditions, *category_filters.map { |filter| "%#{filter}%" }).limit(10)
+        category_ids = Category.select(:id).distinct.where(category_conditions, *category_filters.map { |filter| "%#{filter}%" }).limit(10)
       end
       found_courses = found_courses.filtered_by_category(category_ids)
     end
@@ -34,7 +34,7 @@ module CourseHelper
       else
         # "username ILIKE ? OR username ILIKE ? OR username ILIKE ? ..."
         creator_conditions = creator_filters.map { "username ILIKE ?" }.join(' OR ')
-        creator_ids = User.select(:id).where(creator_conditions, *creator_filters.map { |filter| "%#{filter}%" }).limit(10)
+        creator_ids = User.select(:id).distinct.where(creator_conditions, *creator_filters.map { |filter| "%#{filter}%" }).limit(10)
       end
       found_courses = found_courses.filtered_by_creators(creator_ids)
     end
