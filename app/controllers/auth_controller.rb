@@ -170,7 +170,7 @@ class AuthController < ApplicationController
       end
     end
 
-    render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+    render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token, "first_time": true }) }
   end
 
   def login
@@ -327,7 +327,7 @@ class AuthController < ApplicationController
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
-    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
+    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?email=#{email}&access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
   end
 
   def reset

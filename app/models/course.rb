@@ -20,7 +20,15 @@ class Course < ApplicationRecord
   scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
 
   scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
-  scope :filtered_by_category, -> (category_ids) { joins(:categorizations).where(categorizations: { category_id: category_ids }).distinct }
+
+  # This doesn't provide unique results, so we're using the other one. Using distinct also fails on some queries.
+  # scope :filtered_by_category, -> (category_ids) { joins(:categorizations).where(categorizations: { category_id: category_ids }) }
+
+  # The inner query fetches all the categorizations for those courses (which could have duplicates)
+  # The outer where query just fetches courses that have an ID from that list
+  scope :filtered_by_category, -> (category_ids) {
+    where(id: joins(:categorizations).where(categorizations: { category_id: category_ids }).select(:id))
+  }
   scope :filtered_by_creators, -> (creator_ids) { where(creator_id: creator_ids) }
   scope :filtered_by_test, -> (test) { where(test: test) }
 
