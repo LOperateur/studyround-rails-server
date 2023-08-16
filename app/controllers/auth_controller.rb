@@ -150,7 +150,7 @@ class AuthController < ApplicationController
         user: user,
         auth_provider: :auth_provider_password,
         metadata: { method: :otp },
-        )
+      )
       otp_object.destroy
     else
       # Include additional details for guest signup then destroy the stale guest record
@@ -170,7 +170,7 @@ class AuthController < ApplicationController
       end
     end
 
-    render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+    render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token, "first_time": true }) }
   end
 
   def login
@@ -185,8 +185,35 @@ class AuthController < ApplicationController
 
     user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
 
-    if user.user_type == :content_support
-      raise Errors::AuthenticationError.new(message: "You cannot login as a content support user here, please use the support login page")
+    begin
+      if user && user.authenticate(login_params[:password])
+        access_token = create_access_token(user)
+        refresh_token = create_refresh_token(user)
+
+        render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
+      else
+        raise Errors::AuthenticationError.new(message: "Incorrect login details")
+      end
+    rescue BCrypt::Errors::InvalidHash
+      raise Errors::AuthenticationError.new(message: "Please login with another method or reset your password")
+    end
+  end
+
+  def login_creator
+    email_or_username = login_params[:user_identity].downcase
+    is_email = email_or_username.include? "@"
+
+    if is_email
+      raise Errors::AuthenticationError.new(message: "Email does not exist") unless User.exists?(email: email_or_username)
+    else
+      raise Errors::AuthenticationError.new(message: "User does not exist") unless User.exists?(username: email_or_username)
+    end
+
+    user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
+
+    # If the user is not a creator or admin, they cannot login here
+    if !user.creator && user.user_type != :admin
+      raise Errors::AuthenticationError.new(message: "You are not an approved creator, please use the usual U-Learn login")
     end
 
     if user && user.authenticate(login_params[:password])
@@ -199,30 +226,108 @@ class AuthController < ApplicationController
     end
   end
 
-  def login_content_support
-    email_or_username = login_params[:user_identity].downcase
-    is_email = email_or_username.include? "@"
+  def google_oauth
+    token = params[:code]
 
-    if is_email
-      raise Errors::AuthenticationError.new(message: "Email does not exist") unless User.exists?(email: email_or_username)
-    else
-      raise Errors::AuthenticationError.new(message: "User does not exist") unless User.exists?(username: email_or_username)
+    conn = Faraday.new(
+      url: "https://oauth2.googleapis.com",
+      headers: { 'Content-Type' => 'application/json' }
+    )
+
+    post_data = {
+      code: token,
+      client_id: ENV["GOOGLE_CLIENT_ID"],
+      client_secret: ENV["GOOGLE_CLIENT_SECRET"],
+      redirect_uri: ENV["GOOGLE_REDIRECT_URI"],
+      grant_type: :authorization_code
+    }
+
+    token_response = conn.post("/token") do |req|
+      req.body = post_data.to_json
     end
 
-    user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
+    logger.info token_response
 
-    if !(user.user_type == :content_support || user.user_type == :admin)
-      raise Errors::AuthenticationError.new(message: "You are not a content support user, please use the normal login page")
+    token_data = JSON.parse(token_response.body)
+    access_token = token_data['access_token']
+    id_token = token_data['id_token']
+
+    conn2 = Faraday.new(
+      url: "https://www.googleapis.com",
+      headers: {
+        'Content-Type' => 'application/json',
+        'Authorization' => "Bearer #{id_token}"
+      }
+    )
+
+    profile_response = conn2.get("/oauth2/v1/userinfo?alt=json&access_token=#{access_token}")
+    profile_data = JSON.parse(profile_response.body)
+
+    logger.info profile_data
+
+    email = profile_data["email"]
+    avatar = profile_data["picture"]
+
+    user = User.find_by(email: email)
+
+    if user
+      # If the user already exists, check if an auth provider with google exists
+      auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_google)
+
+      # If it doesn't exist, create it
+      if !auth_provider
+        AuthProvider.create!(
+          user: user,
+          auth_provider: :auth_provider_google,
+          metadata: { avatar: avatar }
+        )
+      end
+
+      first_time = false
+
+    else # Create a new user
+
+      # Extract username from email
+      base_username = email.split('@').first
+      # Sanitize username: remove invalid characters, then restrict length to 20 characters
+      username = base_username.gsub(/[^-a-z0-9_.]/i, '').slice(0, 20)
+      # Check if the username already exists
+      if User.exists?(username: username)
+        # If it exists, append a random 4 digit number to the end of the username
+        username = username + rand(1000..9999).to_s
+      end
+
+      # Get necessary details from the profile data
+      first_name = profile_data["given_name"]
+      last_name = profile_data["family_name"]
+
+      user = User.new(
+        username: username,
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        creator: false,
+      )
+
+      # Indicate that the user is in the oauth creation flow to allow creation of the user without a password
+      user.in_oauth_creation_flow = true
+
+      # Build the auth provider (this will be saved when the NEW user is saved; auto-saving of associations)
+      user.auth_providers.build(
+        user: user,
+        auth_provider: :auth_provider_google,
+        metadata: { avatar: avatar }
+      )
+
+      first_time = true
     end
 
-    if user && user.authenticate(login_params[:password])
-      access_token = create_access_token(user)
-      refresh_token = create_refresh_token(user)
+    user.save!
 
-      render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
-    else
-      raise Errors::AuthenticationError.new(message: "Incorrect login details")
-    end
+    access_token = create_access_token(user)
+    refresh_token = create_refresh_token(user)
+
+    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?email=#{email}&access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
   end
 
   def reset
@@ -243,10 +348,23 @@ class AuthController < ApplicationController
     user = User.find_by(email: email)
     raise Errors::AuthenticationError.new(message: "No existing user with email: #{email}") unless user
 
-    unless user.update_attributes(password: reset_password_params[:password],
-                                  password_confirmation: reset_password_params[:password_confirmation])
-      raise Errors::InvalidError.new(user.errors.to_h)
+    # Create a new auth provider with password if the user doesn't have one
+    auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_password)
+    if !auth_provider
+      AuthProvider.create!(
+        user: user,
+        auth_provider: :auth_provider_password,
+        metadata: { method: :otp },
+      )
     end
+
+    # Indicate that the user is in the reset password flow to mandate password validation
+    user.in_reset_password_flow = true
+
+    user.update_attributes!(
+      password: reset_password_params[:password],
+      password_confirmation: reset_password_params[:password_confirmation]
+    )
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user, true)

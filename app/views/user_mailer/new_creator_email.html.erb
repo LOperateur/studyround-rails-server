@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>U-Learn Creator Welcome</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+      /* Resets */
+      body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+      img { -ms-interpolation-mode: bicubic; }
+      body { font-family: 'Open Sans', sans-serif; margin: 0; padding: 0; }
+
+      /* Responsive */
+      @media only screen and (max-width: 600px) {
+          table.wrapper {
+              width: calc(100% - 20px) !important;
+              max-width: calc(100% - 20px) !important;
+          }
+      }
+
+      /* Styles */
+      body {
+          background-color: rgba(255, 128, 81, 0.2);
+      }
+
+      table.wrapper {
+          background-color: white;
+          border-radius: 10px;
+          box-shadow: 0px 0px 10px 0px lightgray;
+          margin: 30px auto;
+          width: 580px;
+      }
+
+      h1 {
+          margin: 0;
+          display: inline;
+      }
+
+      a {
+          border-radius: 20px;
+          transition: all 0.3s ease-in-out;
+      }
+
+      a:hover {
+          background-color: #333;
+          color: white;
+          cursor: pointer;
+      }
+  </style>
+</head>
+<body>
+<div>
+  <p style="padding: 1px;"></p>
+  <table border="0" cellpadding="0" cellspacing="0" class="wrapper" width="100%" style="max-width: 600px;">
+    <tr>
+      <td align="left" valign="middle" style="padding: 20px;">
+        <img src="https://production-ulearn-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" alt="U-learn Logo" width="100" height="100" style="display: inline-block;">
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align: center;">
+        <h1 style="font-size: 24px; font-weight: 600; color: #333;">Welcome to U-Learn Creators! 🎉</h1>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top" style="text-align: start; padding: 0 20px;">
+        <div style="font-size: 16px; color: #555; line-height: 1.5; padding: 20px;">
+          <p>🌟 <strong>Congratulations!</strong> 🌟</p>
+
+          <p>We're thrilled to inform you that you've been approved as a creator on U-Learn. Our team was genuinely impressed by your profile, and we believe you have a lot to offer our vibrant community of enthusiasts and learners.</p>
+
+          <h3>A Few Things to Get You Started:</h3>
+          <ol>
+            <li><strong>Begin Creating:</strong> Dive in and let your creativity shine. Our platform is designed to provide you with all the tools you need to craft engaging content.</li><br/>
+            <li><strong>Your Login Details:</strong> Your login credentials are: <br/><br/><span>email: <b><%= @email %></b></span> <br/><span>username: <b><%= @username %></b></span> <br/><span>password: <b><%= @password %></b></span> <br/><br/>For your security, we advise that you change your password immediately after you log in. Should you encounter any issues, our support team is here to help.</li><br/>
+            <li><strong>Explore the Site:</strong> Get acquainted with our features, familiarize yourself with the creator dashboard, and discover the wealth of opportunities awaiting you. You can <a href="<%= ENV['CREATOR_URL'] %>">log in here</a></li>
+          </ol>
+
+          <p>Lastly, we encourage you to give our platform a thorough try. Test its features, and don't hesitate to share your feedback with us. We're continuously evolving, and your insights can be instrumental in shaping the future of U-Learn.</p>
+
+          <p>Welcome aboard! We're ecstatic to embark on this creative journey with you. Here's to making magic together!</p>
+
+          <p>Warm regards,</p>
+          <p>The U-Learn Team.</p>
+        </div>
+      </td>
+    </tr>
+  </table>
+  <p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px; text-align: center;">
+    Copyright © 2023 L'Operateur Ltd. Nigeria
+  </p>
+</div>
+</body>
+</html>

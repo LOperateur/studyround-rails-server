@@ -8,7 +8,8 @@ Rails.application.routes.draw do
   mount Sidekiq::Web => '/sidekiq'
   post '/auth/signup', to: "auth#signup"
   post '/auth/login', to: "auth#login"
-  post '/auth/support/login', to: "auth#login_content_support"
+  get '/auth/google', to: "auth#google_oauth"
+  post '/auth/support/login', to: "auth#login_creator"
   post '/auth/reset', to: "auth#reset"
   post '/auth/refresh-token', to: "auth#refresh_token"
   post '/otp/generate', to: "auth#generate_otp"
@@ -101,6 +102,7 @@ Rails.application.routes.draw do
   post '/admin/assign-course', to: "admin#assign_course"
   post '/admin/merge-courses', to: "admin#merge_courses"
   patch '/admin/suspend-course', to: "admin#suspend_course"
+  patch '/admin/approve-creator', to: "admin#make_or_approve_creator"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"

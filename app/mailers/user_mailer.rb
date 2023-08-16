@@ -13,4 +13,11 @@ class UserMailer < ApplicationMailer
     recipients = [@email, ENV['ADMIN_CONSENT_EMAIL']]
     mail(to: recipients, from: 'U-Learn Creators <noreply@myulearn.com>', subject: 'Creator Consent')
   end
+
+  def new_creator_email
+    @email = params[:email]
+    @username = params[:username]
+    @password = params[:password]
+    mail(to: @email, from: 'U-Learn Creators <noreply@myulearn.com>', subject: 'Creator Credentials')
+  end
 end

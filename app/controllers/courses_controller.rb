@@ -2,6 +2,7 @@ class CoursesController < ApplicationController
   require 'action_view'
   require 'action_view/helpers'
   include ActionView::Helpers::DateHelper
+  include CourseHelper
   include TestHelper
 
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
@@ -11,15 +12,12 @@ class CoursesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    search_query = params[:q]
-    courses = Course.published_active_courses
-    
-    if search_query.present?
-      courses = courses.filtered_by_search(search_query.downcase)
-    end
+    found_courses = search_and_filter(Course.published_active_courses.ordered_by_result_count)
 
-    paginatedCourses = paginate(courses, params)
-    render json: paginatedCourses, root: :data, meta: paginated_meta(paginatedCourses)
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
+    courses = paginate(found_courses, params, entries = found_courses.count.size)
+    render json: courses, root: :data, meta: paginated_meta(courses)
   end
 
   def show
@@ -36,14 +34,15 @@ class CoursesController < ApplicationController
       purchase_status[:sale_status_explanations] = current_user.present? && current_user.has_purchased_item(@course)
     end
 
+    review = @course.reviews.where(user: current_user).take
+
     if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
       end
-
-      render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status) }
+      render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status, user_review: review) }
     else
-      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status) }
+      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status, user_review: review) }
     end
   end
 
@@ -198,7 +197,7 @@ class CoursesController < ApplicationController
     min = ENV["TOP_COURSE_MIN_RATING_COUNT"].to_i || 1
 
     if Course.published_active_courses.any?
-      average_rating = Course.first.courses_average_rating
+      average_rating = Course.take.courses_average_rating
       top_courses = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND rating_count >= #{min}
@@ -216,10 +215,9 @@ class CoursesController < ApplicationController
   end
 
   def trending_courses
-    # Get published courses having results created over the past 120 days
+    # Get published courses having results created over the past 180 days
     # Then sort those courses by the result count
-    courses = Course.published_active_courses.left_joins(:results).group(:id)
-                    .where('results.created_at > ?', 120.days.ago).order('COUNT(results.id) DESC').limit(10)
+    courses = Course.published_active_courses.ordered_by_recent_result_count.limit(10)
 
     render json: courses, root: :data
   end
@@ -240,33 +238,20 @@ class CoursesController < ApplicationController
     render json: combined, root: :data
   end
 
+  def enrolled_courses
+    enrolled_courses = search_and_filter(Course.published_active_courses.ordered_by_user_recent_results(current_user))
+
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
+    paginated_enrolled_courses = paginate(enrolled_courses, params, entries = enrolled_courses.count.size)
+    render json: paginated_enrolled_courses, root: :data, meta: paginated_meta(paginated_enrolled_courses)
+  end
+
   def search
-    search_query = params[:q]
-    category_filter_query = params[:category]
+    found_courses = search_and_filter(Course.visible_courses.ordered_by_result_count)
 
-    if category_filter_query.present?
-      category = Category.find_by(id: category_filter_query)
-    else
-      category = nil
-    end
-
-    # Ordered by relevance (result count)
-    if search_query.blank?
-      if category
-        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_category(category.id)
-      else
-        found_courses = Course.none
-      end
-    else
-      if category
-        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_category(category.id)
-                              .filtered_by_search(search_query.downcase)
-      else
-        found_courses = Course.visible_courses.ordered_by_result_count.filtered_by_search(search_query.downcase)
-      end
-    end
-
-    # Specifying entry count here due to the result group count query which returns a hash of grouped courses -> result count
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
     courses = paginate(found_courses, params, entries = found_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
@@ -356,7 +341,7 @@ class CoursesController < ApplicationController
     limit, offset, paginated_metadata = custom_paginate(total_rated_tests, params)
 
     if Course.published_active_courses.where(test: true).any?
-      average_rating = Course.first.tests_average_rating
+      average_rating = Course.take.tests_average_rating
       top_tests = Course.find_by_sql(
         "SELECT *, ((rating * rating_count) + (#{average_rating} * #{min})) / GREATEST(rating_count + #{min}, 1) AS weighted_rating
          FROM courses WHERE publish_status = 2 AND course_status = 1 AND private = false AND test = true AND rating_count >= #{min}
@@ -398,25 +383,6 @@ class CoursesController < ApplicationController
     render json: transactions_controller.process_transaction
   end
 
-  def enrolled_courses
-    course_transaction_ids = Transaction.select(:purchase_item_id)
-                                        .where("buyer_id = ?", current_user.id)
-                                        .order(completed_at: :desc)
-                                        .course_based_transactions.transaction_status_completed
-                                        .map { |transaction| transaction["purchase_item_id"] }
-                                        .uniq
-    purchased_courses = Course.where(id: course_transaction_ids).sort_by { |i| course_transaction_ids.index(i.id) }
-
-    search_query = params[:q]
-    
-    if search_query.present?
-      purchased_courses = purchased_courses.filtered_by_search(search_query.downcase)
-    end
-
-    paginated_purchased_courses = paginate(purchased_courses, params)
-    render json: paginated_purchased_courses, root: :data, meta: paginated_meta(paginated_purchased_courses)
-  end
-
   def purchased_courses
     course_transaction_ids = Transaction.select(:purchase_item_id)
                                         .where("buyer_id = ?", current_user.id)
@@ -444,13 +410,13 @@ class CoursesController < ApplicationController
   end
 
   def created_courses
-    courses = current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc)
+    courses = search_and_filter(current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc))
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
   end
 
   def created_tests
-    tests = current_user.courses.non_deleted_courses.where(test: true).order(created_at: :desc)
+    tests = search_and_filter(current_user.courses.non_deleted_courses.where(test: true).order(created_at: :desc))
     paginated_tests = paginate(tests, params)
     render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
   end

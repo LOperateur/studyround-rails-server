@@ -495,7 +495,8 @@ class QuestionsController < ApplicationController
     reference_type = :reference_type_option_image_draft
     question.question_asset_references.where(reference_type: reference_type).destroy_all
 
-    question.draft["options"].each do |option|
+    # Build the new references for the options, if any options are present
+    question.draft["options"]&.each do |option|
       if option["option_image_asset_id"].present?
         question.question_asset_references.build(
           question_asset_id: option["option_image_asset_id"],
