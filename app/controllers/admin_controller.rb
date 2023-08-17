@@ -21,6 +21,10 @@ class AdminController < ApplicationController
       users = User.active_users.all
     end
 
+    if params[:creator] == "true"
+      users = users.where(creator: true)
+    end
+
     paginated_users = paginate(users.order(created_at: :asc), params)
     render json: paginated_users, root: :data, meta: paginated_meta(paginated_users), each_serializer: ProfileSerializer
   end
