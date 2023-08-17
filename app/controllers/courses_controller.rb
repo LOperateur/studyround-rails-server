@@ -410,7 +410,12 @@ class CoursesController < ApplicationController
   end
 
   def created_courses
-    courses = search_and_filter(current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc))
+    courses = search_and_filter(current_user.courses.non_deleted_courses.order(created_at: :desc))
+
+    if params[:course_only] == "true"
+      courses = courses.where(test: false)
+    end
+
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
   end
