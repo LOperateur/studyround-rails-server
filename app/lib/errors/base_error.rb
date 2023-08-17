@@ -1,7 +1,7 @@
 module Errors
   class BaseError < ::StandardError
     def initialize(message: nil, action: nil, status: nil, source: nil, data: nil)
-      @message = message || "Something went wrong :("
+      @message = message || "Something went wrong. We've been notified and are working on it!"
       @action = action || :nothing
       @status = status || 500
       @source = source.nil? ? nil : source.deep_stringify_keys

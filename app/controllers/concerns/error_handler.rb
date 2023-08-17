@@ -31,7 +31,14 @@ module ErrorHandler
     mapped_error ||= Errors::BaseError.new
 
     # Add a message if there's one available
-    mapped_error.message = e.message if e.message.present?
+    if e.message.present?
+      # If it's a 500 error in production, don't include the message
+      if mapped_error.status == 500 && Rails.env.production?
+        # Do nothing
+      else
+        mapped_error.message = e.message
+      end
+    end
 
     # If it's a not-found error, simplify the error message by removing the params after "with"
     if mapped_error.is_a? Errors::NotFoundError
