@@ -34,7 +34,6 @@ Rails.application.routes.draw do
   get '/courses/my-courses', to: "courses#my_courses"
   get '/courses/tests', to: "courses#tests"
   get '/courses/created', to: "courses#created_courses"
-  get '/courses/tests/created', to: "courses#created_tests"
   get '/courses/enrolled', to: "courses#enrolled_courses"
   get '/courses/purchased', to: "courses#purchased_courses"
   get '/courses/tests/purchased', to: "courses#purchased_tests"
