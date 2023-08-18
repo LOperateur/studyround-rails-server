@@ -256,6 +256,13 @@ class CoursesController < ApplicationController
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
 
+  def halt_attempts
+    course = Course.find(params[:course_id])
+    message = halt_new_attempts(course)
+
+    render json: course, meta: { message: message }, root: :data, serializer: CreatorCourseSerializer
+  end
+
   def close_test
     course = Course.find(params[:course_id])
     if course.creator != current_user
@@ -289,7 +296,7 @@ class CoursesController < ApplicationController
     # Send an email to all test-takers
     TestResultsEmailSendJob.perform_later(course)
 
-    render json: {}, status: :ok
+    render json: course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def my_courses
