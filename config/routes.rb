@@ -34,7 +34,6 @@ Rails.application.routes.draw do
   get '/courses/my-courses', to: "courses#my_courses"
   get '/courses/tests', to: "courses#tests"
   get '/courses/created', to: "courses#created_courses"
-  get '/courses/tests/created', to: "courses#created_tests"
   get '/courses/enrolled', to: "courses#enrolled_courses"
   get '/courses/purchased', to: "courses#purchased_courses"
   get '/courses/tests/purchased', to: "courses#purchased_tests"
@@ -43,6 +42,8 @@ Rails.application.routes.draw do
   post '/courses/:id/publish-questions', to: "courses#publish_questions"
   post '/courses/:id/purchase', to: "courses#purchase"
   post '/courses/:id/set-source', to: "courses#set_source"
+  post '/tests/:course_id/halt-attempts', to: "courses#halt_attempts"
+  post '/tests/:course_id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
@@ -81,7 +82,6 @@ Rails.application.routes.draw do
   post '/sessions/:course_id/end', to: "sessions#end"
   post '/sessions/:course_id/end-demo', to: "sessions#end_demo"
   post '/tests/:course_id/end', to: "sessions#end_test"
-  post '/tests/:course_id/complete', to: "courses#close_test"
   resources :sessions, only: [:update]
 
   get '/transactions/initiate', to: "transactions#initiate"

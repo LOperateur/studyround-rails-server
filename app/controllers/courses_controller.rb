@@ -256,6 +256,13 @@ class CoursesController < ApplicationController
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
   end
 
+  def halt_attempts
+    course = Course.find(params[:course_id])
+    message = halt_new_attempts(course)
+
+    render json: course, meta: { message: message }, root: :data, serializer: CreatorCourseSerializer
+  end
+
   def close_test
     course = Course.find(params[:course_id])
     if course.creator != current_user
@@ -289,7 +296,7 @@ class CoursesController < ApplicationController
     # Send an email to all test-takers
     TestResultsEmailSendJob.perform_later(course)
 
-    render json: {}, status: :ok
+    render json: course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def my_courses
@@ -410,15 +417,18 @@ class CoursesController < ApplicationController
   end
 
   def created_courses
-    courses = search_and_filter(current_user.courses.non_deleted_courses.where(test: false).order(created_at: :desc))
+    courses = search_and_filter(current_user.courses.non_deleted_courses.order(created_at: :desc))
+
+    if params.key?(:test)
+      if params[:test] == "true"
+        courses = courses.where(test: true)
+      else
+        courses = courses.where(test: false)
+      end
+    end
+
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
-  end
-
-  def created_tests
-    tests = search_and_filter(current_user.courses.non_deleted_courses.where(test: true).order(created_at: :desc))
-    paginated_tests = paginate(tests, params)
-    render json: paginated_tests, root: :data, meta: paginated_meta(paginated_tests)
   end
 
   private
