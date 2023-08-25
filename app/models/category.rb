@@ -10,12 +10,16 @@ class Category < ApplicationRecord
   # Here are our current category definitions across levels:
   # More categories can be added as needed...
   # {
+  #   "Occupation": "Professional" | "Student" | "Default"
+  #   "Student order": "5, 3, 2, 1, 4".
+  #   "Professional order": "4, 1, 5, 3, 2".
+  #   "Default order": "1, 4, 5, 2, 3".
+  #
   #   "category_levels": [
-  #       "1-faculty": ["General Knowledge","Engineering","Agriculture","Earth","Sciences","Legal",
-  #                     "Arts & Humanities","Finance","Social Sciences","Technology","International","IQ"],
+  #       "1-faculty": ["General Knowledge","Engineering","Medical Sciences","Agriculture","Sciences","Legal","Arts & Humanities","Business","Social Sciences","Education","Environmental Sciences"],
   #       "2-examinations": ["JAMB","P-UTME","WAEC"],
   #       "3-institutions": ["UNIBEN","DELSU"],
-  #       "4-sectors": ["Banking","Tech","Fashion"],
+  #       "4-sectors": ["Finance","Technology","Fashion","Health","International","Government","Entertainment","Sports","Religious","IQ"],
   #       "5-institution-type": ["University","College","Polytechnic","Secondary","Primary","Adult School"]
   #   ]
   # }
