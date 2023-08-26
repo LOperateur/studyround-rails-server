@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_08_05_215258) do
+ActiveRecord::Schema.define(version: 2023_08_25_093849) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -46,14 +46,12 @@ ActiveRecord::Schema.define(version: 2023_08_05_215258) do
   end
 
   create_table "categories", force: :cascade do |t|
-    t.bigint "parent_id"
     t.string "name"
     t.integer "level"
     t.string "image_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_categories_on_name", unique: true
-    t.index ["parent_id"], name: "index_categories_on_parent_id"
   end
 
   create_table "categorizations", force: :cascade do |t|
@@ -292,7 +290,6 @@ ActiveRecord::Schema.define(version: 2023_08_05_215258) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "auth_providers", "users"
-  add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
   add_foreign_key "courses", "users", column: "creator_id"
