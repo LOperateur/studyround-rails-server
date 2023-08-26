@@ -23,6 +23,7 @@ Rails.application.routes.draw do
   patch '/user/creator-consent', to: "users#creator_consent"
   resources :users, only: [:show]
 
+  post '/categories/generate', to: "categories#generate_default_categories"
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
     get '/courses', to: "courses#per_category"
   end
