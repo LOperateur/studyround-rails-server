@@ -53,6 +53,7 @@ Rails.application.routes.draw do
 
   get '/creator/courses/:course_id/questions', to: "questions#questions"
   post '/creator/courses/:course_id/questions', to: "questions#create"
+  post '/creator/courses/:course_id/questions/import', to: "questions#bulk_import_questions_json"
   get '/creator/courses/:course_id/questions/:id', to: "questions#show"
   put '/creator/courses/:course_id/questions/:id', to: "questions#update"
   patch '/creator/courses/:course_id/questions/:id/publish', to: "questions#publish"

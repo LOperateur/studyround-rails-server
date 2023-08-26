@@ -5,6 +5,7 @@ class QuestionsController < ApplicationController
   before_action :load_creators_course, except: [:index, :explanation]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
+  before_action :check_admin, only: [:resolve_notes, :bulk_import_questions_json]
 
   wrap_parameters format: []
 
@@ -86,14 +87,17 @@ class QuestionsController < ApplicationController
     question = @course.questions.build
     question.draft = draft
 
+    # Todo: deprecated - Remove direct question image attachments
     # Attach images
     question.question_image_draft.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
     question.explanation_image_draft.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
 
+    # Todo: deprecated - Remove direct question image attachments
     # Add generated urls to draft json
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
+    # Identify the original creator for notes
     question.creator_id = current_user.id
 
     Question.transaction do
@@ -113,10 +117,12 @@ class QuestionsController < ApplicationController
     draft = create_draft(update_question_params)
     @question.draft = draft
 
+    # Todo: deprecated - Remove direct question image attachments
     # Attach draft images
     handle_image_update(update_question_params, :question_image, :question_image_url)
     handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
 
+    # Todo: deprecated - Remove direct question image attachments
     # Add generated urls to draft json
     @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
     @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
@@ -258,15 +264,38 @@ class QuestionsController < ApplicationController
   end
 
   def resolve_notes
-    if current_user.user_type != :admin
-      raise Errors::ForbiddenError.new(message: "You don't have the authority to resolve notes in this course.")
-    end
-
     # Just delete all notes
     @question.notes = nil
     @question.save!
 
     render json: @question, root: :data, meta: { message: "All Notes Resolved!" }, serializer: CreatorQuestionSerializer
+  end
+
+  def bulk_import_questions_json
+    count = 0
+
+    Question.transaction do
+      # Fetch the JSON from the file upload
+      questions_json = JSON.parse(bulk_import_questions_params[:questions_json].read)
+
+      # Check if the questions_json is an array
+      if questions_json.kind_of?(Array)
+        # Iterate through the questions_json array
+        questions_json.each do |json|
+          question = @course.questions.build
+          question.draft = json
+          question.creator_id = current_user.id
+
+          establish_position_and_save(question, nil)
+        end
+      else
+        raise Errors::BaseError.new(message: "Invalid questions JSON", status: 400)
+      end
+
+      count = questions_json.count
+    end
+
+    render json: { message: "Imported #{count} Questions Successfully", data: {} }, status: :created
   end
 
   private
@@ -531,6 +560,12 @@ class QuestionsController < ApplicationController
             .update_all(reference_type: :reference_type_passage)
   end
 
+  def check_admin
+    if current_user.user_type != :admin
+      raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
+    end
+  end
+
   # Image handling in controller during update
   # 1.) image √   image_url √   =>    Changing image
   # 2.) image √   image_url X   =>    New image
@@ -622,4 +657,9 @@ class QuestionsController < ApplicationController
   def create_note_params
     params.permit(:note)
   end
+
+  def bulk_import_questions_params
+    params.permit(:questions_json)
+  end
+
 end
