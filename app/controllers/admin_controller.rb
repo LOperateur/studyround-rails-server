@@ -2,6 +2,7 @@ class AdminController < ApplicationController
   include CourseHelper
 
   before_action :check_admin
+  before_action :default_12_page_size, only: [:courses]
 
   wrap_parameters format: []
 
