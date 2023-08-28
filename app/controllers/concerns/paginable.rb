@@ -5,7 +5,7 @@ module Paginable
   def paginate(relation, params = {}, entries = relation.count)
     relation.paginate(
       page: params[:page],
-      per_page: per_page(params, total: entries),
+      per_page: calculate_per_page(params, total: entries),
       total_entries: entries,
     )
   end
@@ -20,12 +20,16 @@ module Paginable
   end
 
   # Returns the per_page value from the params or the default
-  def per_page(params = {}, total: 0, default_per_page: 10)
-    if params[:page_size].present? && params[:page_size].to_i > 0
-      params[:page_size]
-    else
-      [default_per_page, total].min
+  def calculate_per_page(params = {}, total: 0, default_per_page: 10)
+    page_size_param = params[:page_size]
+    per_page_limit = (page_size_param.presence || [default_per_page, total].min).to_i
+
+    # If the limit is 0, return all records
+    if per_page_limit == 0
+      per_page_limit = total
     end
+
+    return per_page_limit
   end
 
   # This is a custom pagination method that returns the limit, offset and metadata.
@@ -37,9 +41,8 @@ module Paginable
   # datasets into memory.
   def custom_paginate(total, params = {})
     page_param = params[:page]
-    page_size_param = params[:page_size]
 
-    limit = (page_size_param.presence || [10, total].min).to_i
+    limit = calculate_per_page(params, total: total)
     page = (page_param.presence || 1).to_i
     offset = (page - 1) * limit
 

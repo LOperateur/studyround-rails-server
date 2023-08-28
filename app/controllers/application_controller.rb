@@ -40,4 +40,10 @@ class ApplicationController < ActionController::API
     super
     payload[:user_id] = current_user&.id
   end
+
+  # Helper method to default the page size to 12 if not specified
+  # To use, add `before_action :default_12_page_size` to the controller
+  def default_12_page_size
+    params[:page_size] ||= 12
+  end
 end
