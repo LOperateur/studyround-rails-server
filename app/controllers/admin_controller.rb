@@ -206,6 +206,47 @@ class AdminController < ApplicationController
 
   end
 
+  def reset_creator
+    email = reset_creator_params[:email]
+
+    if User.exists?(email: email)
+      user = User.find_by!(email: email)
+
+      if !user.creator
+        raise Errors::BaseError.new(message: "User is not a creator", status: 400)
+      end
+
+      # Generate a random password for the user
+      password = SecureRandom.hex(6)
+
+      # Send an email containing the user's reset credentials
+      UserMailer.with(email: email, username: user.username, password: password).new_creator_email.deliver_later
+
+      # Create a new auth provider with password if the user doesn't have one
+      auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_password)
+      if !auth_provider
+        AuthProvider.create!(
+          user: user,
+          auth_provider: :auth_provider_password,
+          metadata: { method: :admin_reset },
+        )
+      end
+
+      # Indicate that the user is in the reset password flow to mandate password validation
+      user.in_reset_password_flow = true
+
+      user.update_attributes!(
+        password: password,
+        password_confirmation: password
+      )
+
+    else
+      raise Errors::BaseError.new(message: "User with this email does not exist", status: 400)
+    end
+
+    render json: user, root: :data, status: :created, meta: { message: "User creator credentials are reset!" }
+  end
+
   private
 
   def check_admin
@@ -235,6 +276,10 @@ class AdminController < ApplicationController
   end
 
   def approve_creator_params
+    params.permit(:email)
+  end
+
+  def reset_creator_params
     params.permit(:email)
   end
 end

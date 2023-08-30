@@ -105,6 +105,7 @@ Rails.application.routes.draw do
   post '/admin/merge-courses', to: "admin#merge_courses"
   patch '/admin/suspend-course', to: "admin#suspend_course"
   patch '/admin/approve-creator', to: "admin#make_or_approve_creator"
+  patch '/admin/reset-creator', to: "admin#reset_creator"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
