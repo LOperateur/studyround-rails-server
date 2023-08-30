@@ -15,7 +15,7 @@ class QuestionAssetsController < ApplicationController
       question_assets = @course.question_assets
     end
 
-    paginated_assets = paginate(question_assets, params)
+    paginated_assets = paginate(question_assets.order(created_at: :asc), params)
     render json: paginated_assets, root: :data, meta: paginated_meta(paginated_assets), status: :ok
   end
 
@@ -62,7 +62,11 @@ class QuestionAssetsController < ApplicationController
       # ActiveStorage will automatically purge the old file
       question_asset.file.attach(update_question_asset_params[:file])
     else
-      raise Errors::BaseError.new(message: "Invalid asset configuration", status: 400)
+      # Raise errors for invalid asset matching
+      if (question_asset.asset_type_passage? && update_question_asset_params[:file].present?) ||
+        (question_asset.asset_type_image? && update_question_asset_params[:content].present?)
+        raise Errors::BaseError.new(message: "Invalid asset configuration", status: 400)
+      end
     end
 
     question_asset.save!
