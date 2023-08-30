@@ -1,5 +1,5 @@
 class QuestionAssetSerializer < ActiveModel::Serializer
-  attributes :id, :value, :asset_type
+  attributes :id, :name, :value, :asset_type
 
   def value
     asset_type = object.asset_type.to_sym

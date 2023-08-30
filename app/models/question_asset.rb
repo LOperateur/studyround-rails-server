@@ -6,6 +6,10 @@ class QuestionAsset < ApplicationRecord
   has_many :questions, through: :question_asset_references
   has_one_attached :file, dependent: :purge_later # Purge the file if the asset is deleted
 
+  # Name can only contain letters, numbers, underscores, and dashes and spaces
+  validates :name, format: { with: /\A[a-zA-Z0-9_\- ]+\z/, message: "can only contain letters, numbers, underscores, dashes, and spaces" },
+            length: { maximum: 50 }, presence: true
+
   enum asset_type: {
     asset_type_image: 1,
     asset_type_passage: 2,
