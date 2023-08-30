@@ -15,7 +15,7 @@ class QuestionAssetsController < ApplicationController
       question_assets = @course.question_assets
     end
 
-    paginated_assets = paginate(question_assets)
+    paginated_assets = paginate(question_assets, params)
     render json: paginated_assets, root: :data, meta: paginated_meta(paginated_assets), status: :ok
   end
 
