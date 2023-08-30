@@ -28,11 +28,15 @@ class QuestionAssetsController < ApplicationController
 
     if create_question_asset_params[:asset_type] == "passage"
       question_asset.assign_attributes(
+        name: create_question_asset_params[:name],
         asset_type: :asset_type_passage,
         content: create_question_asset_params[:content],
       )
     elsif create_question_asset_params[:asset_type] == "image"
-      question_asset.assign_attributes(asset_type: :asset_type_image)
+      question_asset.assign_attributes(
+        name: create_question_asset_params[:name],
+        asset_type: :asset_type_image,
+      )
       question_asset.file.attach(create_question_asset_params[:file])
     else
       raise Errors::BaseError.new(message: "Invalid asset type", status: 400)
@@ -49,6 +53,8 @@ class QuestionAssetsController < ApplicationController
     end
 
     question_asset = @course.question_assets.find(params[:id])
+
+    question_asset.assign_attributes(name: update_question_asset_params[:name])
 
     if question_asset.asset_type_passage? && update_question_asset_params[:content].present?
       question_asset.update!(content: update_question_asset_params[:content])
@@ -95,11 +101,11 @@ class QuestionAssetsController < ApplicationController
   end
 
   def create_question_asset_params
-    params.permit(:asset_type, :content, :file)
+    params.permit(:asset_type, :name, :content, :file)
   end
 
   def update_question_asset_params
-    params.permit(:content, :file)
+    params.permit(:content, :name, :file)
   end
 
 end
