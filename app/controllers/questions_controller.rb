@@ -198,17 +198,8 @@ class QuestionsController < ApplicationController
 
   def destroy
     Question.transaction do
-      # Update position of adjacent questions before this deletion
-      previous_question = @question.previous
-      next_question = @question.next
-
-      if previous_question
-        previous_question.update!(next_id: @question.next_id)
-      end
-
-      if next_question
-        next_question.update!(previous_id: @question.previous_id)
-      end
+      # Adjacent question updates
+      @question.remove_linked_self_references
 
       # If Question has never been published, hard delete it
       if @question.question.nil?

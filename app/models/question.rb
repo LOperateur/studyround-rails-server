@@ -11,12 +11,12 @@ class Question < ApplicationRecord
 
   validates_with QuestionValidator
 
-  has_one_attached :question_image, dependent: :detach # Retain history of published attachments
-  has_one_attached :question_image_draft
-  has_one_attached :explanation_image, dependent: :detach
-  has_one_attached :explanation_image_draft
-  has_many_attached :option_images, dependent: :detach
-  has_many_attached :option_images_draft
+  has_one_attached :question_image, dependent: :purge_later
+  has_one_attached :question_image_draft, dependent: :purge_later
+  has_one_attached :explanation_image, dependent: :purge_later
+  has_one_attached :explanation_image_draft, dependent: :purge_later
+  has_many_attached :option_images, dependent: :purge_later
+  has_many_attached :option_images_draft, dependent: :purge_later
 
   enum publish_status: {
     publish_status_draft: 1,
@@ -81,8 +81,19 @@ class Question < ApplicationRecord
     end
   end
 
-  @deprecated # Use question_assets instead
-  def generated_option_image_url(order)
-    # No-op
+  def remove_linked_self_references
+    Question.transaction do
+      # Update position of adjacent questions before this deletion
+      previous_question = self.previous
+      next_question = self.next
+
+      if previous_question
+        previous_question.update!(next_id: self.next_id)
+      end
+
+      if next_question
+        next_question.update!(previous_id: self.previous_id)
+      end
+    end
   end
 end
