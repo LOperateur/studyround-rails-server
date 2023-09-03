@@ -9,11 +9,11 @@ class Course < ApplicationRecord
   has_many :categorizations, dependent: :destroy
   has_many :categories, through: :categorizations
   has_many :results
-  has_many :questions, dependent: :delete_all # Doing this instead of destroy because questions are self-referential
+  has_many :questions, dependent: :destroy
   has_many :question_assets, dependent: :destroy
   has_many :reviews, dependent: :destroy
   has_many :sessions
-  has_one_attached :image
+  has_one_attached :image, dependent: :purge_later # Purge the image if the course is deleted
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
   scope :visible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired], private: false) }
