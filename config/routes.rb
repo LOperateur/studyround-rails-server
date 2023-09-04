@@ -40,9 +40,7 @@ Rails.application.routes.draw do
   get '/courses/tests/purchased', to: "courses#purchased_tests"
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
-  post '/courses/:id/publish-questions', to: "courses#publish_questions"
   post '/courses/:id/purchase', to: "courses#purchase"
-  post '/courses/:id/set-source', to: "courses#set_source"
   post '/tests/:course_id/halt-attempts', to: "courses#halt_attempts"
   post '/tests/:course_id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
@@ -61,6 +59,8 @@ Rails.application.routes.draw do
   delete '/creator/courses/:course_id/questions/:id/remove-note', to: "questions#remove_note"
   post '/creator/courses/:course_id/questions/:id/resolve-notes', to: "questions#resolve_notes"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
+  post '/courses/:course_id/publish-questions', to: "questions#publish_questions" # Todo: Include /creator namespace
+  post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
 
   resources :questions do
     get '/explanation', to: "questions#explanation"

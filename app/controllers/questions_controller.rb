@@ -170,32 +170,6 @@ class QuestionsController < ApplicationController
            serializer: CreatorQuestionSerializer
   end
 
-  # Publish the question while ignoring deprecated image fields
-  def publish_question(question)
-    draft = question.draft.symbolize_keys
-
-    question.question = draft[:question]
-    question.question_raw = draft[:question_raw]
-
-    question.explanation = draft[:explanation]
-    question.explanation_raw = draft[:explanation_raw]
-
-    question.options = draft[:options]
-    question.answer = draft[:answer]
-    question.multiplier = draft[:multiplier]
-    question.multi_answer = draft[:multi_answer]
-    question.year = draft[:year]
-
-    question.version = question.version + 1
-    question.draft = nil
-    question.publish_status = :publish_status_published
-
-    Question.transaction do
-      publish_asset_references(question)
-      question.save!
-    end
-  end
-
   def destroy
     Question.transaction do
       # Adjacent question updates
@@ -260,6 +234,57 @@ class QuestionsController < ApplicationController
     @question.save!
 
     render json: @question, root: :data, meta: { message: "All Notes Resolved!" }, serializer: CreatorQuestionSerializer
+  end
+
+  def publish_questions
+    if @course.test?
+      if @course.publish_status_published?
+        raise Errors::ForbiddenError.new(message: "You cannot make question changes within a published Test!")
+      end
+    end
+
+    message = ""
+    publish_success_count = 0
+    publish_errors_count = 0
+
+    # Publish all the valid questions in the course
+    @course.questions.each do |question|
+      if question.draft.present?
+        begin
+          publish_question question
+          publish_success_count += 1
+        rescue
+          publish_errors_count += 1
+        end
+      end
+    end
+
+    if publish_success_count > 0
+      message += "Published #{publish_success_count} #{'question'.pluralize(publish_success_count)}. "
+    end
+
+    if publish_errors_count > 0
+      message += "#{publish_errors_count} #{'question'.pluralize(publish_errors_count)} failed to publish."
+
+      # If all questions failed to publish, throw an error instead
+      if publish_success_count == 0
+        raise Errors::BaseError.new(message: message, status: 400)
+      end
+    end
+
+    if message.blank?
+      message = "No draft questions to publish"
+    end
+
+    render json: { message: message }, status: :ok
+  end
+
+  def bulk_set_source
+    # Source can be nil but if it is blank, we still want to set it to nil
+    source = bulk_set_source_params[:source].presence
+
+    @course.questions.non_deleted_questions.update_all(source: source)
+    render json: @course, meta: { message: "Question sources updated" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def bulk_import_questions_json
@@ -466,6 +491,32 @@ class QuestionsController < ApplicationController
     return strip_non_draft_fields(rough_draft)
   end
 
+  # Publish the question while ignoring deprecated image fields
+  def publish_question(question)
+    draft = question.draft.symbolize_keys
+
+    question.question = draft[:question]
+    question.question_raw = draft[:question_raw]
+
+    question.explanation = draft[:explanation]
+    question.explanation_raw = draft[:explanation_raw]
+
+    question.options = draft[:options]
+    question.answer = draft[:answer]
+    question.multiplier = draft[:multiplier]
+    question.multi_answer = draft[:multi_answer]
+    question.year = draft[:year]
+
+    question.version = question.version + 1
+    question.draft = nil
+    question.publish_status = :publish_status_published
+
+    Question.transaction do
+      publish_asset_references(question)
+      question.save!
+    end
+  end
+
   def build_asset_references(question)
     # Handle the assets if they are present in the request parameters.
     # Ideally, when building references, the params should always have the assets id's
@@ -647,6 +698,10 @@ class QuestionsController < ApplicationController
 
   def create_note_params
     params.permit(:note)
+  end
+
+  def bulk_set_source_params
+    params.permit(:source)
   end
 
   def bulk_import_questions_params
