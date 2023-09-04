@@ -102,49 +102,6 @@ class CoursesController < ApplicationController
     render json: @course, root: :data, meta: { message: "Published successfully" }, serializer: CreatorCourseSerializer
   end
 
-  def publish_questions
-    if @course.test?
-      if @course.publish_status_published?
-        raise Errors::ForbiddenError.new(message: "You cannot make question changes within a published Test!")
-      end
-    end
-
-    questions_controller = QuestionsController.new
-    questions_controller.request = request
-    questions_controller.response = response
-
-    message = ""
-    publish_success_count = 0
-    publish_errors_count = 0
-
-    # Publish all the valid questions in the course
-    @course.questions.each do |question|
-      if question.draft.present?
-        begin
-          questions_controller.publish_question question
-          publish_success_count += 1
-        rescue
-          publish_errors_count += 1
-        end
-      end
-    end
-
-    if publish_success_count > 0
-      message += "Published #{publish_success_count} #{'question'.pluralize(publish_success_count)}. "
-    end
-
-    if publish_errors_count > 0
-      message += "#{publish_errors_count} #{'question'.pluralize(publish_errors_count)} failed to publish."
-
-      # If all questions failed to publish, throw an error instead
-      if publish_success_count == 0
-        raise Errors::BaseError.new(message: message, status: 400)
-      end
-    end
-
-    render json: { message: message }, status: :ok
-  end
-
   def destroy
     if @course.test?
       if @course.publish_status_published?
@@ -165,14 +122,6 @@ class CoursesController < ApplicationController
     end
 
     render json: { message: "Deleted successfully", data: {} }, status: 200
-  end
-
-  def set_source
-    # Source can be nil but if it is blank, we still want to set it to nil
-    source = set_source_params[:source].presence
-
-    @course.questions.non_deleted_questions.update_all(source: source)
-    render json: @course, meta: { message: "Question sources updated" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def categorised
@@ -522,10 +471,6 @@ class CoursesController < ApplicationController
 
   def purchase_course_params
     params.permit(:card_id)
-  end
-
-  def set_source_params
-    params.permit(:source)
   end
 
 end
