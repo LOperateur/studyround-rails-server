@@ -154,7 +154,12 @@ class CoursesController < ApplicationController
 
     # If a course has never been published, hard delete it as well as all of its questions.
     if @course.last_publish_date.nil?
-      @course.destroy!
+      # If the course is getting destroyed, ensure that all questions are also destroyed atomically
+      Course.transaction do
+        # Reset all question references to nil
+        @course.questions.update_all(previous_id: nil, next_id: nil)
+        @course.destroy!
+      end
     else
       @course.course_status_deleted!
     end
