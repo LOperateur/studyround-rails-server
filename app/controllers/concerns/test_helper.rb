@@ -289,7 +289,7 @@ module TestHelper
 
     max_trials_left = get_max_trials_left(max_trials)
 
-    "You have #{max_trials_left} chances left to take and submit this test"
+    "You have #{max_trials_left} #{'chance'.pluralize(max_trials_left)} left to take and submit this test"
   end
 
   def map_user_limit_instruction
@@ -301,7 +301,7 @@ module TestHelper
       return nil
     end
 
-    "There are #{available_test_slots} more candidate slots left for this test"
+    "There #{available_test_slots > 1 ? 'are' : 'is'} #{available_test_slots} more candidate #{'slot'.pluralize(available_test_slots)} left for this test"
   end
 
   def map_reveal_answers_instruction
