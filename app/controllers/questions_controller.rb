@@ -287,6 +287,14 @@ class QuestionsController < ApplicationController
     render json: @course, meta: { message: "Question sources updated" }, root: :data, serializer: CreatorCourseSerializer
   end
 
+  def bulk_set_year
+    # Year can be nil but if it is blank, we still want to set it to nil
+    year = bulk_set_year_params[:year].presence
+
+    @course.questions.non_deleted_questions.update_all(year: year)
+    render json: @course, meta: { message: "Question years updated" }, root: :data, serializer: CreatorCourseSerializer
+  end
+
   def bulk_import_questions_json
     count = 0
 
@@ -702,6 +710,10 @@ class QuestionsController < ApplicationController
 
   def bulk_set_source_params
     params.permit(:source)
+  end
+
+  def bulk_set_year_params
+    params.permit(:year)
   end
 
   def bulk_import_questions_params

@@ -61,6 +61,7 @@ Rails.application.routes.draw do
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
   post '/courses/:course_id/publish-questions', to: "questions#publish_questions" # Todo: Include /creator namespace
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
+  post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
   resources :questions do
     get '/explanation', to: "questions#explanation"
