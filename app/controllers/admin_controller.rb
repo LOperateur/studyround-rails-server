@@ -88,7 +88,7 @@ class AdminController < ApplicationController
       raise Errors::BaseError.new(message: "The course you want to merge has no questions", status: 400)
     end
 
-    # Now attempt to merge the courses by moving the questions
+    # Now attempt to merge the courses by moving the questions and the assets
     # Start a transaction to ensure that all operations are atomic
     ApplicationRecord.transaction do
       last_main_course_question =
@@ -105,6 +105,9 @@ class AdminController < ApplicationController
 
       # Move the questions to the main course
       Question.where(course_id: merge_course.id).update_all(course_id: main_course.id)
+
+      # Move the assets to the main course
+      QuestionAsset.where(course_id: merge_course.id).update_all(course_id: main_course.id)
 
       # Delete the merged course
       merge_course.destroy!
