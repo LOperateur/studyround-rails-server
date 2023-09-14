@@ -25,9 +25,9 @@ class CourseValidator < ActiveModel::Validator
           record.errors.add :test_expiration, "should be at least 5 minutes after the test is published"
         end
 
-        # Max test expiration time is 30 days from now (the time of publishing)
-        if record.test_expiration > record.last_publish_date + 30.days
-          record.errors.add :test_expiration, "date cannot exceed 30 days from the date of publishing"
+        # Max test expiration time is 90 days from now (the time of publishing)
+        if record.test_expiration > record.last_publish_date + 90.days
+          record.errors.add :test_expiration, "date cannot exceed 90 days from the date of publishing"
         end
       end
     end
