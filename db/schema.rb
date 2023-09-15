@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_09_09_132703) do
+ActiveRecord::Schema.define(version: 2023_09_15_005021) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -170,7 +170,9 @@ ActiveRecord::Schema.define(version: 2023_09_09_132703) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name"
+    t.bigint "creator_id"
     t.index ["course_id"], name: "index_question_assets_on_course_id"
+    t.index ["creator_id"], name: "index_question_assets_on_creator_id"
   end
 
   create_table "questions", force: :cascade do |t|
@@ -313,6 +315,7 @@ ActiveRecord::Schema.define(version: 2023_09_09_132703) do
   add_foreign_key "question_asset_references", "question_assets"
   add_foreign_key "question_asset_references", "questions"
   add_foreign_key "question_assets", "courses"
+  add_foreign_key "question_assets", "users", column: "creator_id"
   add_foreign_key "questions", "courses"
   add_foreign_key "questions", "questions", column: "next_id"
   add_foreign_key "questions", "questions", column: "previous_id"

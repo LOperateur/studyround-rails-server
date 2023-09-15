@@ -96,7 +96,7 @@ class QuestionsController < ApplicationController
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
-    # Identify the original creator for notes
+    # Identify the original creator
     question.creator_id = current_user.id
 
     Question.transaction do
