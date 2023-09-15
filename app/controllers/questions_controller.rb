@@ -5,7 +5,6 @@ class QuestionsController < ApplicationController
   before_action :load_creators_course, except: [:index, :explanation]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
-  before_action :check_admin, only: [:resolve_notes, :bulk_import_questions_json]
 
   wrap_parameters format: []
 
@@ -326,8 +325,43 @@ class QuestionsController < ApplicationController
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:course_id])
-    if @course.creator != current_user && current_user.user_type != :admin
-      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage questions in this course.")
+
+    # Todo: Add roles and permissions check for destroy-own
+
+    # Mapping roles to their allowed methods
+    roles_and_methods = {
+      :admin => [:questions, :show, :create, :update, :publish,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions,
+                 :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
+
+      :creator => [:questions, :show, :create, :update, :publish,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions],
+
+      :role_co_creator => [:questions, :show, :create, :update, :publish,
+                           :destroy, :add_note, :remove_note, :publish_questions],
+
+      :role_editor => [:questions, :show, :create, :edit, :update,
+                       :destroy, :add_note, :remove_note],
+    }
+
+    # Check the user level/role and permissions
+    # Special case to distinguish between an admin who is not the creator and admin who is also the creator
+    # Since it is possible for some permissions to only be granted to the creator not the admin.
+    if current_user.user_type == :admin && @course.creator != current_user
+      if !roles_and_methods[:admin].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    elsif @course.creator == current_user
+      if !roles_and_methods[:creator].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    elsif CourseCollaborator.where(user: current_user, course: @course).exists?
+      role = CourseCollaborator.where(user: current_user, course: @course).role.to_sym
+      if !roles_and_methods[role].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    else
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage the questions in this course.")
     end
   end
 
