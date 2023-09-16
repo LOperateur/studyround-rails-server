@@ -42,6 +42,9 @@ class QuestionAssetsController < ApplicationController
       raise Errors::BaseError.new(message: "Invalid asset type", status: 400)
     end
 
+    # Identify the original creator
+    question_asset.creator_id = current_user.id
+
     question_asset.save!
 
     render json: question_asset, root: :data, status: :created
@@ -99,8 +102,38 @@ class QuestionAssetsController < ApplicationController
 
   def load_creator_course
     @course = Course.non_deleted_courses.find(params[:course_id])
-    if @course.creator != current_user && current_user.user_type != :admin
-      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage question assets in this course.")
+
+    # Todo: Add roles and permissions check for destroy-own
+
+    # Mapping roles to their allowed methods
+    roles_and_methods = {
+      :admin => [:index, :show, :create, :update, :destroy],
+
+      :creator => [:index, :show, :create, :update, :destroy],
+
+      :role_co_creator => [:index, :show, :create, :update, :destroy],
+
+      :role_editor => [:index, :show, :create, :update, :destroy],
+    }
+
+    # Check the user level/role and permissions
+    # Special case to distinguish between an admin who is not the creator and admin who is also the creator
+    # Since it is possible for some permissions to only be granted to the creator not the admin.
+    if current_user.user_type == :admin && @course.creator != current_user
+      if !roles_and_methods[:admin].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    elsif @course.creator == current_user
+      if !roles_and_methods[:creator].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    elsif CourseCollaborator.where(user: current_user, course: @course).exists?
+      role = CourseCollaborator.where(user: current_user, course: @course).role.to_sym
+      if !roles_and_methods[role].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    else
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage the question assets in this course.")
     end
   end
 

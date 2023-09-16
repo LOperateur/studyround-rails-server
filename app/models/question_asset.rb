@@ -2,6 +2,7 @@ class QuestionAsset < ApplicationRecord
   include Rails.application.routes.url_helpers
 
   belongs_to :course
+  belongs_to :creator, class_name: 'User'
   has_many :question_asset_references, dependent: :restrict_with_exception # Prevent deletion if referenced by a question
   has_many :questions, through: :question_asset_references
   has_one_attached :file, dependent: :purge_later # Purge the file if the asset is deleted
