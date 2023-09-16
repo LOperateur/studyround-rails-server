@@ -8,7 +8,7 @@ class CoursesController < ApplicationController
   before_action :default_12_page_size, only: [:index, :per_category, :enrolled_courses, :search, :my_courses, :tests, :purchased_courses, :purchased_tests, :created_courses]
   skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
   before_action :check_creators_consent, only: [:create]
-  before_action :load_creators_course, only: [:update, :publish, :destroy, :publish_questions, :set_source]
+  before_action :load_creators_course, only: [:update, :publish, :destroy, :halt_attempts, :close_test]
 
   wrap_parameters format: []
 
@@ -64,21 +64,23 @@ class CoursesController < ApplicationController
 
     course_params = prepare_received_course_params(update_course_params)
 
-    # If a course has been published, prevent any changes to price/currency
-    # Making it free will be allowed automatically, however, making it paid at a different
-    # price from what was originally published will require us to take action first.
-    # This will be checked in the validator since going from free->paid will throw an error if price is null.
-    if @course.last_publish_date.present?
-      new_price = course_params[:price]
-      new_currency = course_params[:currency]
+    if current_user.user_type != :admin
+      # If a course has been published, prevent any changes to price/currency
+      # Making it free will be allowed automatically, however, making it paid at a different
+      # price from what was originally published will require us to take action first.
+      # This will be checked in the validator since going from free->paid will throw an error if price is null.
+      if @course.last_publish_date.present?
+        new_price = course_params[:price]
+        new_currency = course_params[:currency]
 
-      # If changing the price/currency and the price/currency is different from what was there before
-      if !new_price.nil? && @course.price != new_price.to_d
-        raise Errors::BaseError.new(message: "Please contact us to change the price", status: 400)
-      end
+        # If changing the price/currency and the price/currency is different from what was there before
+        if !new_price.nil? && @course.price != new_price.to_d
+          raise Errors::BaseError.new(message: "Please contact us to change the price", status: 400)
+        end
 
-      if !new_currency.nil? && @course.currency != new_currency
-        raise Errors::BaseError.new(message: "Please contact us to change the currency", status: 400)
+        if !new_currency.nil? && @course.currency != new_currency
+          raise Errors::BaseError.new(message: "Please contact us to change the currency", status: 400)
+        end
       end
     end
 
@@ -211,22 +213,21 @@ class CoursesController < ApplicationController
   end
 
   def halt_attempts
-    course = Course.find(params[:course_id])
-    message = halt_new_attempts(course)
+    message = halt_new_attempts(@course)
 
-    render json: course, meta: { message: message }, root: :data, serializer: CreatorCourseSerializer
+    render json: @course, meta: { message: message }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def close_test
-    course = Course.find(params[:course_id])
-    if course.creator != current_user
+    # Todo: You can remove this check in pt 2 of the collaborator change
+    if @course.creator != current_user
       raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
     end
 
     # Confirm that the lag time is exceeded and the test is closeable
-    expiration = course.test_expiration
+    expiration = @course.test_expiration
     lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
-    closing_time = expiration + (course.instructions['time']).seconds + lag_time
+    closing_time = expiration + (@course.instructions['time']).seconds + lag_time
     is_closeable = closing_time < Time.now
 
     time_left = distance_of_time_in_words(closing_time, Time.now)
@@ -236,7 +237,7 @@ class CoursesController < ApplicationController
 
     # Submit all remaining sessions
     # Alternative?: CourseSessionSubmissionJob.perform_later(course)
-    course.sessions.each do |session|
+    @course.sessions.each do |session|
       begin
         get_end_test_result(session.user, session.course)
       rescue Errors::BaseError
@@ -245,12 +246,12 @@ class CoursesController < ApplicationController
     end
 
     # Close the test
-    course.course_status_closed!
+    @course.course_status_closed!
 
     # Send an email to all test-takers
-    TestResultsEmailSendJob.perform_later(course)
+    TestResultsEmailSendJob.perform_later(@course)
 
-    render json: course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
+    render json: @course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def my_courses
