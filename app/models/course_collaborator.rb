@@ -3,7 +3,7 @@ class CourseCollaborator < ApplicationRecord
   belongs_to :user
 
   # Creator permissions
-  # Course: View, Edit, Delete, Publish, Invite.
+  # Course: View, Edit, Delete, Publish, Invite, Close-Test.
   # Question: Create, View, Edit, Delete, Publish.
   # Assets: Create, View, Edit, Delete.
   # Notes: Create, View, Edit-Own, Delete-Own, Resolve.

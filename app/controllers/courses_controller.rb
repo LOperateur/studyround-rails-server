@@ -219,7 +219,7 @@ class CoursesController < ApplicationController
   end
 
   def close_test
-    # Todo: You can remove this check
+    # Todo: You can remove this check in pt 2 of the collaborator change
     if @course.creator != current_user
       raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
     end
