@@ -213,7 +213,7 @@ class AuthController < ApplicationController
 
     # If the user is not a creator or admin, they cannot login here
     if !user.creator && user.user_type != :admin
-      raise Errors::AuthenticationError.new(message: "You are not an approved creator, please use the usual U-Learn login")
+      raise Errors::AuthenticationError.new(message: "You are not an approved creator, please use the usual StudyRound login")
     end
 
     if user && user.authenticate(login_params[:password])

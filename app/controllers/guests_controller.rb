@@ -8,7 +8,7 @@ class GuestsController < ApplicationController
 
     if User.exists?(email: email)
       raise Errors::BaseError.new(
-        message: "This email is already associated with a U-Learn account",
+        message: "This email is already associated with a StudyRound account",
         action: :login,
         status: 400
       )
@@ -35,7 +35,7 @@ class GuestsController < ApplicationController
     # Still check if the provided email is a user
     if User.exists?(email: email)
       raise Errors::BaseError.new(
-        message: "This email is already associated with a U-Learn account",
+        message: "This email is already associated with a StudyRound account",
         action: :login,
         status: 400
       )
