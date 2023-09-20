@@ -250,6 +250,22 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :created, meta: { message: "User creator credentials are reset!" }
   end
 
+  def temp_migrate_users
+    admin_user = User.find_by(email: "admin@myulearn.com")
+    admin_user.username = "studyround"
+    admin_user.save!
+
+    ulearn_users = User.where("email LIKE ?", "%@myulearn.com")
+
+    ulearn_users.each do |ulearn_user|
+      email = ulearn_user.email
+      new_email = email.gsub("@myulearn.com", "@studyround.com")
+      ulearn_user.update!(email: new_email)
+    end
+
+    render json: { message: "Users migrated successfully" }, status: :ok
+  end
+
   private
 
   def check_admin

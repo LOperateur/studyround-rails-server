@@ -6,7 +6,7 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-module ULearnserver
+module StudyRound
   class Application < Rails::Application
     # Use as API-only app
     config.api_only = true
