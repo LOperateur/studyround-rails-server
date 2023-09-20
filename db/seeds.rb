@@ -9,18 +9,18 @@
 if Category.count == 0
   Category.create(
     [
-      { name: "General Knowledge", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon.svg" },
-      { name: "Engineering", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Agriculture", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Earth", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Sciences", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Legal", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Arts & Humanities", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Finance", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Social Sciences", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Technology", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "Sports", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
-      { name: "International", level: 1, image_url: "https://ulearn-backend-assets-staging.s3.amazonaws.com/assets/AfricanMaskIcon-on.svg" },
+      { name: "General Knowledge", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Engineering", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Agriculture", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Earth", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Sciences", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Legal", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Arts & Humanities", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Finance", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Social Sciences", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Technology", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "Sports", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
+      { name: "International", level: 1, image_url: "https://staging-studyround-frontend-assets.s3.us-east-2.amazonaws.com/assets/logo.png" },
     ]
   )
 end
