@@ -1,12 +1,12 @@
 class ResultMailer < ApplicationMailer
-  default from: 'U-Learn Results <results@myulearn.com>'
+  default from: 'StudyRound Results <results@studyround.com>'
 
   def demo_result_signup_email
     @email = params[:email]
     @title = params[:title]
     @score = params[:score]
     @pass_token = params[:pass_token]
-    mail(to: @email, subject: 'Your U-Learn Results!')
+    mail(to: @email, subject: 'Your StudyRound Results!')
   end
 
   def test_results_email
@@ -14,6 +14,6 @@ class ResultMailer < ApplicationMailer
     @title = params[:title]
     @score = params[:score]
     @result_id = params[:result_id]
-    mail(to: @email, subject: 'Your U-Learn Test Results!')
+    mail(to: @email, subject: 'Your StudyRound Test Results!')
   end
 end
