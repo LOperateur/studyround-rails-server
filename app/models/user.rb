@@ -60,9 +60,9 @@ class User < ApplicationRecord
   end
 
   def user_type
-    if self.email.starts_with?("admin") && self.email.ends_with?("@myulearn.com")
+    if self.email.starts_with?("admin") && self.email.ends_with?("@studyround.com")
       return :admin
-    elsif self.email.starts_with?("content") && self.email.ends_with?("@myulearn.com")
+    elsif self.email.starts_with?("content") && self.email.ends_with?("@studyround.com")
       return :content_support
     else
       return :standard
