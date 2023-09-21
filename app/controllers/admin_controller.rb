@@ -13,11 +13,11 @@ class AdminController < ApplicationController
     # Todo: Implement better access permission levels
     case user_type_filter
     when :admin
-      users = User.active_users.where("email LIKE ?", "admin%@myulearn.com")
+      users = User.active_users.where("email LIKE ?", "admin%@studyround.com")
     when :content_support
-      users = User.active_users.where("email LIKE ?", "content%@myulearn.com")
+      users = User.active_users.where("email LIKE ?", "content%@studyround.com")
     when :standard
-      users = User.active_users.where("email NOT LIKE ? AND email NOT LIKE ?", "admin%@myulearn.com", "content%@myulearn.com")
+      users = User.active_users.where("email NOT LIKE ? AND email NOT LIKE ?", "admin%@studyround.com", "content%@studyround.com")
     else
       users = User.active_users.all
     end
@@ -248,22 +248,6 @@ class AdminController < ApplicationController
     end
 
     render json: user, root: :data, status: :created, meta: { message: "User creator credentials are reset!" }
-  end
-
-  def temp_migrate_users
-    admin_user = User.find_by(email: "admin@myulearn.com")
-    admin_user.username = "studyround"
-    admin_user.save!
-
-    ulearn_users = User.where("email LIKE ?", "%@myulearn.com")
-
-    ulearn_users.each do |ulearn_user|
-      email = ulearn_user.email
-      new_email = email.gsub("@myulearn.com", "@studyround.com")
-      ulearn_user.update!(email: new_email)
-    end
-
-    render json: { message: "Users migrated successfully" }, status: :ok
   end
 
   private

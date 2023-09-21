@@ -17,7 +17,7 @@ class AutomationController < ApplicationController
       course.creator = reviewer
       assignee_trello_id = username_to_trello_id_map[reviewer.username.to_sym]
     else
-      course.creator = User.find_by!(email: "admin@myulearn.com")
+      course.creator = User.find_by!(email: "admin@studyround.com")
       assignee_trello_id = username_to_trello_id_map[creator.username.to_sym]
     end
 
@@ -38,7 +38,7 @@ class AutomationController < ApplicationController
   end
 
   def create_course
-    course = User.find_by(email: "admin@myulearn.com").courses.create!(title: create_course_params[:title], about: create_course_params[:title])
+    course = User.find_by(email: "admin@studyround.com").courses.create!(title: create_course_params[:title], about: create_course_params[:title])
 
     render json: { id: course.id }, status: :created
   end
