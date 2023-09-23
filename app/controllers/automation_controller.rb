@@ -57,7 +57,7 @@ class AutomationController < ApplicationController
   def username_to_trello_id_map
     {
       # Admins
-      "ulearn": "5d7fca71118a894284ce5818",
+      "studyround": "5d7fca71118a894284ce5818",
       "mofeejegi": "5b83d7af75612b1212f3a7f1",
       "caleb": "5d478ab77a6be628c6573af0",
       "karo": "6473baa1ae62fda376e8cc60",
