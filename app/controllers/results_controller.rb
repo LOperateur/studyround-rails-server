@@ -52,9 +52,8 @@ class ResultsController < ApplicationController
     end
 
     if !result.session_type_test?
-      # For non-test sessions, if session items is nil, then just raise an error
-      # Also, check if there is no question in the session items, this is for backwards incompatible sessions
-      if result.session_items.blank? || result.session_items.first['question'].nil?
+      # For non-test sessions, if session items is empty or nil, then just raise an error
+      if result.session_items.blank?
         raise Errors::BaseError.new(message: "This result session is no longer available", status: 400)
       end
     end
