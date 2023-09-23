@@ -14,11 +14,11 @@ class CategoriesController < ApplicationController
       # Get the user's occupation
       occupation = current_user.occupation
 
-      # If the occupation starts with "Student", get the category order tailored for students
-      if occupation.start_with?("Student")
+      # If the occupation starts with "student", get the category order tailored for students
+      if occupation.downcase.start_with?("student")
         category_order = [5, 3, 2, 1, 4]
-      # If the occupation starts with "Professional", get the category order tailored for professionals
-      elsif occupation.start_with?("Professional")
+      # If the occupation starts with "professional", get the category order tailored for professionals
+      elsif occupation.start_with?("professional")
         category_order = [4, 1, 5, 3, 2]
       # If the occupation starts with anything else, get the category order tailored for default users
       end
