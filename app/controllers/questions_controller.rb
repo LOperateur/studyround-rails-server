@@ -290,7 +290,16 @@ class QuestionsController < ApplicationController
     # Year can be nil but if it is blank, we still want to set it to nil
     year = bulk_set_year_params[:year].presence
 
-    @course.questions.non_deleted_questions.update_all(year: year)
+    # Set all the years for the questions in the course to year
+
+    # If the question has been published, update the year column
+    @course.questions.non_deleted_questions.where.not(version: 0).update_all(year: year)
+
+    # If the question has a draft, then set the year to the draft json too
+    year_value = year.nil? ? "null" : %("#{year}") # Ensure JSON null value or a year string value (not integer)
+    update_draft_year_sql = "draft = jsonb_set(draft, '{year}', ?)"
+    @course.questions.non_deleted_questions.where.not(draft: nil).update_all([update_draft_year_sql, year_value])
+
     render json: @course, meta: { message: "Question years updated" }, root: :data, serializer: CreatorCourseSerializer
   end
 
@@ -345,9 +354,7 @@ class QuestionsController < ApplicationController
     }
 
     # Check the user level/role and permissions
-    # Special case to distinguish between an admin who is not the creator and admin who is also the creator
-    # Since it is possible for some permissions to only be granted to the creator not the admin.
-    if current_user.user_type == :admin && @course.creator != current_user
+    if current_user.user_type == :admin
       if !roles_and_methods[:admin].include?(action_name.to_sym)
         raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
       end

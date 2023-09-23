@@ -117,9 +117,7 @@ class QuestionAssetsController < ApplicationController
     }
 
     # Check the user level/role and permissions
-    # Special case to distinguish between an admin who is not the creator and admin who is also the creator
-    # Since it is possible for some permissions to only be granted to the creator not the admin.
-    if current_user.user_type == :admin && @course.creator != current_user
+    if current_user.user_type == :admin
       if !roles_and_methods[:admin].include?(action_name.to_sym)
         raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
       end
