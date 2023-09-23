@@ -8,7 +8,8 @@ Rails.application.routes.draw do
   mount Sidekiq::Web => '/sidekiq'
   post '/auth/signup', to: "auth#signup"
   post '/auth/login', to: "auth#login"
-  post '/auth/support/login', to: "auth#login_content_support"
+  get '/auth/google', to: "auth#google_oauth"
+  post '/auth/support/login', to: "auth#login_creator"
   post '/auth/reset', to: "auth#reset"
   post '/auth/refresh-token', to: "auth#refresh_token"
   post '/otp/generate', to: "auth#generate_otp"
@@ -22,6 +23,7 @@ Rails.application.routes.draw do
   patch '/user/creator-consent', to: "users#creator_consent"
   resources :users, only: [:show]
 
+  post '/categories/generate', to: "categories#generate_default_categories"
   resources :categories, only: [:index, :show, :create, :update, :destroy] do
     get '/courses', to: "courses#per_category"
   end
@@ -33,15 +35,14 @@ Rails.application.routes.draw do
   get '/courses/my-courses', to: "courses#my_courses"
   get '/courses/tests', to: "courses#tests"
   get '/courses/created', to: "courses#created_courses"
-  get '/courses/tests/created', to: "courses#created_tests"
   get '/courses/enrolled', to: "courses#enrolled_courses"
   get '/courses/purchased', to: "courses#purchased_courses"
   get '/courses/tests/purchased', to: "courses#purchased_tests"
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
-  post '/courses/:id/publish-questions', to: "courses#publish_questions"
   post '/courses/:id/purchase', to: "courses#purchase"
-  post '/courses/:id/set-source', to: "courses#set_source"
+  post '/tests/:id/halt-attempts', to: "courses#halt_attempts"
+  post '/tests/:id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     resources :questions, only: [:index]
     resources :reviews
@@ -50,6 +51,7 @@ Rails.application.routes.draw do
 
   get '/creator/courses/:course_id/questions', to: "questions#questions"
   post '/creator/courses/:course_id/questions', to: "questions#create"
+  post '/creator/courses/:course_id/questions/import', to: "questions#bulk_import_questions_json"
   get '/creator/courses/:course_id/questions/:id', to: "questions#show"
   put '/creator/courses/:course_id/questions/:id', to: "questions#update"
   patch '/creator/courses/:course_id/questions/:id/publish', to: "questions#publish"
@@ -57,6 +59,9 @@ Rails.application.routes.draw do
   delete '/creator/courses/:course_id/questions/:id/remove-note', to: "questions#remove_note"
   post '/creator/courses/:course_id/questions/:id/resolve-notes', to: "questions#resolve_notes"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
+  post '/courses/:course_id/publish-questions', to: "questions#publish_questions" # Todo: Include /creator namespace
+  post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
+  post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
   resources :questions do
     get '/explanation', to: "questions#explanation"
@@ -80,7 +85,6 @@ Rails.application.routes.draw do
   post '/sessions/:course_id/end', to: "sessions#end"
   post '/sessions/:course_id/end-demo', to: "sessions#end_demo"
   post '/tests/:course_id/end', to: "sessions#end_test"
-  post '/tests/:course_id/complete', to: "courses#close_test"
   resources :sessions, only: [:update]
 
   get '/transactions/initiate', to: "transactions#initiate"
@@ -101,6 +105,8 @@ Rails.application.routes.draw do
   post '/admin/assign-course', to: "admin#assign_course"
   post '/admin/merge-courses', to: "admin#merge_courses"
   patch '/admin/suspend-course', to: "admin#suspend_course"
+  patch '/admin/approve-creator', to: "admin#make_or_approve_creator"
+  patch '/admin/reset-creator', to: "admin#reset_creator"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"

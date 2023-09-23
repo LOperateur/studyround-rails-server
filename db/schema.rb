@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_06_25_130708) do
+ActiveRecord::Schema.define(version: 2023_09_15_005021) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -46,14 +46,12 @@ ActiveRecord::Schema.define(version: 2023_06_25_130708) do
   end
 
   create_table "categories", force: :cascade do |t|
-    t.bigint "parent_id"
     t.string "name"
     t.integer "level"
     t.string "image_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_categories_on_name", unique: true
-    t.index ["parent_id"], name: "index_categories_on_parent_id"
   end
 
   create_table "categorizations", force: :cascade do |t|
@@ -63,6 +61,16 @@ ActiveRecord::Schema.define(version: 2023_06_25_130708) do
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_categorizations_on_category_id"
     t.index ["course_id"], name: "index_categorizations_on_course_id"
+  end
+
+  create_table "course_collaborators", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "user_id"
+    t.integer "role", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_course_collaborators_on_course_id"
+    t.index ["user_id"], name: "index_course_collaborators_on_user_id"
   end
 
   create_table "courses", force: :cascade do |t|
@@ -161,7 +169,10 @@ ActiveRecord::Schema.define(version: 2023_06_25_130708) do
     t.integer "asset_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
+    t.bigint "creator_id"
     t.index ["course_id"], name: "index_question_assets_on_course_id"
+    t.index ["creator_id"], name: "index_question_assets_on_creator_id"
   end
 
   create_table "questions", force: :cascade do |t|
@@ -285,15 +296,17 @@ ActiveRecord::Schema.define(version: 2023_06_25_130708) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "onboarding", default: {}
+    t.jsonb "metadata", default: {}
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "auth_providers", "users"
-  add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
+  add_foreign_key "course_collaborators", "courses"
+  add_foreign_key "course_collaborators", "users"
   add_foreign_key "courses", "users", column: "creator_id"
   add_foreign_key "financial_cards", "users"
   add_foreign_key "interests", "categories"
@@ -302,6 +315,7 @@ ActiveRecord::Schema.define(version: 2023_06_25_130708) do
   add_foreign_key "question_asset_references", "question_assets"
   add_foreign_key "question_asset_references", "questions"
   add_foreign_key "question_assets", "courses"
+  add_foreign_key "question_assets", "users", column: "creator_id"
   add_foreign_key "questions", "courses"
   add_foreign_key "questions", "questions", column: "next_id"
   add_foreign_key "questions", "questions", column: "previous_id"

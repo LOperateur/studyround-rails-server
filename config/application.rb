@@ -6,7 +6,7 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-module ULearnserver
+module StudyRound
   class Application < Rails::Application
     # Use as API-only app
     config.api_only = true
@@ -45,7 +45,7 @@ module ULearnserver
     if Rails.env.production?
       config.middleware.insert_before 0, Rack::Cors do
         allow do
-          origins "#{ENV['HOST_URL']}", "#{ENV['URL']}", "#{ENV['SUPPORT_URL']}"
+          origins "#{ENV['HOST_URL']}", "#{ENV['URL']}", "#{ENV['CREATOR_URL']}", "#{ENV['SUPPORT_URL']}"
           resource '*', :headers => :any, :methods => [:get, :post, :put, :patch, :delete, :options, :head]
         end
       end

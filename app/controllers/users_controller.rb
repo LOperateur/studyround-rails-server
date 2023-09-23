@@ -42,6 +42,7 @@ class UsersController < ApplicationController
       onboarding_data[key] = value
     end
 
+    # Todo: Also clean up the onboarding data in case we remove any fields
     current_user.update!(onboarding: onboarding_data)
 
     render json: current_user, root: :data
@@ -104,6 +105,8 @@ class UsersController < ApplicationController
   end
 
   def onboard_user_params
-    params.permit(:dashboard, :course_list, :session_start, :manage_course, :manage_question)
+    # Get the permitted params from an ENV variable
+    permitted_onboarding_params = ENV['ONBOARDING_PARAMS'].split('|').map(&:to_sym)
+    params.permit(*permitted_onboarding_params)
   end
 end

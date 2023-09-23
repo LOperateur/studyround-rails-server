@@ -94,14 +94,17 @@ class QuestionsController < ApplicationController
     question = @course.questions.build
     question.draft = draft
 
+    # Todo: deprecated - Remove direct question image attachments
     # Attach images
     question.question_image_draft.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
     question.explanation_image_draft.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
 
+    # Todo: deprecated - Remove direct question image attachments
     # Add generated urls to draft json
     question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
     question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
 
+    # Identify the original creator
     question.creator_id = current_user.id
 
     Question.transaction do
@@ -121,10 +124,12 @@ class QuestionsController < ApplicationController
     draft = create_draft(update_question_params)
     @question.draft = draft
 
+    # Todo: deprecated - Remove direct question image attachments
     # Attach draft images
     handle_image_update(update_question_params, :question_image, :question_image_url)
     handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
 
+    # Todo: deprecated - Remove direct question image attachments
     # Add generated urls to draft json
     @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
     @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
@@ -172,45 +177,10 @@ class QuestionsController < ApplicationController
            serializer: CreatorQuestionSerializer
   end
 
-  # Publish the question while ignoring deprecated image fields
-  def publish_question(question)
-    draft = question.draft.symbolize_keys
-
-    question.question = draft[:question]
-    question.question_raw = draft[:question_raw]
-
-    question.explanation = draft[:explanation]
-    question.explanation_raw = draft[:explanation_raw]
-
-    question.options = draft[:options]
-    question.answer = draft[:answer]
-    question.multiplier = draft[:multiplier]
-    question.multi_answer = draft[:multi_answer]
-    question.year = draft[:year]
-
-    question.version = question.version + 1
-    question.draft = nil
-    question.publish_status = :publish_status_published
-
-    Question.transaction do
-      publish_asset_references(question)
-      question.save!
-    end
-  end
-
   def destroy
     Question.transaction do
-      # Update position of adjacent questions before this deletion
-      previous_question = @question.previous
-      next_question = @question.next
-
-      if previous_question
-        previous_question.update!(next_id: @question.next_id)
-      end
-
-      if next_question
-        next_question.update!(previous_id: @question.previous_id)
-      end
+      # Adjacent question updates
+      @question.remove_linked_self_references
 
       # If Question has never been published, hard delete it
       if @question.question.nil?
@@ -266,10 +236,6 @@ class QuestionsController < ApplicationController
   end
 
   def resolve_notes
-    if current_user.user_type != :admin
-      raise Errors::ForbiddenError.new(message: "You don't have the authority to resolve notes in this course.")
-    end
-
     # Just delete all notes
     @question.notes = nil
     @question.save!
@@ -277,12 +243,140 @@ class QuestionsController < ApplicationController
     render json: @question, root: :data, meta: { message: "All Notes Resolved!" }, serializer: CreatorQuestionSerializer
   end
 
+  def publish_questions
+    if @course.test?
+      if @course.publish_status_published?
+        raise Errors::ForbiddenError.new(message: "You cannot make question changes within a published Test!")
+      end
+    end
+
+    message = ""
+    publish_success_count = 0
+    publish_errors_count = 0
+
+    # Publish all the valid questions in the course
+    @course.questions.each do |question|
+      if question.draft.present?
+        begin
+          publish_question question
+          publish_success_count += 1
+        rescue
+          publish_errors_count += 1
+        end
+      end
+    end
+
+    if publish_success_count > 0
+      message += "Published #{publish_success_count} #{'question'.pluralize(publish_success_count)}. "
+    end
+
+    if publish_errors_count > 0
+      message += "#{publish_errors_count} #{'question'.pluralize(publish_errors_count)} failed to publish."
+
+      # If all questions failed to publish, throw an error instead
+      if publish_success_count == 0
+        raise Errors::BaseError.new(message: message, status: 400)
+      end
+    end
+
+    if message.blank?
+      message = "No draft questions to publish"
+    end
+
+    render json: { message: message }, status: :ok
+  end
+
+  def bulk_set_source
+    # Source can be nil but if it is blank, we still want to set it to nil
+    source = bulk_set_source_params[:source].presence
+
+    @course.questions.non_deleted_questions.update_all(source: source)
+    render json: @course, meta: { message: "Question sources updated" }, root: :data, serializer: CreatorCourseSerializer
+  end
+
+  def bulk_set_year
+    # Year can be nil but if it is blank, we still want to set it to nil
+    year = bulk_set_year_params[:year].presence
+
+    # Set all the years for the questions in the course to year
+
+    # If the question has been published, update the year column
+    @course.questions.non_deleted_questions.where.not(version: 0).update_all(year: year)
+
+    # If the question has a draft, then set the year to the draft json too
+    year_value = year.nil? ? "null" : %("#{year}") # Ensure JSON null value or a year string value (not integer)
+    update_draft_year_sql = "draft = jsonb_set(draft, '{year}', ?)"
+    @course.questions.non_deleted_questions.where.not(draft: nil).update_all([update_draft_year_sql, year_value])
+
+    render json: @course, meta: { message: "Question years updated" }, root: :data, serializer: CreatorCourseSerializer
+  end
+
+  def bulk_import_questions_json
+    count = 0
+
+    Question.transaction do
+      # Fetch the JSON from the file upload
+      questions_json = JSON.parse(bulk_import_questions_params[:questions_json].read)
+
+      # Check if the questions_json is an array
+      if questions_json.kind_of?(Array)
+        # Iterate through the questions_json array
+        questions_json.each do |json|
+          question = @course.questions.build
+          question.draft = json
+          question.creator_id = current_user.id
+
+          establish_position_and_save(question, nil)
+        end
+      else
+        raise Errors::BaseError.new(message: "Invalid questions JSON", status: 400)
+      end
+
+      count = questions_json.count
+    end
+
+    render json: { message: "Imported #{count} Questions Successfully", data: {} }, status: :created
+  end
+
   private
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:course_id])
-    if @course.creator != current_user && current_user.user_type != :admin
-      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage questions in this course.")
+
+    # Todo: Add roles and permissions check for destroy-own
+
+    # Mapping roles to their allowed methods
+    roles_and_methods = {
+      :admin => [:questions, :show, :create, :update, :publish,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions,
+                 :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
+
+      :creator => [:questions, :show, :create, :update, :publish,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions],
+
+      :role_co_creator => [:questions, :show, :create, :update, :publish,
+                           :destroy, :add_note, :remove_note, :publish_questions],
+
+      :role_editor => [:questions, :show, :create, :edit, :update,
+                       :destroy, :add_note, :remove_note],
+    }
+
+    # Check the user level/role and permissions
+    if current_user.user_type == :admin
+      if !roles_and_methods[:admin].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    elsif @course.creator == current_user
+      if !roles_and_methods[:creator].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    elsif CourseCollaborator.where(user: current_user, course: @course).exists?
+      role = CourseCollaborator.where(user: current_user, course: @course).role.to_sym
+      if !roles_and_methods[role].include?(action_name.to_sym)
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
+      end
+    else
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to manage the questions in this course.")
     end
   end
 
@@ -454,6 +548,32 @@ class QuestionsController < ApplicationController
     return strip_non_draft_fields(rough_draft)
   end
 
+  # Publish the question while ignoring deprecated image fields
+  def publish_question(question)
+    draft = question.draft.symbolize_keys
+
+    question.question = draft[:question]
+    question.question_raw = draft[:question_raw]
+
+    question.explanation = draft[:explanation]
+    question.explanation_raw = draft[:explanation_raw]
+
+    question.options = draft[:options]
+    question.answer = draft[:answer]
+    question.multiplier = draft[:multiplier]
+    question.multi_answer = draft[:multi_answer]
+    question.year = draft[:year]
+
+    question.version = question.version + 1
+    question.draft = nil
+    question.publish_status = :publish_status_published
+
+    Question.transaction do
+      publish_asset_references(question)
+      question.save!
+    end
+  end
+
   def build_asset_references(question)
     # Handle the assets if they are present in the request parameters.
     # Ideally, when building references, the params should always have the assets id's
@@ -503,7 +623,8 @@ class QuestionsController < ApplicationController
     reference_type = :reference_type_option_image_draft
     question.question_asset_references.where(reference_type: reference_type).destroy_all
 
-    question.draft["options"].each do |option|
+    # Build the new references for the options, if any options are present
+    question.draft["options"]&.each do |option|
       if option["option_image_asset_id"].present?
         question.question_asset_references.build(
           question_asset_id: option["option_image_asset_id"],
@@ -536,6 +657,12 @@ class QuestionsController < ApplicationController
 
     question.question_asset_references.where(reference_type: :reference_type_passage_draft)
             .update_all(reference_type: :reference_type_passage)
+  end
+
+  def check_admin
+    if current_user.user_type != :admin
+      raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
+    end
   end
 
   # Image handling in controller during update
@@ -629,4 +756,17 @@ class QuestionsController < ApplicationController
   def create_note_params
     params.permit(:note)
   end
+
+  def bulk_set_source_params
+    params.permit(:source)
+  end
+
+  def bulk_set_year_params
+    params.permit(:year)
+  end
+
+  def bulk_import_questions_params
+    params.permit(:questions_json)
+  end
+
 end

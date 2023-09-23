@@ -20,14 +20,14 @@ class CourseValidator < ActiveModel::Validator
       end
 
       if record.last_publish_date.present?
-        # Min test expiration time is 2 hours from now (the time of publishing)
-        if record.test_expiration < record.last_publish_date + 2.hours
-          record.errors.add :test_expiration, "should be set at least 2 hours from now"
+        # Min test expiration time is 5 minutes from now (the time of publishing)
+        if record.test_expiration < record.last_publish_date + 5.minutes
+          record.errors.add :test_expiration, "should be at least 5 minutes after the test is published"
         end
 
-        # Max test expiration time is 30 days from now (the time of publishing)
-        if record.test_expiration > record.last_publish_date + 30.days
-          record.errors.add :test_expiration, "date cannot exceed 30 days from now"
+        # Max test expiration time is 90 days from now (the time of publishing)
+        if record.test_expiration > record.last_publish_date + 90.days
+          record.errors.add :test_expiration, "date cannot exceed 90 days from the date of publishing"
         end
       end
     end

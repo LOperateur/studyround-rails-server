@@ -197,6 +197,29 @@ module TestHelper
     return result
   end
 
+  # Allows a creator to immediately mark a test as expired.
+  # This is useful for when a creator wants to end a test early.
+  # Note: Expiry isn't an indication that the test is closed, users can still
+  # submit their sessions if they started the test before the expiry time.
+  def halt_new_attempts(course)
+    @course = course
+
+    if is_closed
+      raise Errors::BaseError.new(message: "This Test is already over! Further action cannot be taken.", status: 400)
+    end
+
+    if is_expired(course.test_expiration)
+      return "This test is already expired."
+    else
+      course.test_expiration = Time.now
+      course.save!
+
+      # Call this to handle the process of updating the status and sending notifications
+      is_expired(course.test_expiration)
+      return "Test Expired! New attempts are halted."
+    end
+  end
+
   private
 
   # region Basic private functions
@@ -255,9 +278,9 @@ module TestHelper
         resumption_addendum = ", you are still allowed to resume."
       end
 
-      "This test expired on #{expiration.to_formatted_s(:long_ordinal)}#{resumption_addendum} GMT"
+      "This test stopped allowing new attempts on #{expiration.to_formatted_s(:long_ordinal)}#{resumption_addendum} GMT"
     else
-      "This test will expire by #{expiration.to_formatted_s(:long_ordinal)} GMT"
+      "New attempts for this test will be stopped from #{expiration.to_formatted_s(:long_ordinal)} GMT"
     end
   end
 
@@ -266,7 +289,7 @@ module TestHelper
 
     max_trials_left = get_max_trials_left(max_trials)
 
-    "You have #{max_trials_left} chances left to take and submit this test"
+    "You have #{max_trials_left} #{'chance'.pluralize(max_trials_left)} left to take and submit this test"
   end
 
   def map_user_limit_instruction
@@ -278,7 +301,7 @@ module TestHelper
       return nil
     end
 
-    "There are #{available_test_slots} more candidate slots left for this test"
+    "There #{available_test_slots > 1 ? 'are' : 'is'} #{available_test_slots} more candidate #{'slot'.pluralize(available_test_slots)} left for this test"
   end
 
   def map_reveal_answers_instruction
