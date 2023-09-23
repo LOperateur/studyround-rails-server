@@ -219,7 +219,8 @@ class CoursesController < ApplicationController
   end
 
   def close_test
-    # Todo: You can remove this check in pt 2 of the collaborator change
+    # Todo: Review this in pt. 2 of the collaborator change
+    #  Admins have superuser privileges but can't close tests that aren't theirs.
     if @course.creator != current_user
       raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
     end
