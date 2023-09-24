@@ -37,6 +37,8 @@ class CoursesController < ApplicationController
 
     review = @course.reviews.where(user: current_user).take
 
+    # TODO: Collaborators should also get a creator view of the course
+    # If current user is nil or current user is not a creator/collaborator on the course, return the user facing course
     if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
