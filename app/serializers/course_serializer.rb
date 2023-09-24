@@ -2,7 +2,7 @@ class CourseSerializer < ActiveModel::Serializer
   include CurrencyHelper
 
   attributes :id, :title, :rating, :image_url, :currency, :price,
-             :formatted_price, :sale_status, :version, :test
+             :formatted_price, :sale_status, :version, :test, :included_question_years
 
   belongs_to :creator, serializer: ProfileSerializer
 
@@ -30,5 +30,9 @@ class CourseSerializer < ActiveModel::Serializer
 
       return price
     end
+  end
+
+  def included_question_years
+    object.questions.published_active_questions.distinct.pluck(:year).compact.sort
   end
 end

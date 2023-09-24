@@ -8,6 +8,7 @@ module SessionHelper
     num_questions = session_params[:questions]
     duration = session_params[:duration]
     session_type = require_session_type(session_params[:session_type])
+    year = session_params[:year].presence
     check_course_session_limits(num_questions)
 
     light_course_session = {
@@ -22,13 +23,13 @@ module SessionHelper
 
     if user_id.nil?
       # Demo session
-      # This gives an array of 20 questions of which the first 10 are selected just for guest demo purposes
+      # This gives an array of the first 20 questions of which a random 10 are selected just for guest demo purposes
       questions = course.questions.published_active_questions.limit(20).shuffle.first(num_questions)
     else
       if session.session_type_quiz?
-        questions = course.questions.published_active_questions.order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
+        questions = course.questions.published_active_questions.filtered_by_year(year).order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
       else
-        questions = course.questions.published_active_questions.order(Arel.sql("RANDOM()")).limit(num_questions)
+        questions = course.questions.published_active_questions.filtered_by_year(year).order(Arel.sql("RANDOM()")).limit(num_questions)
       end
     end
 
@@ -131,6 +132,9 @@ module SessionHelper
     total_questions = course.questions.published_active_questions.count
     limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
+    # Optional year filter
+    year = params[:year].presence
+
     # Recursive CTE to get questions in order
     cte_query = <<-SQL
     WITH RECURSIVE ordered_questions AS (
@@ -146,10 +150,11 @@ module SessionHelper
     SELECT * FROM ordered_questions
     WHERE publish_status = 2
     AND question_status = 1
+    AND (? IS NULL OR year = ?) -- Filter by year
     LIMIT ? OFFSET ?
     SQL
 
-    questions = Question.find_by_sql([cte_query, course.id, limit, offset])
+    questions = Question.find_by_sql([cte_query, course.id, year, year, limit, offset])
 
     return questions, paginated_metadata
   end

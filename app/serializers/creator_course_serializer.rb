@@ -1,9 +1,9 @@
 # Course serializer showing all details of the course
-# specifically reserved for the viewership of the creator only.
+# specifically reserved for the viewership of the creator/collaborators only.
 class CreatorCourseSerializer < UserCourseSerializer
   type :course
   attributes :instructions, :private, :publish_status, :course_status, :num_questions_draft,
-             :num_explanations_draft, :last_publish_date, :test_statistics, :sources
+             :num_explanations_draft, :last_publish_date, :test_statistics, :sources, :included_question_years_draft
 
   def num_questions_draft
     object.questions.non_deleted_questions.count
@@ -11,6 +11,17 @@ class CreatorCourseSerializer < UserCourseSerializer
 
   def num_explanations_draft
     object.questions.non_deleted_questions.where.not(explanation: nil).count
+  end
+
+  def included_question_years_draft
+    # Years from the 'year' column
+    years = object.questions.non_deleted_questions.where(draft: nil).pluck(:year)
+
+    # Years from the 'draft' JSONB column
+    draft_years = object.questions.non_deleted_questions.where.not(draft: nil).pluck("draft->>'year'")
+
+    # Combine and deduplicate
+    (years + draft_years).compact.uniq.sort
   end
 
   def test_statistics
