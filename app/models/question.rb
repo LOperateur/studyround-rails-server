@@ -32,6 +32,16 @@ class Question < ApplicationRecord
   scope :published_active_questions, -> { where(publish_status: :publish_status_published, question_status: :question_status_active) }
   scope :non_deleted_questions, -> { where.not(question_status: :question_status_deleted) }
 
+  scope :filtered_by_year, -> (year) { year.present? ? where(year: year) : all }
+  scope :filtered_by_draft_year, -> (year) {
+    if year.present?
+      # Get all questions that have a draft with the year or no draft but the year in the question column
+      where("draft->>'year' = ? OR (draft IS NULL AND year = ?)", year, year)
+    else
+      all
+    end
+  }
+
   # Used to serialize the question model on the go without having to render
   def serialized_question
     ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionSerializer).as_json
