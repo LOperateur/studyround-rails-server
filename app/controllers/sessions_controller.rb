@@ -357,7 +357,7 @@ class SessionsController < ApplicationController
   end
 
   def start_course_session_params
-    params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration,
+    params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration, :year,
                   :tags => [])
   end
 
