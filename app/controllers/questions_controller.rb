@@ -49,17 +49,14 @@ class QuestionsController < ApplicationController
 
   def questions
     # Filter by year if present
-    year = validate_year(params[:year])
+    year = params[:year].presence
 
     # Custom pagination for find_by_sql
-    if year.present?
-      total_questions = @course.questions.non_deleted_questions.filtered_by_year(year).count
-    else
-      total_questions = @course.questions.non_deleted_questions.count
-    end
+    total_questions = @course.questions.non_deleted_questions.filtered_by_draft_year(year).count
     limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
     # Recursive CTE to get questions in order
+    # This corresponds to a non-deleted questions query
     cte_query = <<-SQL
     WITH RECURSIVE ordered_questions AS (
       SELECT * FROM questions
@@ -73,10 +70,11 @@ class QuestionsController < ApplicationController
     )
     SELECT * FROM ordered_questions 
     WHERE NOT question_status = 3 
-    AND (? IS NULL OR year = ?) LIMIT ? OFFSET ?
+    AND (? IS NULL OR (draft->>'year' = ? OR (draft IS NULL AND year = ?))) -- Filter by year (draft first, then published)
+    LIMIT ? OFFSET ?
     SQL
 
-    questions = Question.find_by_sql([cte_query, @course.id, year, year, limit, offset])
+    questions = Question.find_by_sql([cte_query, @course.id, year, year, year, limit, offset])
 
     render json: { data: questions.map do |question|
       question.serialized_creator_question_list_item[:question]
@@ -398,19 +396,20 @@ class QuestionsController < ApplicationController
         question.serialized_question_with_answer[:question]
       end
       }.merge(paginated_metadata)
-      return # Return early to prevent double render
+
     when :quiz, :practice
       session = Session.find(params[:session_id])
       question_ids = session.session_items.map { |session_item| session_item["question_id"] }
 
       # Sort by the order of ids supplied
       questions = Question.where(id: question_ids).sort_by { |i| question_ids.index(i.id) }
+
+      paginated_questions = paginate(questions, params)
+      render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
+
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
-
-    paginated_questions = paginate(questions, params)
-    render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
   end
 
   def handle_test_index
