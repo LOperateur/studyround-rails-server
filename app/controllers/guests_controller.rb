@@ -4,17 +4,21 @@ class GuestsController < ApplicationController
   wrap_parameters format: []
 
   def create
-    email = create_guest_params[:email]
+    email = create_guest_params[:email].presence
 
-    if User.exists?(email: email)
-      raise Errors::BaseError.new(
-        message: "This email is already associated with a StudyRound account",
-        action: :login,
-        status: 400
-      )
+    if email.present?
+      if User.exists?(email: email)
+        raise Errors::BaseError.new(
+          message: "This email is already associated with a StudyRound account",
+          action: :login,
+          status: 400
+        )
+      end
+
+      guest = Guest.where(email: email).first_or_initialize
+    else
+      guest = Guest.new
     end
-
-    guest = Guest.where(email: email).first_or_initialize
 
     begin
       guest.save!
@@ -26,7 +30,8 @@ class GuestsController < ApplicationController
   end
 
   def invite
-    guest_id = params[:guest_id]
+    # TODO: Move this to a shared concern
+    guest_id = params[:guest_id] # This is the guest_id from the URL params (or from the end_demo params)
     guest = Guest.find(guest_id)
 
     email = invite_guest_params[:email]
@@ -41,11 +46,7 @@ class GuestsController < ApplicationController
       )
     end
 
-    begin
-      guest.update!(email: email)
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(guest.errors.to_h)
-    end
+    guest.update!(email: email)
 
     course = Course.find(guest.result['course_id'])
 

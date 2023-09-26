@@ -171,7 +171,11 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Unknown guest user!", status: 400)
     end
 
-    guest_email = end_course_session_params[:guest_email] || Guest.find(guest_id).email
+    guest_email = end_course_session_params[:guest_email]
+
+    if guest_email.blank?
+      raise Errors::BaseError.new(message: "No email provided!", status: 400)
+    end
 
     if end_course_session_params[:session_id].nil?
       raise Errors::BaseError.new(message: "Unknown session!", status: 400)
@@ -205,6 +209,7 @@ class SessionsController < ApplicationController
       guest.update!(result: result.as_json)
     end
 
+    # TODO: Move this to a shared concern
     # Send the invite/results email
     guests_controller = GuestsController.new
     guests_controller.request = request
