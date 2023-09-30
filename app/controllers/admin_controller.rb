@@ -250,6 +250,18 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :created, meta: { message: "User creator credentials are reset!" }
   end
 
+  def temp_cleanup_years
+    Question.where("year IS NOT NULL AND (year = '20..' OR year LIKE '%,%')").each do |question|
+      if question.year == "20.."
+        question.update!(year: nil)
+      elsif question.year.include?(",")
+        year = question.year.split(",").last
+        question.update!(year: year)
+      end
+    end
+    render json: { message: "Done" }, status: :ok
+  end
+
   private
 
   def check_admin
