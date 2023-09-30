@@ -10,7 +10,7 @@ class CreatorCourseSerializer < UserCourseSerializer
   end
 
   def num_explanations_draft
-    object.questions.non_deleted_questions.where.not(explanation: nil).count
+    object.questions.non_deleted_questions.where("draft->>'explanation' IS NOT NULL OR explanation IS NOT NULL").count
   end
 
   def included_question_years_draft
@@ -21,7 +21,7 @@ class CreatorCourseSerializer < UserCourseSerializer
     draft_years = object.questions.non_deleted_questions.where.not(draft: nil).pluck("draft->>'year'")
 
     # Combine and deduplicate
-    (years + draft_years).compact.uniq.sort
+    (years + draft_years).compact.uniq.sort.reject(&:blank?)
   end
 
   def test_statistics

@@ -33,6 +33,6 @@ class CourseSerializer < ActiveModel::Serializer
   end
 
   def included_question_years
-    object.questions.published_active_questions.distinct.pluck(:year).compact.sort
+    object.questions.published_active_questions.distinct.pluck(:year).compact.sort.reject(&:blank?)
   end
 end
