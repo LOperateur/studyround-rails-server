@@ -90,6 +90,7 @@ class User < ApplicationRecord
   end
 
   def has_purchased_item(item)
+    # Todo: Should we allow collaborators to access the course or explanations?
     if item.is_a? Course
       item.creator_id == self.id || Transaction.where(buyer_id: self.id, purchase_item_id: item.id).any?
     else
