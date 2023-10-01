@@ -26,7 +26,7 @@ class CategoriesController < ApplicationController
 
     # Fetch all categories ordered by their level as specified in the category order then by their name
     category_order_sql = category_order.map.with_index { |level, index| "WHEN #{level} THEN #{index}" }.join(' ')
-    categories = Category.order(Arel.sql("CASE level #{category_order_sql} END, name"))
+    categories = Category.order(Arel.sql("CASE level #{category_order_sql} END, id"))
 
     paginated_categories = paginate(categories, params)
     render json: paginated_categories, root: :data, meta: paginated_meta(paginated_categories)
