@@ -191,7 +191,7 @@ module SessionHelper
       #If the question is not found, just skip it
       next if question.nil?
       # Merge the question data into the session item
-      session_item.merge!(question.serialized_question)
+      session_item.merge!(question.serialized_question_with_answer)
       # Todo: Consider adding the explanation data (would be hidden when rendering session items)
       # session_item[:explanation] = { explanation: question.explanation, explanation_image_asset: question.explanation_image_asset }
       # Then add the full session item to the array
