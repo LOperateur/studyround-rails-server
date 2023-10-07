@@ -218,7 +218,7 @@ class CoursesController < ApplicationController
   end
 
   def search
-    found_courses = search_and_filter(Course.visible_courses.ordered_by_result_count)
+    found_courses = search_and_filter(Course.published_active_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count

@@ -358,7 +358,7 @@ class SessionsController < ApplicationController
   end
 
   def load_course
-    @course = Course.published_active_courses.find(params[:course_id])
+    @course = Course.session_accessible_courses.find(params[:course_id])
   end
 
   def start_course_session_params
