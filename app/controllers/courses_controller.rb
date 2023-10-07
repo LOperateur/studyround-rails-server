@@ -135,6 +135,18 @@ class CoursesController < ApplicationController
       categories = Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5)
     else
       categories = current_user.categories.order(affinity: :desc).take(5)
+
+      # If the user's category has less than 3 courses, remove the category from the list
+      categories.each do |category|
+        if category.courses.published_active_courses.count < 3
+          categories.delete(category)
+        end
+      end
+
+      # Then add more categories to make up the 5
+      if categories.size < 5
+        categories += Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5 - categories.size)
+      end
     end
 
     render json: {
@@ -206,7 +218,7 @@ class CoursesController < ApplicationController
   end
 
   def search
-    found_courses = search_and_filter(Course.visible_courses.ordered_by_result_count)
+    found_courses = search_and_filter(Course.published_active_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
