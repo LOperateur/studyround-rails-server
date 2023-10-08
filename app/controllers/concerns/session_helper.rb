@@ -128,12 +128,12 @@ module SessionHelper
   # Fetches ALL the paginated questions for a session in an ordered
   # manner using the linked list approach.
   def published_active_ordered_questions(course, params)
-    # Custom pagination for find_by_sql
-    total_questions = course.questions.published_active_questions.count
-    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
-
     # Optional year filter
     year = params[:year].presence
+
+    # Custom pagination for find_by_sql
+    total_questions = course.questions.published_active_questions.filtered_by_year(year).count
+    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
     # Recursive CTE to get questions in order
     cte_query = <<-SQL
