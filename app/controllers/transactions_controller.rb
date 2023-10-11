@@ -158,8 +158,15 @@ class TransactionsController < ApplicationController
     transaction.purchase_item_type = process_transaction_params[:item_type]
     transaction.purchase_currency = currency
     transaction.purchase_price = price
-    transaction.description = "User purchase transaction"
     transaction.extra = data
+
+    if transaction.purchase_item_type_course?
+      transaction.description = "Purchased #{Course.find(transaction.purchase_item_id).title}"
+    elsif transaction.purchase_item_type_explanations?
+      transaction.description = "Purchased explanations for #{Course.find(transaction.purchase_item_id).title}"
+    else
+      transaction.description = "User purchase transaction"
+    end
 
     transaction.save
   end
