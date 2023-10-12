@@ -250,6 +250,11 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :created, meta: { message: "User creator credentials are reset!" }
   end
 
+  def inspect_transaction
+    transaction = Transaction.find(params[:transaction_id])
+    render json: transaction.extra, root: :data, status: :ok
+  end
+
   private
 
   def check_admin
