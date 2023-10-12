@@ -42,10 +42,11 @@ module StudyRound
       end if File.exists?(env_file)
     end
 
-    if Rails.env.production?
+    if Rails.env.production? || Rails.env.staging?
       config.middleware.insert_before 0, Rack::Cors do
         allow do
-          origins "#{ENV['HOST_URL']}", "#{ENV['URL']}", "#{ENV['CREATOR_URL']}", "#{ENV['SUPPORT_URL']}"
+          # Allow origins ending in studyround.com including subdomains
+          origins /\A(?:.*\.)?studyround\.com\z/
           resource '*', :headers => :any, :methods => [:get, :post, :put, :patch, :delete, :options, :head]
         end
       end
