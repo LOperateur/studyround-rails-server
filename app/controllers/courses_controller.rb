@@ -25,7 +25,7 @@ class CoursesController < ApplicationController
     @course = Course.non_deleted_courses.find(params[:id])
 
     # Track the purchase of items available for sale in this course
-    purchase_status = { }
+    purchase_status = {}
 
     if @course.sale_status_paid?
       purchase_status[:sale_status_paid] = current_user.present? && current_user.has_purchased_item(@course)
@@ -143,9 +143,10 @@ class CoursesController < ApplicationController
         end
       end
 
-      # Then add more categories to make up the 5
+      # Then add more categories to make up the 5 and ensure that no category is repeated
       if categories.size < 5
-        categories += Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5 - categories.size)
+        categories += Category.published_active_course_categories.where.not(id: categories.map(&:id))
+                              .group(:id).order('COUNT(courses.id) DESC').take(5 - categories.size)
       end
     end
 
