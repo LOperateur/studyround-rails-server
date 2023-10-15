@@ -44,6 +44,7 @@ Rails.application.routes.draw do
   post '/tests/:id/halt-attempts', to: "courses#halt_attempts"
   post '/tests/:id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
+    get '/similar', to: "courses#similar_courses"
     resources :questions, only: [:index]
     resources :reviews
     resources :question_assets, only: [:index, :create, :update, :show, :destroy]
