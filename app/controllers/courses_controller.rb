@@ -6,7 +6,7 @@ class CoursesController < ApplicationController
   include TestHelper
 
   before_action :default_12_page_size, only: [:index, :per_category, :enrolled_courses, :search, :my_courses, :tests, :purchased_courses, :purchased_tests, :created_courses]
-  skip_before_action :authorize!, only: [:index, :show, :categorised, :top_courses, :trending_courses, :search]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search]
   before_action :check_creators_consent, only: [:create]
   before_action :load_creators_course, only: [:update, :publish, :destroy, :halt_attempts, :close_test]
 
@@ -160,6 +160,24 @@ class CoursesController < ApplicationController
   def per_category
     category = Category.find(params[:category_id])
     courses = paginate(category.courses.published_active_courses, params)
+    render json: courses, root: :data, meta: paginated_meta(courses)
+  end
+
+  def similar_courses
+    @course = Course.published_active_courses.find(params[:course_id])
+
+    # Get the course's categories
+    course_categories = @course.categories.select(:id)
+
+    # Get all courses that have at least one category in common with the course
+    # Then group them by the number of categories they have in common with the course
+    # Then sort them in descending order by the number of categories they have in common with the course.
+    similar_courses = Course.published_active_courses.joins(:categories).where.not(id: @course.id)
+                            .where(categories: { id: course_categories })
+                            .group(:id).order('COUNT(courses.id) DESC')
+
+    # Specifying entry count here due to the Category group count query which returns a hash of { grouped courses -> category count }
+    courses = paginate(similar_courses, params, entries = similar_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses)
   end
 
