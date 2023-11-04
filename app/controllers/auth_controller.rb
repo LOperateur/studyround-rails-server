@@ -228,7 +228,14 @@ class AuthController < ApplicationController
 
   def google_oauth
     token = params[:code]
-    logger.info "These are params: #{params}"
+    logger.info "Google oauth params: #{params}" # Todo: Remove this later
+
+    optional_guest = nil
+    auth_state = params[:state]
+    if auth_state
+      guest_id = JSON.parse(auth_state.to_s)["guest_id"]
+      optional_guest = Guest.find_by(id: guest_id)
+    end
 
     conn = Faraday.new(
       url: "https://oauth2.googleapis.com",
