@@ -228,6 +228,7 @@ class AuthController < ApplicationController
 
   def google_oauth
     token = params[:code]
+    logger.info "These are params: #{params}"
 
     conn = Faraday.new(
       url: "https://oauth2.googleapis.com",
