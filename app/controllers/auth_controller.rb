@@ -236,10 +236,14 @@ class AuthController < ApplicationController
     logger.info "Google oauth params: #{params}" # Todo: Remove this later
 
     optional_guest = nil
-    auth_state = params[:state]
-    if auth_state
-      guest_id = JSON.parse(auth_state.to_s)["guest_id"]
-      optional_guest = Guest.find_by(id: guest_id)
+    begin
+      auth_state = params[:state]
+      if auth_state
+        guest_id = JSON.parse(auth_state.to_s)["guest_id"]
+        optional_guest = Guest.find(guest_id)
+      end
+    rescue => e
+      logger.error "Error parsing Google oauth state: #{e}"
     end
 
     conn = Faraday.new(
