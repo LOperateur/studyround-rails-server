@@ -1,8 +1,10 @@
 class QuestionsController < ApplicationController
+  include CourseHelper
   include SessionHelper
   include TestHelper
 
-  before_action :load_creators_course, except: [:index, :explanation]
+  skip_before_action :authorize!, only: [:preview]
+  before_action :load_creators_course, except: [:index, :explanation, :preview]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
@@ -22,6 +24,7 @@ class QuestionsController < ApplicationController
   end
 
   def explanation
+    # Todo: Rewrite this starting from the context of a course
     question = Question.find(params[:question_id])
     course = question.course
 
@@ -43,6 +46,33 @@ class QuestionsController < ApplicationController
         explanation_image_asset: explanation_image_asset,
       }
     }
+  end
+
+  def preview
+    course = Course.find(params[:course_id])
+
+    is_course_owned = is_course_owner?(course, current_user)
+    is_course_accessible = course.publish_status_published? && course.course_status_active?
+    is_course_free = course.sale_status_free? || course.sale_status_explanations?
+    is_course_purchased = current_user.has_purchased_item(course)
+
+    if current_user
+      if is_course_owned
+        question = course.questions.find(params[:question_id])
+      elsif is_course_accessible && (is_course_free || is_course_purchased)
+        question = course.questions.published_active_questions.find(params[:question_id])
+      else
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to preview this question")
+      end
+    else
+      if is_course_accessible && is_course_free
+        question = course.questions.published_active_questions.find(params[:question_id])
+      else
+        raise Errors::ForbiddenError.new(message: "Please sign in to preview this particular question")
+      end
+    end
+
+    render json: question, root: :data, serializer: QuestionAnswerSerializer, status: :ok
   end
 
   # From a Creator's point of view

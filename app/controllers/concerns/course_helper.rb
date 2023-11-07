@@ -45,4 +45,11 @@ module CourseHelper
 
     return found_courses
   end
+
+  def is_course_owner?(course, current_user)
+    return false if current_user.nil?
+    return course.creator == current_user ||
+      current_user.user_type == :admin ||
+      CourseCollaborator.where(user: current_user, course: course).exists?
+  end
 end
