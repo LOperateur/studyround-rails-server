@@ -11,12 +11,11 @@ class Question < ApplicationRecord
 
   validates_with QuestionValidator
 
+  # Todo: Deprecated - Remove these eventually
   has_one_attached :question_image, dependent: :purge_later
   has_one_attached :question_image_draft, dependent: :purge_later
   has_one_attached :explanation_image, dependent: :purge_later
   has_one_attached :explanation_image_draft, dependent: :purge_later
-  has_many_attached :option_images, dependent: :purge_later
-  has_many_attached :option_images_draft, dependent: :purge_later
 
   enum publish_status: {
     publish_status_draft: 1,
