@@ -1,8 +1,10 @@
 class QuestionsController < ApplicationController
+  include CourseHelper
   include SessionHelper
   include TestHelper
 
-  before_action :load_creators_course, except: [:index, :explanation]
+  skip_before_action :authorize!, only: [:preview]
+  before_action :load_creators_course, except: [:index, :explanation, :preview]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
@@ -22,6 +24,7 @@ class QuestionsController < ApplicationController
   end
 
   def explanation
+    # Todo: Rewrite this starting from the context of a course
     question = Question.find(params[:question_id])
     course = question.course
 
@@ -43,6 +46,33 @@ class QuestionsController < ApplicationController
         explanation_image_asset: explanation_image_asset,
       }
     }
+  end
+
+  def preview
+    course = Course.find(params[:course_id])
+
+    is_course_owned = is_course_owner?(course, current_user)
+    is_course_accessible = course.publish_status_published? && course.course_status_active?
+    is_course_free = course.sale_status_free? || course.sale_status_explanations?
+    is_course_purchased = current_user.has_purchased_item(course)
+
+    if current_user
+      if is_course_owned
+        question = course.questions.find(params[:question_id])
+      elsif is_course_accessible && (is_course_free || is_course_purchased)
+        question = course.questions.published_active_questions.find(params[:question_id])
+      else
+        raise Errors::ForbiddenError.new(message: "You don't have the authority to preview this question")
+      end
+    else
+      if is_course_accessible && is_course_free
+        question = course.questions.published_active_questions.find(params[:question_id])
+      else
+        raise Errors::ForbiddenError.new(message: "Please sign in to preview this particular question")
+      end
+    end
+
+    render json: question, root: :data, serializer: QuestionAnswerSerializer, status: :ok
   end
 
   # From a Creator's point of view
@@ -92,16 +122,6 @@ class QuestionsController < ApplicationController
     question = @course.questions.build
     question.draft = draft
 
-    # Todo: deprecated - Remove direct question image attachments
-    # Attach images
-    question.question_image_draft.attach(create_question_params[:question_image]) if create_question_params.key?(:question_image)
-    question.explanation_image_draft.attach(create_question_params[:explanation_image]) if create_question_params.key?(:explanation_image)
-
-    # Todo: deprecated - Remove direct question image attachments
-    # Add generated urls to draft json
-    question.draft["question_image_url"] = generated_attachment_url(question.question_image_draft) if question.question_image_draft.attached?
-    question.draft["explanation_image_url"] = generated_attachment_url(question.explanation_image_draft) if question.explanation_image_draft.attached?
-
     # Identify the original creator
     question.creator_id = current_user.id
 
@@ -122,12 +142,7 @@ class QuestionsController < ApplicationController
     draft = create_draft(update_question_params)
     @question.draft = draft
 
-    # Todo: deprecated - Remove direct question image attachments
-    # Attach draft images
-    handle_image_update(update_question_params, :question_image, :question_image_url)
-    handle_image_update(update_question_params, :explanation_image, :explanation_image_url)
-
-    # Todo: deprecated - Remove direct question image attachments
+    # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
     # Add generated urls to draft json
     @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
     @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
@@ -153,19 +168,19 @@ class QuestionsController < ApplicationController
     # Handle the publishing
     publish_question @question
 
-    # Todo: deprecated - Remove direct question image attachments
+    # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
     # Handle images if save was successful
-    # Transfer images if present in draft, detach otherwise as published image state should exactly mirror draft
+    # Transfer images if present in draft, purge otherwise as published image state should exactly mirror draft
     if @question.question_image_draft.attached?
       copy_attachment(@question.question_image_draft, @question.question_image)
     else
-      @question.question_image.detach
+      @question.question_image.purge_later
     end
 
     if @question.explanation_image_draft.attached?
       copy_attachment(@question.explanation_image_draft, @question.explanation_image)
     else
-      @question.explanation_image.detach
+      @question.explanation_image.purge_later
     end
 
     @question.question_image_draft.purge_later
@@ -531,9 +546,7 @@ class QuestionsController < ApplicationController
     # Position and next/previous id's have no relevance in the draft JSON
     question = @course.questions.build(
       question_params.except(
-        :question_image, :question_image_url, :explanation_image,
-        :explanation_image_url, :option_images, :position,
-        :question_image_asset_id, :explanation_image_asset_id, :passage_asset_id,
+        :position, :question_image_asset_id, :explanation_image_asset_id, :passage_asset_id,
       )
     )
 
@@ -664,47 +677,7 @@ class QuestionsController < ApplicationController
     end
   end
 
-  # Image handling in controller during update
-  # 1.) image √   image_url √   =>    Changing image
-  # 2.) image √   image_url X   =>    New image
-  # 3.) image X   image_url √   =>    No changes
-  # 4.) image X   image_url X   =>    Deleting image
-  def handle_image_update(question_params, image_key, image_url_key)
-    has_image_to_upload = question_params[image_key].present?
-    has_image_url_to_retain = question_params[image_url_key].present?
-
-    draft_attachment, attachment = get_attachments(image_key)
-
-    if has_image_to_upload
-      # Attach new or changed image, active storage would purge any current image first
-      draft_attachment.attach(update_question_params[image_key]) if draft_attachment.present?
-    else
-      if has_image_url_to_retain
-        # Attach the latest image to this draft
-        if draft_attachment.attached?
-          # Do nothing, latest draft image already attached
-        elsif attachment.attached?
-          # Transfer a copy of the published attachment to the draft
-          copy_attachment(attachment, draft_attachment)
-        end
-      else
-        # Delete image
-        draft_attachment.purge if draft_attachment.present?
-      end
-    end
-  end
-
-  def get_attachments(image_key)
-    case image_key
-    when :question_image
-      return @question.question_image_draft, @question.question_image
-    when :explanation_image
-      return @question.explanation_image_draft, @question.explanation_image
-    else
-      return nil, nil
-    end
-  end
-
+  # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
   def copy_attachment(from_attachment, to_attachment)
     to_attachment.attach(
       io: StringIO.new(from_attachment.download),
@@ -713,6 +686,7 @@ class QuestionsController < ApplicationController
     )
   end
 
+  # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
   def generated_attachment_url(attachment)
     begin
       path = rails_blob_path(attachment, only_path: true)
@@ -737,17 +711,15 @@ class QuestionsController < ApplicationController
   end
 
   def create_question_params
-    params.permit(:question, :question_raw, :question_image,
-                  :explanation, :explanation_raw, :explanation_image, :position,
-                  :options, :answer, :multi_answer, :multiplier, :option_images, :year,
+    params.permit(:question, :question_raw, :explanation, :explanation_raw, :position,
+                  :options, :answer, :multi_answer, :multiplier, :year,
                   :question_image_asset_id, :explanation_image_asset_id, :passage_asset_id,
     )
   end
 
   def update_question_params
-    params.permit(:question, :question_raw, :question_image, :question_image_url,
-                  :explanation, :explanation_raw, :explanation_image, :explanation_image_url,
-                  :options, :answer, :multi_answer, :multiplier, :option_images, :year,
+    params.permit(:question, :question_raw, :explanation, :explanation_raw,
+                  :options, :answer, :multi_answer, :multiplier, :year,
                   :question_image_asset_id, :explanation_image_asset_id, :passage_asset_id,
     )
   end

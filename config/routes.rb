@@ -45,7 +45,10 @@ Rails.application.routes.draw do
   post '/tests/:id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     get '/similar', to: "courses#similar_courses"
-    resources :questions, only: [:index]
+    resources :questions, only: [:index] do
+      get '/', to: "questions#preview"
+      get '/explanation', to: "questions#explanation"
+    end
     resources :reviews
     resources :question_assets, only: [:index, :create, :update, :show, :destroy]
   end
@@ -64,6 +67,7 @@ Rails.application.routes.draw do
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
   post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
+  # Todo: Remove this route, questions & explanations should be scoped to courses
   resources :questions do
     get '/explanation', to: "questions#explanation"
   end
