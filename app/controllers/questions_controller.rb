@@ -168,7 +168,7 @@ class QuestionsController < ApplicationController
     # Handle the publishing
     publish_question @question
 
-    # Todo: deprecated - Remove direct question image attachments
+    # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
     # Handle images if save was successful
     # Transfer images if present in draft, purge otherwise as published image state should exactly mirror draft
     if @question.question_image_draft.attached?
