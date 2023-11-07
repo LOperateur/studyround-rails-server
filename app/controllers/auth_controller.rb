@@ -101,7 +101,8 @@ class AuthController < ApplicationController
 
   def signup
     is_otp_auth = false
-    guest = nil
+
+    optional_guest = nil
 
     # Decode the pass token and obtain the email from it
     begin
@@ -112,9 +113,13 @@ class AuthController < ApplicationController
       if otp_object
         email = otp_object.user_identity
         is_otp_auth = true
-      else
-        guest = Guest.find_by(id: decoded_token[:guest_id])
-        email = guest.email
+        # An email/OTP sign up may still have a guest id if a demo session was taken, so check for that
+        if params[:guest_id].present?
+          optional_guest = Guest.find_by(id: params[:guest_id])
+        end
+      else # Emailed Result sign up - a guest record should be present
+        optional_guest = Guest.find_by(id: decoded_token[:guest_id])
+        email = optional_guest.email
       end
 
       if email.nil?
@@ -144,6 +149,16 @@ class AuthController < ApplicationController
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
+    # Include additional details if guest info is available, then destroy the stale guest record
+    if optional_guest.present?
+      if optional_guest.result
+        result = Result.new(ActiveSupport::JSON.decode(optional_guest.result.to_json))
+        result.user = user
+        result.save!
+      end
+      optional_guest.destroy
+    end
+
     # Add extra information for OTP signup and delete the OTP record
     if is_otp_auth
       AuthProvider.create!(
@@ -152,22 +167,12 @@ class AuthController < ApplicationController
         metadata: { method: :otp },
       )
       otp_object.destroy
-    else
-      # Include additional details for guest signup then destroy the stale guest record
-      if guest.present?
-        if guest.result
-          result = Result.new(ActiveSupport::JSON.decode(guest.result.to_json))
-          result.user = user
-          result.save!
-        end
-
-        AuthProvider.create!(
-          user: user,
-          auth_provider: :auth_provider_password,
-          metadata: { method: :result }
-        )
-        guest.destroy
-      end
+    else # Emailed result signup
+      AuthProvider.create!(
+        user: user,
+        auth_provider: :auth_provider_password,
+        metadata: { method: :result }
+      )
     end
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token, "first_time": true }) }
@@ -228,7 +233,18 @@ class AuthController < ApplicationController
 
   def google_oauth
     token = params[:code]
-    logger.info "These are params: #{params}"
+    logger.info "Google oauth params: #{params}" # Todo: Remove this later
+
+    optional_guest = nil
+    begin
+      auth_state = params[:state]
+      if auth_state
+        guest_id = JSON.parse(auth_state.to_s)["guest_id"]
+        optional_guest = Guest.find(guest_id)
+      end
+    rescue => e
+      logger.error "Error parsing Google oauth state: #{e}"
+    end
 
     conn = Faraday.new(
       url: "https://oauth2.googleapis.com",
@@ -327,6 +343,18 @@ class AuthController < ApplicationController
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
+
+    if first_time
+      # Include additional details if guest info is available, then destroy the stale guest record
+      if optional_guest.present?
+        if optional_guest.result
+          result = Result.new(ActiveSupport::JSON.decode(optional_guest.result.to_json))
+          result.user = user
+          result.save!
+        end
+        optional_guest.destroy
+      end
+    end
 
     redirect_to "#{ENV['HOST_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
   end
