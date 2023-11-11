@@ -4,7 +4,7 @@ class QuestionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:preview]
-  before_action :load_creators_course, except: [:index, :explanation, :preview]
+  before_action :load_creators_course, except: [:index, :explanation, :preview, :temp_force_publish_image_drafts, :temp_all_image_draft_questions]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
