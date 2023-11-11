@@ -113,6 +113,8 @@ Rails.application.routes.draw do
   patch '/admin/approve-creator', to: "admin#make_or_approve_creator"
   patch '/admin/reset-creator', to: "admin#reset_creator"
   get '/admin/inspect-transaction', to: "admin#inspect_transaction"
+  get '/admin/questions-attached', to: "questions#temp_all_image_draft_questions"
+  post '/admin/questions-publish-attached', to: "questions#temp_force_publish_image_drafts"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"

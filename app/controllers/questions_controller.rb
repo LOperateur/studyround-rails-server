@@ -190,6 +190,30 @@ class QuestionsController < ApplicationController
            serializer: CreatorQuestionSerializer
   end
 
+  def temp_force_publish_image_drafts
+    question = Question.find(params[:question_id])
+    if question.question_image_draft.attached?
+      copy_attachment(question.question_image_draft, question.question_image)
+    else
+      question.question_image.purge_later
+    end
+
+    if question.explanation_image_draft.attached?
+      copy_attachment(question.explanation_image_draft, question.explanation_image)
+    else
+      question.explanation_image.purge_later
+    end
+
+    question.question_image_draft.purge_later
+    question.explanation_image_draft.purge_later
+  end
+
+  def temp_all_image_draft_questions
+    all_questions_with_image_drafts = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
+
+    render json: all_questions_with_image_drafts, root: :data, each_serializer: CreatorQuestionListSerializer
+  end
+
   def destroy
     Question.transaction do
       # Adjacent question updates
@@ -361,7 +385,7 @@ class QuestionsController < ApplicationController
     # Mapping roles to their allowed methods
     roles_and_methods = {
       :admin => [:questions, :show, :create, :update, :publish,
-                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions, :temp_force_publish_image_drafts, :temp_all_image_draft_questions,
                  :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
 
       :creator => [:questions, :show, :create, :update, :publish,
