@@ -209,9 +209,9 @@ class QuestionsController < ApplicationController
   end
 
   def temp_all_image_draft_questions
-    all_questions_with_image_drafts = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
+    all_questions_with_image_drafts = paginate(Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil }))
 
-    render json: all_questions_with_image_drafts, root: :data, each_serializer: CreatorQuestionListSerializer
+    render json: all_questions_with_image_drafts, root: :data, each_serializer: CreatorQuestionListSerializer, meta: paginated_meta(all_questions_with_image_drafts)
   end
 
   def destroy
