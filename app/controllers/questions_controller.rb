@@ -4,7 +4,7 @@ class QuestionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:preview]
-  before_action :load_creators_course, except: [:index, :explanation, :preview, :temp_force_publish_image_drafts, :temp_all_image_draft_questions, :temp_purge_image_drafts]
+  before_action :load_creators_course, except: [:index, :explanation, :preview]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
@@ -142,11 +142,6 @@ class QuestionsController < ApplicationController
     draft = create_draft(update_question_params)
     @question.draft = draft
 
-    # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
-    # Add generated urls to draft json
-    @question.draft["question_image_url"] = generated_attachment_url(@question.question_image_draft)
-    @question.draft["explanation_image_url"] = generated_attachment_url(@question.explanation_image_draft)
-
     Question.transaction do
       # Reference Assets and update the question
       build_asset_references(@question)
@@ -168,55 +163,8 @@ class QuestionsController < ApplicationController
     # Handle the publishing
     publish_question @question
 
-    # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
-    # Handle images if save was successful
-    # Transfer images if present in draft, purge otherwise as published image state should exactly mirror draft
-    if @question.question_image_draft.attached?
-      copy_attachment(@question.question_image_draft, @question.question_image)
-    else
-      @question.question_image.purge_later
-    end
-
-    if @question.explanation_image_draft.attached?
-      copy_attachment(@question.explanation_image_draft, @question.explanation_image)
-    else
-      @question.explanation_image.purge_later
-    end
-
-    @question.question_image_draft.purge_later
-    @question.explanation_image_draft.purge_later
-
     render json: @question, root: :data, meta: { message: "Published successfully" },
            serializer: CreatorQuestionSerializer
-  end
-
-  def temp_force_publish_image_drafts
-    questions = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
-
-    questions.each do |question|
-      if question.question_image_draft.attached?
-        CopyAttachmentJob.perform_later(is_question = true, question)
-      end
-
-      if question.explanation_image_draft.attached?
-        CopyAttachmentJob.perform_later(is_question = false, question)
-      end
-    end
-  end
-
-  def temp_purge_image_drafts
-    questions = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
-
-    questions.each do |question|
-      question.question_image_draft.purge_later
-      question.explanation_image_draft.purge_later
-    end
-  end
-
-  def temp_all_image_draft_questions
-    all_questions_with_image_drafts = paginate(Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil }), params)
-
-    render json: all_questions_with_image_drafts, root: :data, each_serializer: CreatorQuestionListSerializer, meta: paginated_meta(all_questions_with_image_drafts)
   end
 
   def destroy
@@ -230,8 +178,6 @@ class QuestionsController < ApplicationController
       else
         # Also delete any drafts if soft-deleting
         @question.draft = nil
-        @question.question_image_draft.purge_later
-        @question.explanation_image_draft.purge_later
 
         @question.previous_id = nil
         @question.next_id = nil
@@ -390,7 +336,7 @@ class QuestionsController < ApplicationController
     # Mapping roles to their allowed methods
     roles_and_methods = {
       :admin => [:questions, :show, :create, :update, :publish,
-                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions, :temp_force_publish_image_drafts, :temp_all_image_draft_questions, :temp_purge_image_drafts,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions,
                  :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
 
       :creator => [:questions, :show, :create, :update, :publish,
@@ -703,29 +649,6 @@ class QuestionsController < ApplicationController
   def check_admin
     if current_user.user_type != :admin
       raise Errors::ForbiddenError.new(message: "You are not authorized to perform this action")
-    end
-  end
-
-  # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
-  def copy_attachment(from_attachment, to_attachment)
-    begin
-      to_attachment.attach(
-        io: StringIO.new(from_attachment.download),
-        filename: from_attachment.filename,
-        content_type: from_attachment.content_type
-      )
-    rescue
-      # Do nothing
-    end
-  end
-
-  # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
-  def generated_attachment_url(attachment)
-    begin
-      path = rails_blob_path(attachment, only_path: true)
-      return ActionController::Base.helpers.asset_path(path)
-    rescue
-      nil
     end
   end
 
