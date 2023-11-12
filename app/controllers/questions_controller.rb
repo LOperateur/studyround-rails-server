@@ -193,11 +193,11 @@ class QuestionsController < ApplicationController
   def temp_force_publish_image_drafts
     question = Question.find(params[:question_id])
     if question.question_image_draft.attached?
-      CopyAttachmentJob.perform_later(question.question_image_draft, question.question_image)
+      CopyAttachmentJob.perform_later(is_question = true, question)
     end
 
     if question.explanation_image_draft.attached?
-      CopyAttachmentJob.perform_later(question.explanation_image_draft, question.explanation_image)
+      CopyAttachmentJob.perform_later(is_question = false, question)
     end
 
     question.question_image_draft.purge_later
