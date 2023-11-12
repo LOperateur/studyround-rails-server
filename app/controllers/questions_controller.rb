@@ -191,17 +191,20 @@ class QuestionsController < ApplicationController
   end
 
   def temp_force_publish_image_drafts
-    question = Question.find(params[:question_id])
-    if question.question_image_draft.attached?
-      CopyAttachmentJob.perform_later(is_question = true, question)
-    end
+    questions = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
 
-    if question.explanation_image_draft.attached?
-      CopyAttachmentJob.perform_later(is_question = false, question)
-    end
+    questions.each do |question|
+      if question.question_image_draft.attached?
+        CopyAttachmentJob.perform_later(is_question = true, question)
+      end
 
-    question.question_image_draft.purge_later
-    question.explanation_image_draft.purge_later
+      if question.explanation_image_draft.attached?
+        CopyAttachmentJob.perform_later(is_question = false, question)
+      end
+
+      question.question_image_draft.purge_later
+      question.explanation_image_draft.purge_later
+    end
   end
 
   def temp_all_image_draft_questions
