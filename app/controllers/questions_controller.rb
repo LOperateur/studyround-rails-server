@@ -4,7 +4,7 @@ class QuestionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:preview]
-  before_action :load_creators_course, except: [:index, :explanation, :preview, :temp_force_publish_image_drafts, :temp_all_image_draft_questions]
+  before_action :load_creators_course, except: [:index, :explanation, :preview, :temp_force_publish_image_drafts, :temp_all_image_draft_questions, :temp_purge_image_drafts]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
@@ -201,7 +201,13 @@ class QuestionsController < ApplicationController
       if question.explanation_image_draft.attached?
         CopyAttachmentJob.perform_later(is_question = false, question)
       end
+    end
+  end
 
+  def temp_purge_image_drafts
+    questions = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
+
+    questions.each do |question|
       question.question_image_draft.purge_later
       question.explanation_image_draft.purge_later
     end
@@ -384,7 +390,7 @@ class QuestionsController < ApplicationController
     # Mapping roles to their allowed methods
     roles_and_methods = {
       :admin => [:questions, :show, :create, :update, :publish,
-                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions, :temp_force_publish_image_drafts, :temp_all_image_draft_questions,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions, :temp_force_publish_image_drafts, :temp_all_image_draft_questions, :temp_purge_image_drafts,
                  :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
 
       :creator => [:questions, :show, :create, :update, :publish,
