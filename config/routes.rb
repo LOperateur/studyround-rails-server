@@ -45,7 +45,10 @@ Rails.application.routes.draw do
   post '/tests/:id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     get '/similar', to: "courses#similar_courses"
-    resources :questions, only: [:index]
+    resources :questions, only: [:index] do
+      get '/', to: "questions#preview"
+      get '/explanation', to: "questions#explanation"
+    end
     resources :reviews
     resources :question_assets, only: [:index, :create, :update, :show, :destroy]
   end
@@ -64,6 +67,7 @@ Rails.application.routes.draw do
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
   post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
+  # Todo: Remove this route, questions & explanations should be scoped to courses
   resources :questions do
     get '/explanation', to: "questions#explanation"
   end
@@ -109,6 +113,9 @@ Rails.application.routes.draw do
   patch '/admin/approve-creator', to: "admin#make_or_approve_creator"
   patch '/admin/reset-creator', to: "admin#reset_creator"
   get '/admin/inspect-transaction', to: "admin#inspect_transaction"
+  get '/admin/questions-attached', to: "questions#temp_all_image_draft_questions"
+  post '/admin/questions-publish-attached', to: "questions#temp_force_publish_image_drafts"
+  post '/admin/questions-purge-drafts', to: "questions#temp_purge_image_drafts"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"

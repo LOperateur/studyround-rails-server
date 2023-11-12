@@ -173,10 +173,6 @@ class SessionsController < ApplicationController
 
     guest_email = end_course_session_params[:guest_email]
 
-    if guest_email.blank?
-      raise Errors::BaseError.new(message: "No email provided!", status: 400)
-    end
-
     if end_course_session_params[:session_id].nil?
       raise Errors::BaseError.new(message: "Unknown session!", status: 400)
     end
@@ -209,17 +205,30 @@ class SessionsController < ApplicationController
       guest.update!(result: result.as_json)
     end
 
-    # TODO: Move this to a shared concern
-    # Send the invite/results email
-    guests_controller = GuestsController.new
-    guests_controller.request = request
-    guests_controller.response = response
+    if guest_email.present?
+      # TODO: Move this to a shared concern
+      # Send the invite/results email if the guest provided an email
+      guests_controller = GuestsController.new
+      guests_controller.request = request
+      guests_controller.response = response
 
-    guest_invite_params = { guest_id: guest_id, email: guest_email }
+      guest_invite_params = { guest_id: guest_id, email: guest_email }
 
-    guests_controller.params = guest_invite_params
+      guests_controller.params = guest_invite_params
 
-    render json: guests_controller.invite
+      render json: guests_controller.invite
+    else
+      # If no email was provided, just return the result
+      render json: {
+        data: {
+          result: {
+            guest_id: guest_id,
+            score: score,
+            total: total,
+          }
+        }
+      }, status: :ok
+    end
   end
 
   # Tests
