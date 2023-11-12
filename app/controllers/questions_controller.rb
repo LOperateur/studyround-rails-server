@@ -194,14 +194,10 @@ class QuestionsController < ApplicationController
     question = Question.find(params[:question_id])
     if question.question_image_draft.attached?
       copy_attachment(question.question_image_draft, question.question_image)
-    else
-      question.question_image.purge_later
     end
 
     if question.explanation_image_draft.attached?
       copy_attachment(question.explanation_image_draft, question.explanation_image)
-    else
-      question.explanation_image.purge_later
     end
 
     question.question_image_draft.purge_later
@@ -703,11 +699,15 @@ class QuestionsController < ApplicationController
 
   # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
   def copy_attachment(from_attachment, to_attachment)
-    to_attachment.attach(
-      io: StringIO.new(from_attachment.download),
-      filename: from_attachment.filename,
-      content_type: from_attachment.content_type
-    )
+    begin
+      to_attachment.attach(
+        io: StringIO.new(from_attachment.download),
+        filename: from_attachment.filename,
+        content_type: from_attachment.content_type
+      )
+    rescue
+      # Do nothing
+    end
   end
 
   # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
