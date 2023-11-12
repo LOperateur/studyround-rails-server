@@ -4,7 +4,7 @@ class QuestionsController < ApplicationController
   include TestHelper
 
   skip_before_action :authorize!, only: [:preview]
-  before_action :load_creators_course, except: [:index, :explanation, :preview]
+  before_action :load_creators_course, except: [:index, :explanation, :preview, :temp_force_publish_image_drafts, :temp_all_image_draft_questions, :temp_purge_image_drafts]
   before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
@@ -190,6 +190,35 @@ class QuestionsController < ApplicationController
            serializer: CreatorQuestionSerializer
   end
 
+  def temp_force_publish_image_drafts
+    questions = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
+
+    questions.each do |question|
+      if question.question_image_draft.attached?
+        CopyAttachmentJob.perform_later(is_question = true, question)
+      end
+
+      if question.explanation_image_draft.attached?
+        CopyAttachmentJob.perform_later(is_question = false, question)
+      end
+    end
+  end
+
+  def temp_purge_image_drafts
+    questions = Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil })
+
+    questions.each do |question|
+      question.question_image_draft.purge_later
+      question.explanation_image_draft.purge_later
+    end
+  end
+
+  def temp_all_image_draft_questions
+    all_questions_with_image_drafts = paginate(Question.joins(question_image_draft_attachment: :blob).where.not(active_storage_blobs: { id: nil }), params)
+
+    render json: all_questions_with_image_drafts, root: :data, each_serializer: CreatorQuestionListSerializer, meta: paginated_meta(all_questions_with_image_drafts)
+  end
+
   def destroy
     Question.transaction do
       # Adjacent question updates
@@ -361,7 +390,7 @@ class QuestionsController < ApplicationController
     # Mapping roles to their allowed methods
     roles_and_methods = {
       :admin => [:questions, :show, :create, :update, :publish,
-                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions,
+                 :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions, :temp_force_publish_image_drafts, :temp_all_image_draft_questions, :temp_purge_image_drafts,
                  :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
 
       :creator => [:questions, :show, :create, :update, :publish,
@@ -679,11 +708,15 @@ class QuestionsController < ApplicationController
 
   # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses
   def copy_attachment(from_attachment, to_attachment)
-    to_attachment.attach(
-      io: StringIO.new(from_attachment.download),
-      filename: from_attachment.filename,
-      content_type: from_attachment.content_type
-    )
+    begin
+      to_attachment.attach(
+        io: StringIO.new(from_attachment.download),
+        filename: from_attachment.filename,
+        content_type: from_attachment.content_type
+      )
+    rescue
+      # Do nothing
+    end
   end
 
   # Todo: Deprecated - Remove this after ensuring that no DRAFT images are needed. e.g: after publishing PUTME courses

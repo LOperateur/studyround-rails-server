@@ -11,7 +11,7 @@ class Question < ApplicationRecord
 
   validates_with QuestionValidator
 
-  # Todo: Deprecated - Remove these eventually
+  # Todo: Deprecated - Remove these eventually starting with the drafts
   has_one_attached :question_image, dependent: :purge_later
   has_one_attached :question_image_draft, dependent: :purge_later
   has_one_attached :explanation_image, dependent: :purge_later
