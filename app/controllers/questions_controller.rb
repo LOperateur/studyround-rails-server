@@ -54,9 +54,10 @@ class QuestionsController < ApplicationController
     is_course_owned = is_course_owner?(course, current_user)
     is_course_accessible = course.publish_status_published? && course.course_status_active?
     is_course_free = course.sale_status_free? || course.sale_status_explanations?
-    is_course_purchased = current_user.has_purchased_item(course)
 
     if current_user
+      is_course_purchased = current_user.has_purchased_item(course)
+
       if is_course_owned
         question = course.questions.find(params[:question_id])
       elsif is_course_accessible && (is_course_free || is_course_purchased)
