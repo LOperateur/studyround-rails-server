@@ -8,7 +8,8 @@ Rails.application.routes.draw do
   mount Sidekiq::Web => '/sidekiq'
   post '/auth/signup', to: "auth#signup"
   post '/auth/login', to: "auth#login"
-  get '/auth/google', to: "auth#google_oauth"
+  get '/auth/google', to: "auth#google_oauth_web"
+  post '/auth/google/mobile', to: "auth#google_oauth_mobile"
   post '/auth/support/login', to: "auth#login_creator"
   post '/auth/reset', to: "auth#reset"
   post '/auth/refresh-token', to: "auth#refresh_token"

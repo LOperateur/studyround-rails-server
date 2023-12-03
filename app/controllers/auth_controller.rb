@@ -231,9 +231,8 @@ class AuthController < ApplicationController
     end
   end
 
-  def google_oauth
+  def google_oauth_web
     token = params[:code]
-    logger.info "Google oauth params: #{params}" # Todo: Remove this later
 
     optional_guest = nil
     begin
@@ -283,80 +282,32 @@ class AuthController < ApplicationController
     logger.info profile_data
 
     email = profile_data["email"]
-    avatar = profile_data["picture"]
+    user, sr_access_token, sr_refresh_token, first_time = google_oauth_user(profile_data, optional_guest)
 
-    user = User.find_by(email: email)
+    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}"
+  end
 
-    if user
-      # If the user already exists, check if an auth provider with google exists
-      auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_google)
+  def google_oauth_mobile
+    # First verify the id token
+    id_token = google_oauth_mobile_params[:id_token]
+    conn = Faraday.new(
+      url: "https://oauth2.googleapis.com",
+      headers: { 'Content-Type' => 'application/json' }
+    )
 
-      # If it doesn't exist, create it
-      if !auth_provider
-        AuthProvider.create!(
-          user: user,
-          auth_provider: :auth_provider_google,
-          metadata: { avatar: avatar }
-        )
-      end
-
-      first_time = false
-
-    else # Create a new user
-
-      # Extract username from email
-      base_username = email.split('@').first
-      # Sanitize username: remove invalid characters, then restrict length to 20 characters
-      username = base_username.gsub(/[^-a-z0-9_.]/i, '').slice(0, 20)
-      # Check if the username already exists
-      if User.exists?(username: username)
-        # If it exists, append a random 4 digit number to the end of the username
-        username = username + rand(1000..9999).to_s
-      end
-
-      # Get necessary details from the profile data
-      first_name = profile_data["given_name"]
-      last_name = profile_data["family_name"]
-
-      user = User.new(
-        username: username,
-        email: email,
-        first_name: first_name,
-        last_name: last_name,
-        creator: false,
-      )
-
-      # Indicate that the user is in the oauth creation flow to allow creation of the user without a password
-      user.in_oauth_creation_flow = true
-
-      # Build the auth provider (this will be saved when the NEW user is saved; auto-saving of associations)
-      user.auth_providers.build(
-        user: user,
-        auth_provider: :auth_provider_google,
-        metadata: { avatar: avatar }
-      )
-
-      first_time = true
+    # Todo: Only for debugging, don't use in production
+    # https://github.com/googleapis/google-api-ruby-client
+    token_info_response = conn.get("/tokeninfo") do |req|
+      req.params['id_token'] = id_token
     end
 
-    user.save!
+    profile_data = JSON.parse(token_info_response.body)
 
-    access_token = create_access_token(user)
-    refresh_token = create_refresh_token(user)
+    logger.info profile_data
 
-    if first_time
-      # Include additional details if guest info is available, then destroy the stale guest record
-      if optional_guest.present?
-        if optional_guest.result
-          result = Result.new(ActiveSupport::JSON.decode(optional_guest.result.to_json))
-          result.user = user
-          result.save!
-        end
-        optional_guest.destroy
-      end
-    end
+    user, access_token, refresh_token, first_time = google_oauth_user(profile_data)
 
-    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{access_token}&refresh_token=#{refresh_token}&first_time=#{first_time}"
+    render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token, "first_time": first_time }) }
   end
 
   def reset
@@ -464,6 +415,83 @@ class AuthController < ApplicationController
     refresh_token
   end
 
+  def google_oauth_user(profile_data = {}, optional_guest = nil)
+    # Get necessary details from the profile data
+    email = profile_data["email"]
+    avatar = profile_data["picture"]
+    first_name = profile_data["given_name"]
+    last_name = profile_data["family_name"]
+
+    user = User.find_by(email: email)
+
+    if user
+      # If the user already exists, check if an auth provider with google exists
+      auth_provider = AuthProvider.find_by(user: user, auth_provider: :auth_provider_google)
+
+      # If it doesn't exist, create it
+      if !auth_provider
+        AuthProvider.create!(
+          user: user,
+          auth_provider: :auth_provider_google,
+          metadata: { avatar: avatar }
+        )
+      end
+
+      first_time = false
+
+    else # Create a new user
+
+      # Extract username from email
+      base_username = email.split('@').first
+      # Sanitize username: remove invalid characters, then restrict length to 20 characters
+      username = base_username.gsub(/[^-a-z0-9_.]/i, '').slice(0, 20)
+      # Check if the username already exists
+      if User.exists?(username: username)
+        # If it exists, append a random 4 digit number to the end of the username
+        username = username + rand(1000..9999).to_s
+      end
+
+      user = User.new(
+        username: username,
+        email: email,
+        first_name: first_name,
+        last_name: last_name,
+        creator: false,
+      )
+
+      # Indicate that the user is in the oauth creation flow to allow creation of the user without a password
+      user.in_oauth_creation_flow = true
+
+      # Build the auth provider (this will be saved when the NEW user is saved; auto-saving of associations)
+      user.auth_providers.build(
+        user: user,
+        auth_provider: :auth_provider_google,
+        metadata: { avatar: avatar }
+      )
+
+      first_time = true
+    end
+
+    user.save!
+
+    access_token = create_access_token(user)
+    refresh_token = create_refresh_token(user)
+
+    if first_time
+      # Include additional details if guest info is available, then destroy the stale guest record
+      if optional_guest.present?
+        if optional_guest.result
+          result = Result.new(ActiveSupport::JSON.decode(optional_guest.result.to_json))
+          result.user = user
+          result.save!
+        end
+        optional_guest.destroy
+      end
+    end
+
+    return user, access_token, refresh_token, first_time
+  end
+
   def random_otp
     (0..9).to_a.shuffle[0..3].join
   end
@@ -490,5 +518,9 @@ class AuthController < ApplicationController
 
   def refresh_token_params
     params.permit(:refresh_token) || ActionController::Parameters.new
+  end
+
+  def google_oauth_mobile_params
+    params.permit(:id_token)
   end
 end
