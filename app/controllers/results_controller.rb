@@ -1,4 +1,5 @@
 class ResultsController < ApplicationController
+  include CourseHelper
   include SessionHelper
 
   wrap_parameters format: []
@@ -9,7 +10,7 @@ class ResultsController < ApplicationController
     if result.user != current_user
       if result.session_type_test?
         # For tests, raise exception if a user other than the candidate or creator tries to access it
-        if result.course.creator != current_user
+        if !is_course_creator?(result.course, current_user)
           raise Errors::ForbiddenError.new(message: "You cannot view this result")
         end
       else
@@ -28,7 +29,7 @@ class ResultsController < ApplicationController
       if result.session_type_test?
 
         # For tests, raise exception if a user other than the candidate or creator tries to access it
-        if course.creator != current_user
+        if !is_course_creator?(course, current_user)
           raise Errors::ForbiddenError.new(message: "You cannot view this result session")
         end
 
@@ -97,16 +98,40 @@ class ResultsController < ApplicationController
   def test_submissions
     course = Course.find(params[:course_id])
     if !course.test
-      raise Errors::ForbiddenError.new(message: "Course must be a Test!")
+      raise Errors::ForbiddenError.new(message: "The Course must be a Test!")
     end
 
-    if course.creator != current_user
+    if !is_course_creator?(course, current_user)
       raise Errors::ForbiddenError.new(message: "You don't have authority to view these test submissions")
     end
 
     submissions = course.results.order(created_at: :desc)
     paginated_submissions = paginate(submissions)
 
-    render json: paginated_submissions, root: :data, meta: paginated_meta(paginated_submissions), each_serializer: ProfileResultSerializer, status: :ok
+    render json: paginated_submissions,
+           root: :data,
+           meta: paginated_meta(paginated_submissions),
+           each_serializer: ProfileResultSerializer,
+           status: :ok
+  end
+
+  def leaderboard
+    course = Course.find(params[:course_id])
+    if !course.test
+      raise Errors::ForbiddenError.new(message: "The Course must be a Test to have a Leaderboard!")
+    end
+
+    if course.course_status_closed? && !is_course_owner?(course, current_user)
+      raise Errors::ForbiddenError.new(message: "The Test hasn't been closed by the creator yet.")
+    end
+
+    top_submissions = course.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    paginated_submissions = paginate(top_submissions)
+
+    render json: paginated_submissions,
+           root: :data,
+           meta: paginated_meta(paginated_submissions),
+           each_serializer: ProfileResultSerializer,
+           status: :ok
   end
 end

@@ -37,9 +37,8 @@ class CoursesController < ApplicationController
 
     review = @course.reviews.where(user: current_user).take
 
-    # TODO: Collaborators should also get a creator view of the course
-    # If current user is nil or current user is not a creator/collaborator on the course, return the user facing course
-    if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
+    # If current user is not a creator/collaborator on the course, return the user facing course
+    if !is_course_owner?(@course, current_user)
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
       end
@@ -254,8 +253,8 @@ class CoursesController < ApplicationController
 
   def close_test
     # Todo: Review this in pt. 2 of the collaborator change
-    #  Admins have superuser privileges but can't close tests that aren't theirs.
-    if @course.creator != current_user
+    # Admins have superuser privileges but can't close tests that aren't theirs.
+    if !is_course_creator?(@course, current_user)
       raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
     end
 
@@ -425,7 +424,8 @@ class CoursesController < ApplicationController
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:id])
-    if @course.creator != current_user && current_user.user_type != :admin
+    # Todo: Add more fine-grained permissions in the Collaborator part 2
+    if !is_course_owner?(@course, current_user)
       raise Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
     end
   end
