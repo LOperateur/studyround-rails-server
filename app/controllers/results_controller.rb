@@ -106,7 +106,7 @@ class ResultsController < ApplicationController
     end
 
     submissions = course.results.order(created_at: :desc)
-    paginated_submissions = paginate(submissions)
+    paginated_submissions = paginate(submissions, params)
 
     render json: paginated_submissions,
            root: :data,
@@ -126,7 +126,7 @@ class ResultsController < ApplicationController
     end
 
     top_submissions = course.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
-    paginated_submissions = paginate(top_submissions)
+    paginated_submissions = paginate(top_submissions, params)
 
     render json: paginated_submissions,
            root: :data,
