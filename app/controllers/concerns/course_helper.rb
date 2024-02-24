@@ -46,10 +46,20 @@ module CourseHelper
     return found_courses
   end
 
-  def is_course_owner?(course, current_user)
-    return false if current_user.nil?
-    return course.creator == current_user ||
-      current_user.user_type == :admin ||
-      CourseCollaborator.where(user: current_user, course: course).exists?
+  # Check if the supplied user is among the owners of the course.
+  # Owners can include the original creator, collaborators and the site admins.
+  # Todo: In pt 2 of collaborators, limit the collaborator permission by role
+  def is_course_owner?(course, user)
+    return false if user.nil?
+    return course.creator == user ||
+      user.user_type == :admin ||
+      CourseCollaborator.where(user: user, course: course).exists?
+  end
+
+  # Check if the supplied user is strictly the creator of the course.
+  # No one, not even admins are the creators, except the actually creator
+  def is_course_creator?(course, user)
+    return false if user.nil?
+    return course.creator == user
   end
 end
