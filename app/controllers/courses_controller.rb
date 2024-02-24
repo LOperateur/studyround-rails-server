@@ -132,26 +132,27 @@ class CoursesController < ApplicationController
     if current_user.nil? || current_user.categories.empty?
       # Use left_joins for when you want Categories with 0 courses. Not want we want here, so we use joins
       # Answer gotten from: https://stackoverflow.com/questions/16996618/rails-order-by-results-count-of-has-many-association
-      categories = Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5)
+      ordered_categories = Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5)
     else
       categories = current_user.categories.order(affinity: :desc).take(5)
+      ordered_categories = []
 
-      # If the user's category has less than 3 courses, remove the category from the list
+      # If the user's category has less than 3 courses, don't include the category in the list
       categories.each do |category|
-        if category.courses.published_active_courses.count < 3
-          categories.delete(category)
+        if category.courses.published_active_courses.count >= 3
+          ordered_categories.push(category)
         end
       end
 
       # Then add more categories to make up the 5 and ensure that no category is repeated
-      if categories.size < 5
-        categories += Category.published_active_course_categories.where.not(id: categories.map(&:id))
-                              .group(:id).order('COUNT(courses.id) DESC').take(5 - categories.size)
+      if ordered_categories.size < 5
+        ordered_categories += Category.published_active_course_categories.where.not(id: categories.map(&:id))
+                              .group(:id).order('COUNT(courses.id) DESC').take(5 - ordered_categories.size)
       end
     end
 
     render json: {
-      data: categories.map do |category|
+      data: ordered_categories.map do |category|
         category.serialized_categorised_course[:category]
       end
     }
