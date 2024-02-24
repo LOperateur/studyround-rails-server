@@ -37,9 +37,8 @@ class CoursesController < ApplicationController
 
     review = @course.reviews.where(user: current_user).take
 
-    # TODO: Collaborators should also get a creator view of the course
-    # If current user is nil or current user is not a creator/collaborator on the course, return the user facing course
-    if current_user.nil? || (@course.creator != current_user && current_user.user_type != :admin)
+    # If current user is not a creator/collaborator on the course, return the user facing course
+    if !is_course_owner?(@course, current_user)
       if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
       end
@@ -132,26 +131,27 @@ class CoursesController < ApplicationController
     if current_user.nil? || current_user.categories.empty?
       # Use left_joins for when you want Categories with 0 courses. Not want we want here, so we use joins
       # Answer gotten from: https://stackoverflow.com/questions/16996618/rails-order-by-results-count-of-has-many-association
-      categories = Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5)
+      ordered_categories = Category.published_active_course_categories.group(:id).order('COUNT(courses.id) DESC').take(5)
     else
       categories = current_user.categories.order(affinity: :desc).take(5)
+      ordered_categories = []
 
-      # If the user's category has less than 3 courses, remove the category from the list
+      # If the user's category has less than 3 courses, don't include the category in the list
       categories.each do |category|
-        if category.courses.published_active_courses.count < 3
-          categories.delete(category)
+        if category.courses.published_active_courses.count >= 3
+          ordered_categories.push(category)
         end
       end
 
       # Then add more categories to make up the 5 and ensure that no category is repeated
-      if categories.size < 5
-        categories += Category.published_active_course_categories.where.not(id: categories.map(&:id))
-                              .group(:id).order('COUNT(courses.id) DESC').take(5 - categories.size)
+      if ordered_categories.size < 5
+        ordered_categories += Category.published_active_course_categories.where.not(id: categories.map(&:id))
+                              .group(:id).order('COUNT(courses.id) DESC').take(5 - ordered_categories.size)
       end
     end
 
     render json: {
-      data: categories.map do |category|
+      data: ordered_categories.map do |category|
         category.serialized_categorised_course[:category]
       end
     }
@@ -253,8 +253,8 @@ class CoursesController < ApplicationController
 
   def close_test
     # Todo: Review this in pt. 2 of the collaborator change
-    #  Admins have superuser privileges but can't close tests that aren't theirs.
-    if @course.creator != current_user
+    # Admins have superuser privileges but can't close tests that aren't theirs.
+    if !is_course_creator?(@course, current_user)
       raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
     end
 
@@ -424,7 +424,8 @@ class CoursesController < ApplicationController
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:id])
-    if @course.creator != current_user && current_user.user_type != :admin
+    # Todo: Add more fine-grained permissions in the Collaborator part 2
+    if !is_course_owner?(@course, current_user)
       raise Errors::ForbiddenError.new(message: "You don't have the authority to change this #{course_or_test(@course)}")
     end
   end
