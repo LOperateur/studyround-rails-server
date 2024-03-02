@@ -18,9 +18,14 @@ class Result < ApplicationRecord
     test: 4,
   }, _prefix: true
 
-  # Used to serialize the result model on the go without having to render
+  # Used to serialize the result model (with session data) on the go without having to render
   def serialized_result
     ActiveModelSerializers::SerializableResource.new(self, serializer: SessionResultSerializer).as_json
+  end
+
+  # Used to serialize the result model (with profile data) on the go without having to render
+  def serialized_profile_result
+    ActiveModelSerializers::SerializableResource.new(self, serializer: ProfileResultSerializer).as_json
   end
 
   def send_test_completion_email
