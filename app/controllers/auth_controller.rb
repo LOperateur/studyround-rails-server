@@ -183,9 +183,9 @@ class AuthController < ApplicationController
     is_email = email_or_username.include? "@"
 
     if is_email
-      raise Errors::AuthenticationError.new(message: "Email does not exist") unless User.exists?(email: email_or_username)
+      raise Errors::AuthenticationError.new(message: "Invalid login details") unless User.exists?(email: email_or_username)
     else
-      raise Errors::AuthenticationError.new(message: "User does not exist") unless User.exists?(username: email_or_username)
+      raise Errors::AuthenticationError.new(message: "Invalid login details") unless User.exists?(username: email_or_username)
     end
 
     user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
@@ -197,7 +197,7 @@ class AuthController < ApplicationController
 
         render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
       else
-        raise Errors::AuthenticationError.new(message: "Incorrect login details")
+        raise Errors::AuthenticationError.new(message: "Invalid login details")
       end
     rescue BCrypt::Errors::InvalidHash
       raise Errors::AuthenticationError.new(message: "Please login with another method or reset your password")
