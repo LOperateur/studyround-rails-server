@@ -255,6 +255,67 @@ class AdminController < ApplicationController
     render json: transaction.extra, root: :data, status: :ok
   end
 
+  def copy_question
+    Question.transaction do
+      original_question = Question.find(params[:question_id])
+      src_course = original_question.course
+      dest_course = Course.find(params[:course_id])
+
+      if src_course.test && src_course.publish_status_published?
+        raise Errors::BaseError.new(message: "Published tests cannot get new questions", status: 400)
+      end
+
+      duplicate_question = Question.new(course: dest_course)
+      duplicate_question.creator = dest_course.creator
+
+      # TODO: Implement a way to create draft content from published content
+      if original_question.draft.nil?
+        raise Errors::BaseError.new(message: "Only draft content can be copied right now. Try editing the question", status: 400)
+      else
+        duplicate_question.draft = original_question.draft
+      end
+
+      # Migrate course assets
+      if src_course != dest_course
+        # Find all the associated question assets
+        asset_ids = []
+        original_question.question_asset_references.each do |ref|
+          asset_ids.append(ref.question_asset_id)
+        end
+
+        # Get all the question assets this question uses and duplicate them in the new course
+        # TODO: The user has to manually re-attach the assets in the copied question. Improve UX!
+        src_course.question_assets.where(id: asset_ids.uniq).each do |original_asset|
+          duplicate_asset = original_asset.dup
+          duplicate_asset.course = dest_course
+          duplicate_asset.creator = dest_course.creator
+          duplicate_asset.save!
+
+          if original_asset.asset_type_image? && original_asset.file.attached?
+            duplicate_asset.file.attach(
+              io: StringIO.new(original_asset.file.download),
+              filename: original_asset.file.filename,
+              content_type: original_asset.file.content_type
+            )
+          end
+        end
+      end
+
+      # Establish question position and save
+      # Todo: Use establish_position_and_save when moved to questions controller
+      last_question = dest_course.questions.non_deleted_questions.find_by(next_id: nil)
+      duplicate_question.previous_id = last_question&.id
+      duplicate_question.save!
+
+      if last_question.present?
+        last_question.next_id = duplicate_question.id
+        last_question.save!
+      end
+
+      render json: duplicate_question, root: :data, serializer: CreatorQuestionSerializer, status: :ok
+    end
+  end
+
   private
 
   def check_admin
@@ -289,5 +350,9 @@ class AdminController < ApplicationController
 
   def reset_creator_params
     params.permit(:email)
+  end
+
+  def copy_question_params
+    params.permit(:question_id, :course_id)
   end
 end
