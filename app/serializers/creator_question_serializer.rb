@@ -26,6 +26,21 @@ class CreatorQuestionSerializer < QuestionAnswerSerializer
     [6 - object.version, 5].min
   end
 
+  # Overriding this method to leave the option_text_raw json
+  def options
+    options_w_assets = object.options
+    course = object.course
+
+    options_w_assets&.each do |option|
+      # Expand the asset id's to dynamically include the option assets
+      if option["option_image_asset_id"].present?
+        option.merge!({ option_image_asset: course.question_assets.find_by(id: option["option_image_asset_id"])&.serialized_question_asset })
+      end
+    end
+
+    return options_w_assets
+  end
+
   def draft
     # Expand the asset id's to dynamically include the draft assets
     draft_w_assets = object.draft
