@@ -15,11 +15,14 @@ class QuestionSerializer < ActiveModel::Serializer
   end
 
   def options
-    # Expand the asset id's to dynamically include the option assets
     options_w_assets = object.options
     course = object.course
 
     options_w_assets&.each do |option|
+      # Remove the option_text_raw json content
+      option.delete("option_text_raw")
+
+      # Expand the asset id's to dynamically include the option assets
       if option["option_image_asset_id"].present?
         option.merge!({ option_image_asset: course.question_assets.find_by(id: option["option_image_asset_id"])&.serialized_question_asset })
       end
