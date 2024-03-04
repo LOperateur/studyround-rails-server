@@ -283,25 +283,8 @@ class AdminController < ApplicationController
           asset_ids.append(ref.question_asset_id)
         end
 
-        # Get all the question assets this question uses and duplicate them in the new course
         # TODO: The user has to manually re-attach the assets in the copied question. Improve UX!
-        src_course.question_assets.where(id: asset_ids.uniq).each do |original_asset|
-          # Migrate asset if it doesn't exist in the destination course
-          if !dest_course.question_assets.exists?(content_signature: original_asset.content_signature)
-            duplicate_asset = original_asset.dup
-            duplicate_asset.course = dest_course
-            duplicate_asset.creator = dest_course.creator
-            duplicate_asset.save!
-
-            if original_asset.asset_type_image? && original_asset.file.attached?
-              duplicate_asset.file.attach(
-                io: StringIO.new(original_asset.file.download),
-                filename: original_asset.file.filename,
-                content_type: original_asset.file.content_type
-              )
-            end
-          end
-        end
+        CopyAssetsJob.perform_later(asset_ids.uniq, dest_course, src_course)
       end
 
       # Establish question position and save
