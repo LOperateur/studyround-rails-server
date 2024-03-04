@@ -1,14 +1,16 @@
 class QuestionAsset < ApplicationRecord
   include Rails.application.routes.url_helpers
 
-  before_create :set_content_signature
-  before_update :set_content_signature
+  before_save :ensure_content_signature
 
   belongs_to :course
   belongs_to :creator, class_name: 'User'
   has_many :question_asset_references, dependent: :restrict_with_exception # Prevent deletion if referenced by a question
   has_many :questions, through: :question_asset_references
   has_one_attached :file, dependent: :purge_later # Purge the file if the asset is deleted
+
+  # Todo: Explore attachment_changes.any? in Rails 6
+  attr_accessor :file_changed # track file changes to update content signature
 
   # Name can only contain letters, numbers, underscores, and dashes and spaces
   validates :name, format: { with: /\A[a-zA-Z0-9_\- ]+\z/, message: "can only contain letters, numbers, underscores, dashes, and spaces" },
@@ -35,7 +37,9 @@ class QuestionAsset < ApplicationRecord
 
   private
 
-  def set_content_signature
-    self.content_signature = SecureRandom.uuid if self.content_signature.nil?
+  def ensure_content_signature
+    if self.content_signature.nil? || content_changed? || file_changed
+      self.content_signature = SecureRandom.uuid
+    end
   end
 end
