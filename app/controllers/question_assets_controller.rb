@@ -57,13 +57,16 @@ class QuestionAssetsController < ApplicationController
 
     question_asset = @course.question_assets.find(params[:id])
 
-    question_asset.assign_attributes(name: update_question_asset_params[:name])
+    if update_question_asset_params[:name].present?
+      question_asset.assign_attributes(name: update_question_asset_params[:name])
+    end
 
     if question_asset.asset_type_passage? && update_question_asset_params[:content].present?
       question_asset.assign_attributes(content: update_question_asset_params[:content])
     elsif question_asset.asset_type_image? && update_question_asset_params[:file].present?
       # ActiveStorage will automatically purge the old file
       question_asset.file.attach(update_question_asset_params[:file])
+      question_asset.file_changed = true
     else
       # Raise errors for invalid asset matching
       if (question_asset.asset_type_passage? && update_question_asset_params[:file].present?) ||

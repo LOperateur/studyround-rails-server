@@ -121,17 +121,51 @@ class ResultsController < ApplicationController
       raise Errors::ForbiddenError.new(message: "The Course must be a Test to have a Leaderboard!")
     end
 
+    # Return an empty response to unauthorised users who want to view the leaderboard before the test is closed
     if course.course_status_closed? && !is_course_owner?(course, current_user)
-      raise Errors::ForbiddenError.new(message: "The Test hasn't been closed by the creator yet.")
+      _, _, paginated_metadata = custom_paginate(0, params)
+      render json: { data: { has_result: false, position: nil, rankings: [] } }.merge(paginated_metadata), status: :ok
+      return
     end
+
+    position = get_ranked_position(course, current_user)
+    has_result = !position.nil?
 
     top_submissions = course.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
     paginated_submissions = paginate(top_submissions, params)
 
-    render json: paginated_submissions,
-           root: :data,
-           meta: paginated_meta(paginated_submissions),
-           each_serializer: ProfileResultSerializer,
+    render json:
+             {
+               data: {
+                 has_result: has_result,
+                 position: position,
+                 rankings: paginated_submissions.map do |result|
+                   result.serialized_profile_result[:result]
+                 end
+               },
+             }.merge(paginated_meta(paginated_submissions)),
            status: :ok
   end
+
+  private
+
+  def get_ranked_position(course, user)
+    ranked_results_sql = <<~SQL
+      SELECT id, user_id, RANK() OVER (ORDER BY score DESC, elapsed_time ASC, created_at ASC) as rank
+      FROM results
+      WHERE course_id = ?
+    SQL
+
+    user_rank_sql = <<~SQL
+      SELECT rank
+      FROM (#{ranked_results_sql}) as ranked_results
+      WHERE user_id = ?
+      LIMIT 1
+    SQL
+
+    user_rank = Result.find_by_sql([user_rank_sql, course.id, user.id]).first&.rank
+
+    return user_rank
+  end
+
 end
