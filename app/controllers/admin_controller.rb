@@ -298,7 +298,7 @@ class AdminController < ApplicationController
         last_question.save!
       end
 
-      render json: duplicate_question, root: :data, serializer: CreatorQuestionSerializer, status: :ok
+      render json: duplicate_question, root: :data, serializer: CreatorQuestionSerializer, status: :created
     end
   end
 
