@@ -115,6 +115,7 @@ Rails.application.routes.draw do
   patch '/admin/approve-creator', to: "admin#make_or_approve_creator"
   patch '/admin/reset-creator', to: "admin#reset_creator"
   get '/admin/inspect-transaction', to: "admin#inspect_transaction"
+  post '/admin/copy-question', to: "admin#copy_question"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
