@@ -1,6 +1,9 @@
 class QuestionAsset < ApplicationRecord
   include Rails.application.routes.url_helpers
 
+  before_create :set_content_signature
+  before_update :set_content_signature
+
   belongs_to :course
   belongs_to :creator, class_name: 'User'
   has_many :question_asset_references, dependent: :restrict_with_exception # Prevent deletion if referenced by a question
@@ -28,5 +31,11 @@ class QuestionAsset < ApplicationRecord
     rescue
       nil
     end
+  end
+
+  private
+
+  def set_content_signature
+    self.content_signature = SecureRandom.uuid if self.content_signature.nil?
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_09_15_005021) do
+ActiveRecord::Schema.define(version: 2024_03_04_055206) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -171,6 +171,8 @@ ActiveRecord::Schema.define(version: 2023_09_15_005021) do
     t.datetime "updated_at", null: false
     t.string "name"
     t.bigint "creator_id"
+    t.string "content_signature"
+    t.index ["content_signature"], name: "index_question_assets_on_content_signature"
     t.index ["course_id"], name: "index_question_assets_on_course_id"
     t.index ["creator_id"], name: "index_question_assets_on_creator_id"
   end
