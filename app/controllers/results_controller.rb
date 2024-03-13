@@ -122,7 +122,7 @@ class ResultsController < ApplicationController
     end
 
     # Return an empty response to unauthorised users who want to view the leaderboard before the test is closed
-    if course.course_status_closed? && !is_course_owner?(course, current_user)
+    if !course.course_status_closed? && !is_course_owner?(course, current_user)
       _, _, paginated_metadata = custom_paginate(0, params)
       render json: { data: { has_result: false, position: nil, rankings: [] } }.merge(paginated_metadata), status: :ok
       return
