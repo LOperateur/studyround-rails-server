@@ -4,7 +4,7 @@ class SessionsController < ApplicationController
   include UserInterest
 
   skip_before_action :authorize!, only: [:start_demo, :end_demo]
-  before_action :load_course, except: [:update, :verify_active_session]
+  before_action :load_course, except: [:update, :test_instructions, :verify_active_session]
 
   wrap_parameters format: []
 
@@ -234,11 +234,13 @@ class SessionsController < ApplicationController
   # Tests
 
   def test_instructions
-    if !@course.test?
+    # The instructions page can be viewed even when the test is closed
+    course = Course.non_deleted_courses.where(publish_status: :publish_status_published).find(params[:course_id])
+    if !course.test?
       raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
     end
 
-    instructions_response = init_test_instructions(current_user, @course)
+    instructions_response = init_test_instructions(current_user, course)
 
     render json: {
       data: instructions_response
