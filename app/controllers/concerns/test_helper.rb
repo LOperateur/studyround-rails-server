@@ -289,7 +289,11 @@ module TestHelper
 
     max_trials_left = get_max_trials_left(max_trials)
 
-    "You have #{max_trials_left} #{'chance'.pluralize(max_trials_left)} left to take and submit this test"
+    message = "You have #{max_trials_left} #{'chance'.pluralize(max_trials_left)}"
+    message += " left" if max_trials_left < max_trials
+    message += " to take and submit this test"
+
+    return message
   end
 
   def map_user_limit_instruction
