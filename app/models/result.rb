@@ -33,6 +33,7 @@ class Result < ApplicationRecord
       email: self.user.email,
       title: self.course.title,
       score: "#{self.score}/#{self.total}",
+      course_id: self.course.id,
       result_id: self.id,
     ).test_results_email.deliver_later
   end
