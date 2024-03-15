@@ -13,6 +13,7 @@ class ResultMailer < ApplicationMailer
     @email = params[:email]
     @title = params[:title]
     @score = params[:score]
+    @course_id = params[:course_id]
     @result_id = params[:result_id]
     mail(to: @email, subject: 'Your StudyRound Test Results!')
   end

@@ -121,15 +121,33 @@ class ResultsController < ApplicationController
       raise Errors::ForbiddenError.new(message: "The Course must be a Test to have a Leaderboard!")
     end
 
-    # Return an empty response to unauthorised users who want to view the leaderboard before the test is closed
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
+    user_count = course.results.distinct.count(:user_id)
+    closing_time = course.test_expiration + (course.instructions['time']).seconds + lag_time
+    result = course.results.where(user: current_user)&.order(score: :desc, elapsed_time: :asc, created_at: :asc)&.first
+    score = result&.score
+
+    # Return empty rankings to unauthorised users who want to view the leaderboard before the test is closed
     if !course.course_status_closed? && !is_course_owner?(course, current_user)
       _, _, paginated_metadata = custom_paginate(0, params)
-      render json: { data: { has_result: false, position: nil, rankings: [] } }.merge(paginated_metadata), status: :ok
+      render json:
+               {
+                 data: {
+                    has_result: !score.nil?,
+                    position: nil,
+                    score: score,
+                    total: result&.total,
+                    extra_id: result&.extra_id,
+                    users: user_count,
+                    closing_time: closing_time,
+                    rankings: []
+                 }
+               }.merge(paginated_metadata),
+             status: :ok
       return
     end
 
     position = get_ranked_position(course, current_user)
-    has_result = !position.nil?
 
     top_submissions = course.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
     paginated_submissions = paginate(top_submissions, params)
@@ -137,10 +155,15 @@ class ResultsController < ApplicationController
     render json:
              {
                data: {
-                 has_result: has_result,
+                 has_result: !score.nil?,
                  position: position,
-                 rankings: paginated_submissions.map do |result|
-                   result.serialized_profile_result[:result]
+                 score: score,
+                 total: result&.total,
+                 extra_id: result&.extra_id,
+                 users: user_count,
+                 closing_time: closing_time,
+                 rankings: paginated_submissions.map do |ranked_result|
+                   ranked_result.serialized_profile_result[:result]
                  end
                },
              }.merge(paginated_meta(paginated_submissions)),

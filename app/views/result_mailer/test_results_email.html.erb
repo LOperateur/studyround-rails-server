@@ -81,20 +81,27 @@
     <tr>
       <td align="center" valign="top" style="padding: 0 20px;">
         <p style="font-size: 16px; color: #555; line-height: 1.5;">
-          Click here to view more details about your result:
+          You can also view more details about your result and the leaderboard.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle" style="padding: 0 20px 0 20px;">
+        <p>
+          <a href="<%= ENV['HOST_URL'] %>/result/<%= @result_id %>/review" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">Review Performance</a>
         </p>
       </td>
     </tr>
     <tr>
       <td align="center" valign="middle" style="padding: 0 20px 20px 20px;">
         <p>
-          <a href="<%= ENV['HOST_URL'] %>/result/<%= @result_id %>/review" style="display: inline-block; padding: 12px 20px; background-color: #ff8051; color: #fff; text-decoration: none;">Review Performance</a>
+          <a href="<%= ENV['HOST_URL'] %>/courses/<%= @course_id %>/start" style="display: inline-block; padding: 12px 20px; background-color: #046163; color: #fff; text-decoration: none;">View Leaderboard</a>
         </p>
       </td>
     </tr>
   </table>
   <p style="font-size: 14px; color: #999; line-height: 1.5; padding: 10px;">
-    Copyright © 2023 L'Operateur Ltd. Nigeria
+    Copyright © 2024 L'Operateur Ltd. Nigeria
   </p>
 </div>
 </body>
