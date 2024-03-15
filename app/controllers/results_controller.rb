@@ -121,10 +121,24 @@ class ResultsController < ApplicationController
       raise Errors::ForbiddenError.new(message: "The Course must be a Test to have a Leaderboard!")
     end
 
-    # Return an empty response to unauthorised users who want to view the leaderboard before the test is closed
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
+    user_count = course.results.distinct.count(:user_id)
+    closing_time = course.test_expiration + (course.instructions['time']).seconds + lag_time
+
+    # Return basic response to unauthorised users who want to view the leaderboard before the test is closed
     if !course.course_status_closed? && !is_course_owner?(course, current_user)
       _, _, paginated_metadata = custom_paginate(0, params)
-      render json: { data: { has_result: false, position: nil, rankings: [] } }.merge(paginated_metadata), status: :ok
+      render json:
+               {
+                 data: {
+                    has_result: course.results.exists?(user: current_user),
+                    position: nil,
+                    users: user_count,
+                    closing_time: closing_time,
+                    rankings: []
+                 }
+               }.merge(paginated_metadata),
+             status: :ok
       return
     end
 
@@ -139,6 +153,8 @@ class ResultsController < ApplicationController
                data: {
                  has_result: has_result,
                  position: position,
+                 users: user_count,
+                 closing_time: closing_time,
                  rankings: paginated_submissions.map do |result|
                    result.serialized_profile_result[:result]
                  end
