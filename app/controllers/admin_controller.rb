@@ -308,6 +308,12 @@ class AdminController < ApplicationController
     render json: result, root: :data, status: :ok, meta: { message: "Result deleted!" }
   end
 
+  def update_result
+    result = Result.find(update_result_params[:result_id])
+    result.update!(extra_id: update_result_params[:extra_id])
+    render json: result, root: :data, status: :ok, meta: { message: "Result Updated!" }
+  end
+
   private
 
   def check_admin
@@ -350,5 +356,9 @@ class AdminController < ApplicationController
 
   def delete_result_params
     params.permit(:result_id)
+  end
+
+  def update_result_params
+    params.permit(:result_id, :extra_id)
   end
 end

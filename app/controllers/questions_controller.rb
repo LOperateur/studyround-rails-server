@@ -160,6 +160,7 @@ class QuestionsController < ApplicationController
     end
 
     @question.update!(update_question_params)
+    render json: @question, root: :data, serializer: CreatorQuestionSerializer
   end
 
   def publish
