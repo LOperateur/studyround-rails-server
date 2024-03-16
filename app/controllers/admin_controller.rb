@@ -302,6 +302,12 @@ class AdminController < ApplicationController
     end
   end
 
+  def delete_result
+    result = Result.find(delete_result_params[:result_id])
+    result.destroy!
+    render json: result, root: :data, status: :ok, meta: { message: "Result deleted!" }
+  end
+
   private
 
   def check_admin
@@ -340,5 +346,9 @@ class AdminController < ApplicationController
 
   def copy_question_params
     params.permit(:question_id, :course_id)
+  end
+
+  def delete_result_params
+    params.permit(:result_id)
   end
 end
