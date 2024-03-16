@@ -2,7 +2,7 @@
 # specifically reserved for the viewership of the creator/collaborators only.
 class CreatorCourseSerializer < UserCourseSerializer
   type :course
-  attributes :instructions, :private, :publish_status, :course_status, :num_questions_draft,
+  attributes :instructions, :private, :publish_status, :num_questions_draft,
              :num_explanations_draft, :last_publish_date, :test_statistics, :sources, :included_question_years_draft
 
   def num_questions_draft

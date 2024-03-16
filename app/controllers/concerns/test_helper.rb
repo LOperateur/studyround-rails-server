@@ -18,7 +18,14 @@ module TestHelper
     ]
 
     @instructions.each do |k, v|
-      instructions_array << map_instructions(k)
+      instructions_array.append map_instructions(k)
+    end
+
+    # This should always be present
+    # Todo: If it's not, then it's a bug from the frontend, fix that
+    # Check if the "pause_on_quit" instruction is present in the instructions json
+    if !@instructions.key?(:pause_on_quit)
+      instructions_array.append instructions_map[:pause_on_quit]
     end
 
     course.serialized_mini_course.merge(
@@ -289,7 +296,11 @@ module TestHelper
 
     max_trials_left = get_max_trials_left(max_trials)
 
-    "You have #{max_trials_left} #{'chance'.pluralize(max_trials_left)} left to take and submit this test"
+    message = "You have #{max_trials_left} #{'chance'.pluralize(max_trials_left)}"
+    message += " left" if max_trials_left < max_trials
+    message += " to take and submit this test"
+
+    return message
   end
 
   def map_user_limit_instruction

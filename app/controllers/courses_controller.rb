@@ -39,8 +39,8 @@ class CoursesController < ApplicationController
 
     # If current user is not a creator/collaborator on the course, return the user facing course
     if !is_course_owner?(@course, current_user)
-      if @course.publish_status_draft? || @course.course_status_suspended? || @course.course_status_closed?
-        raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished, suspended or closed.")
+      if @course.publish_status_draft? || @course.course_status_suspended?
+        raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished or suspended.")
       end
       render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status, user_review: review) }
     else
