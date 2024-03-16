@@ -63,6 +63,7 @@ Rails.application.routes.draw do
   patch '/creator/courses/:course_id/questions/:id/add-note', to: "questions#add_note"
   delete '/creator/courses/:course_id/questions/:id/remove-note', to: "questions#remove_note"
   post '/creator/courses/:course_id/questions/:id/resolve-notes', to: "questions#resolve_notes"
+  put '/creator/courses/:course_id/questions/:id/hard-update', to: "questions#hard_update"
   delete '/creator/courses/:course_id/questions/:id', to: "questions#destroy"
   post '/courses/:course_id/publish-questions', to: "questions#publish_questions" # Todo: Include /creator namespace
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
@@ -116,6 +117,7 @@ Rails.application.routes.draw do
   patch '/admin/reset-creator', to: "admin#reset_creator"
   get '/admin/inspect-transaction', to: "admin#inspect_transaction"
   post '/admin/copy-question', to: "admin#copy_question"
+  delete '/admin/delete-result', to: "admin#delete_result"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
