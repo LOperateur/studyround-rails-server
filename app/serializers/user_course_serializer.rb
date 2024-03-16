@@ -2,7 +2,7 @@
 # on the course which can be presented to the general user base.
 class UserCourseSerializer < CourseSerializer
   type :course
-  attributes :about, :review_count, :num_questions, :num_explanations, :test_expiration
+  attributes :course_status, :about, :review_count, :num_questions, :num_explanations, :test_expiration
 
   has_many :categories, serializer: MiniCategorySerializer
 
