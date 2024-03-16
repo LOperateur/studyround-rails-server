@@ -118,6 +118,7 @@ Rails.application.routes.draw do
   get '/admin/inspect-transaction', to: "admin#inspect_transaction"
   post '/admin/copy-question', to: "admin#copy_question"
   delete '/admin/delete-result', to: "admin#delete_result"
+  patch '/admin/update-result', to: "admin#update_result"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
