@@ -16,7 +16,7 @@ class Course < ApplicationRecord
   has_one_attached :image, dependent: :purge_later # Purge the image if the course is deleted
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
-  scope :session_accessible_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active) }
+  scope :session_accessible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired]) }
   scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
 
   scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
