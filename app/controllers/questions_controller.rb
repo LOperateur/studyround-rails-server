@@ -5,7 +5,7 @@ class QuestionsController < ApplicationController
 
   skip_before_action :authorize!, only: [:preview]
   before_action :load_creators_course, except: [:index, :explanation, :preview]
-  before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes]
+  before_action :load_question, only: [:show, :update, :publish, :destroy, :add_note, :remove_note, :resolve_notes, :hard_update]
   before_action :published_test_check, only: [:create, :update, :publish, :destroy]
 
   wrap_parameters format: []
@@ -150,6 +150,16 @@ class QuestionsController < ApplicationController
     end
 
     render json: @question, root: :data, serializer: CreatorQuestionSerializer
+  end
+
+  def hard_update
+    # This method is used to update a question without creating a new draft
+    # It is used when the question is being edited in a test session
+    if @question.version == 0
+      raise Errors::BaseError.new(message: "This question has not yet been published", status: 400)
+    end
+
+    @question.update!(update_question_params)
   end
 
   def publish
@@ -336,7 +346,7 @@ class QuestionsController < ApplicationController
 
     # Mapping roles to their allowed methods
     roles_and_methods = {
-      :admin => [:questions, :show, :create, :update, :publish,
+      :admin => [:questions, :show, :create, :update, :publish, :hard_update,
                  :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions,
                  :bulk_set_source, :bulk_set_year, :bulk_import_questions_json],
 
