@@ -138,6 +138,7 @@ class ResultsController < ApplicationController
                     score: score,
                     total: result&.total,
                     extra_id: result&.extra_id,
+                    disqualified: result&.disqualified || false,
                     users: user_count,
                     closing_time: closing_time,
                     rankings: []
@@ -160,6 +161,7 @@ class ResultsController < ApplicationController
                  score: score,
                  total: result&.total,
                  extra_id: result&.extra_id,
+                 disqualified: result&.disqualified || false,
                  users: user_count,
                  closing_time: closing_time,
                  rankings: paginated_submissions.map do |ranked_result|

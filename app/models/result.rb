@@ -28,6 +28,11 @@ class Result < ApplicationRecord
     ActiveModelSerializers::SerializableResource.new(self, serializer: ProfileResultSerializer).as_json
   end
 
+  def disqualified
+    # Todo: Update the disqualified logic
+    self[:extra_id].present? && self[:extra_id].ends_with?('Disqualified')
+  end
+
   def send_test_completion_email
     ResultMailer.with(
       email: self.user.email,
