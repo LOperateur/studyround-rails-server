@@ -29,7 +29,7 @@ class Result < ApplicationRecord
   end
 
   def disqualified
-    # Todo: Update the disqualified logic
+    # Todo: Update the disqualified logic to use a course list of disqualified results
     self[:extra_id].present? && self[:extra_id].ends_with?('Disqualified')
   end
 
