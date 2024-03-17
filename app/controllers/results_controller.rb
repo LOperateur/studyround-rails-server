@@ -126,6 +126,7 @@ class ResultsController < ApplicationController
     closing_time = course.test_expiration + (course.instructions['time']).seconds + lag_time
     result = course.results.where(user: current_user)&.order(score: :desc, elapsed_time: :asc, created_at: :asc)&.first
     score = result&.score
+    disqualified = result&.disqualified || false
 
     # Return empty rankings to unauthorised users who want to view the leaderboard before the test is closed
     if !course.course_status_closed? && !is_course_owner?(course, current_user)
@@ -133,15 +134,15 @@ class ResultsController < ApplicationController
       render json:
                {
                  data: {
-                    has_result: !score.nil?,
-                    position: nil,
-                    score: score,
-                    total: result&.total,
-                    extra_id: result&.extra_id,
-                    disqualified: result&.disqualified || false,
-                    users: user_count,
-                    closing_time: closing_time,
-                    rankings: []
+                   has_result: !score.nil?,
+                   position: nil,
+                   score: score,
+                   total: result&.total,
+                   extra_id: result&.extra_id,
+                   disqualified: disqualified,
+                   users: user_count,
+                   closing_time: closing_time,
+                   rankings: []
                  }
                }.merge(paginated_metadata),
              status: :ok
@@ -157,11 +158,11 @@ class ResultsController < ApplicationController
              {
                data: {
                  has_result: !score.nil?,
-                 position: position,
+                 position: disqualified ? nil : position, # In case the user has more than one result ranked
                  score: score,
                  total: result&.total,
                  extra_id: result&.extra_id,
-                 disqualified: result&.disqualified || false,
+                 disqualified: disqualified,
                  users: user_count,
                  closing_time: closing_time,
                  rankings: paginated_submissions.map do |ranked_result|
@@ -175,10 +176,11 @@ class ResultsController < ApplicationController
   private
 
   def get_ranked_position(course, user)
+    # Todo: Update the disqualification logic here too to use a course list of disqualified results
     ranked_results_sql = <<~SQL
       SELECT id, user_id, RANK() OVER (ORDER BY score DESC, elapsed_time ASC, created_at ASC) as rank
       FROM results
-      WHERE course_id = ?
+      WHERE course_id = ? AND (extra_id IS NOT NULL AND extra_id NOT LIKE '%Disqualified')
     SQL
 
     user_rank_sql = <<~SQL
