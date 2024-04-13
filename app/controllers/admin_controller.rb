@@ -23,6 +23,7 @@ class AdminController < ApplicationController
     end
 
     if params[:creator] == "true"
+      # Todo: Change query to not none
       users = users.where(creator: true)
     end
 
@@ -153,8 +154,8 @@ class AdminController < ApplicationController
       user = User.find_by!(email: email)
 
       if !user.creator
-        # Update the user's creator status indicating they can create content
-        user.update!(creator: true)
+        # Update the user's creator status (limited) indicating they can create content
+        user.update!( { creator: true, creator_status: :creator_status_limited } )
 
         # Send an email to the user to confirm their creator's consent
         UserMailer.with(email: user.email).creator_consent_email.deliver_later
@@ -186,6 +187,7 @@ class AdminController < ApplicationController
         password: password,
         password_confirmation: password,
         creator: true,
+        creator_status: :creator_status_limited,
         metadata: { primary_creator: true },
       )
 

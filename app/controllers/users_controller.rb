@@ -51,7 +51,7 @@ class UsersController < ApplicationController
   def creator_consent
     if !current_user.creator
       # Update the user's creator status indicating they can create content
-      current_user.update!(creator: true)
+      current_user.update!( { creator: true, creator_status: :creator_status_limited } )
 
       # Send an email to the user to confirm their creator's consent
       UserMailer.with(email: current_user.email).creator_consent_email.deliver_later
