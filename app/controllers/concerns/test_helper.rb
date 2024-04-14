@@ -18,7 +18,7 @@ module TestHelper
     ]
 
     @instructions.each do |k, v|
-      instructions_array.append map_instructions(k)
+      instructions_array.append instructions_map[k]
     end
 
     # This should always be present
@@ -32,7 +32,7 @@ module TestHelper
       {
         resuming: is_user_resuming,
         session_id: if is_user_resuming then @current_session.id else nil end,
-        server_time: DateTime.now.utc, # Send server time to API in UTC T..Z format
+        server_time: Time.now.utc, # Send server time to API in UTC T..Z format
         time_left: get_time_left(@instructions[:time]),
         start_time: if is_user_resuming then @current_session.created_at else nil end,
         expiration: @course.test_expiration,
@@ -162,7 +162,7 @@ module TestHelper
     # Use the obtained session to create a Result
     if session
       duration = session.duration
-      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+      elapsed_time = [(Time.now - session.created_at).ceil, duration].min
 
       # Idempotency check to prevent double submissions
       session_key = idempotent_session_key(user.id, session.id, :test)
@@ -230,10 +230,6 @@ module TestHelper
   private
 
   # region Basic private functions
-
-  def map_instructions(key)
-    instructions_map[key]
-  end
 
   def instructions_map
     {
@@ -381,7 +377,8 @@ module TestHelper
   # Check if the user was invited for the private test
   def has_valid_invitation
     # Todo: Validate Invitation properly and pass the key through method parameters
-    return !!params[:invite_key]
+    # return validate(params[:invite_key])
+    return true
   end
 
   def is_user_resuming

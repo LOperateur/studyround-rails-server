@@ -46,6 +46,12 @@ class User < ApplicationRecord
     content_support: 3,
   }, _prefix: true
 
+  enum creator_status: {
+    creator_status_none: 1,
+    creator_status_limited: 2,
+    creator_status_full: 3,
+  }
+
   def password_required?
     # Passwords are not required if the user is in the oauth creation flow
     return false if in_oauth_creation_flow

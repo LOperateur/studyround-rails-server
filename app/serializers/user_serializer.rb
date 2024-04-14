@@ -13,6 +13,10 @@ class UserSerializer < ActiveModel::Serializer
     object.user_type
   end
 
+  def creator
+    !object.creator_status_none?
+  end
+
   def onboarding
     # They are currently keys in an env var that's a string delimited by pipes |
     # An array of pairs can be converted to a hash with `to_h`

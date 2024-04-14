@@ -217,7 +217,7 @@ class AuthController < ApplicationController
     user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
 
     # If the user is not a creator or admin, they cannot login here
-    if !user.creator && user.user_type != :admin
+    if user.creator_status_none? && user.user_type != :admin
       raise Errors::AuthenticationError.new(message: "You are not an approved creator, please use the usual StudyRound login")
     end
 
@@ -456,7 +456,6 @@ class AuthController < ApplicationController
         email: email,
         first_name: first_name,
         last_name: last_name,
-        creator: false,
       )
 
       # Indicate that the user is in the oauth creation flow to allow creation of the user without a password
@@ -505,7 +504,7 @@ class AuthController < ApplicationController
   end
 
   def signup_params
-    params.permit(:username, :password, :password_confirmation, :creator, :pass_token) || ActionController::Parameters.new
+    params.permit(:username, :password, :password_confirmation, :pass_token) || ActionController::Parameters.new
   end
 
   def login_params
