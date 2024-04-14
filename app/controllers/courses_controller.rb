@@ -66,7 +66,7 @@ class CoursesController < ApplicationController
     course = current_user.courses.build(course_params)
     course.private = true if current_user.user_type != :admin # Temp solution
 
-    # course.save!
+    course.save!
     render json: course, root: :data, serializer: CreatorCourseSerializer
   end
 
