@@ -154,7 +154,7 @@ class AdminController < ApplicationController
 
       if user.creator_status_none?
         # Update the user's creator status (limited) indicating they can create content
-        user.update!(creator_status: :creator_status_limited)
+        user.creator_status_limited!
 
         # Send an email to the user to confirm their creator's consent
         UserMailer.with(email: user.email).creator_consent_email.deliver_later
