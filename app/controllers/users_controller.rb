@@ -49,7 +49,7 @@ class UsersController < ApplicationController
   end
 
   def creator_consent
-    if !current_user.creator
+    if current_user.creator_status_none?
       # Update the user's creator status indicating they can create content
       current_user.update!( { creator: true, creator_status: :creator_status_limited } )
 

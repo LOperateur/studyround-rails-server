@@ -119,6 +119,19 @@ class QuestionsController < ApplicationController
   end
 
   def create
+    case @course.creator.creator_status.to_sym
+    when :creator_status_limited
+      if @course.questions.non_deleted_questions.count >= 100
+        raise Errors::ForbiddenError.new(message: "The owner of this course has limited creator status. You can only create 100 questions")
+      end
+    when :creator_status_full
+      if @course.questions.non_deleted_questions.count >= 2000
+        raise Errors::ForbiddenError.new(message: "You have reached the maximum number of questions for this course")
+      end
+    else
+      # Do nothing
+    end
+
     draft = create_draft(create_question_params)
     question = @course.questions.build
     question.draft = draft

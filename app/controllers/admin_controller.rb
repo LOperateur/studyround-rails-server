@@ -316,6 +316,42 @@ class AdminController < ApplicationController
     render json: result, root: :data, status: :ok, meta: { message: "Result Updated!" }
   end
 
+  def update_creator_status
+    user = User.find(update_creator_status_params[:user_id])
+
+    case update_creator_status_params[:creator_status].to_sym
+    when :none
+      # Creator status is none
+      user.creator_status_none!
+    when :limited
+      # Creator status is limited
+      user.creator_status_limited!
+    when :full
+      # Creator status is full
+      user.creator_status_full!
+    else
+      raise Errors::BaseError.new(message: "Invalid creator status", status: 400)
+    end
+
+    render json: user, root: :data, status: :ok, meta: { message: "Creator status updated!" }
+  end
+
+  def temp_bulk_update_creator_status
+    # This is a temporary method to bulk update creator status for users
+    # This is a one-time operation and should be removed after use
+    # The method should be removed after use
+
+    User.where(creator: true).each do |user|
+      if user.user_type == :admin
+        user.creator_status_full!
+      else
+        user.creator_status_limited!
+      end
+    end
+
+    render json: { message: "Bulk update successful!" }, status: :ok
+  end
+
   private
 
   def check_admin
@@ -362,5 +398,9 @@ class AdminController < ApplicationController
 
   def update_result_params
     params.permit(:result_id, :extra_id)
+  end
+
+  def update_creator_status_params
+    params.permit(:user_id, :creator_status)
   end
 end

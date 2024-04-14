@@ -49,8 +49,22 @@ class CoursesController < ApplicationController
   end
 
   def create
+    case current_user.creator_status.to_sym
+    when :creator_status_limited
+      if current_user.courses.non_deleted_courses.count >= 10
+        raise Errors::ForbiddenError.new(message: "You have a limited creator status. You can only create 10 courses")
+      end
+    when :creator_status_full
+      if current_user.courses.non_deleted_courses.count >= 200
+        raise Errors::ForbiddenError.new(message: "You have reached the maximum number of courses you can create")
+      end
+    else
+      # Do nothing
+    end
+
     course_params = prepare_received_course_params(create_course_params)
     course = current_user.courses.build(course_params)
+    course.private = true if current_user.user_type == :admin
 
     course.save!
     render json: course, root: :data, serializer: CreatorCourseSerializer
@@ -431,7 +445,7 @@ class CoursesController < ApplicationController
   end
 
   def check_creators_consent
-    if !current_user.creator
+    if current_user.creator_status_none?
       raise Errors::ForbiddenError.new(message: "You must agree to the creator terms before you can create a course")
     end
   end

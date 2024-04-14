@@ -119,6 +119,8 @@ Rails.application.routes.draw do
   post '/admin/copy-question', to: "admin#copy_question"
   delete '/admin/delete-result', to: "admin#delete_result"
   patch '/admin/update-result', to: "admin#update_result"
+  patch '/admin/update-creator-status', to: "admin#update_creator_status"
+  patch '/admin/migrate-creator-status', to: "admin#temp_bulk_update_creator_status"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
