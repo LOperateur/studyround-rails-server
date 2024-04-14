@@ -23,8 +23,7 @@ class AdminController < ApplicationController
     end
 
     if params[:creator] == "true"
-      # Todo: Change query to not none
-      users = users.where(creator: true)
+      users = users.where.not(creator_status: :creator_status_none)
     end
 
     paginated_users = paginate(users.order(created_at: :asc), params)
@@ -155,7 +154,7 @@ class AdminController < ApplicationController
 
       if user.creator_status_none?
         # Update the user's creator status (limited) indicating they can create content
-        user.update!( { creator: true, creator_status: :creator_status_limited } )
+        user.update!(creator_status: :creator_status_limited)
 
         # Send an email to the user to confirm their creator's consent
         UserMailer.with(email: user.email).creator_consent_email.deliver_later
@@ -186,9 +185,8 @@ class AdminController < ApplicationController
         email: email,
         password: password,
         password_confirmation: password,
-        creator: true,
         creator_status: :creator_status_limited,
-        metadata: { primary_creator: true },
+        metadata: { primary_creator: true }, # Indicate that they are primarily creators not users/students
       )
 
       # Build the auth provider (this will be saved when the NEW user is saved; auto-saving of associations)

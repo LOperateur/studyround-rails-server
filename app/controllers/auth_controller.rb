@@ -456,7 +456,6 @@ class AuthController < ApplicationController
         email: email,
         first_name: first_name,
         last_name: last_name,
-        creator: false,
       )
 
       # Indicate that the user is in the oauth creation flow to allow creation of the user without a password
@@ -505,7 +504,7 @@ class AuthController < ApplicationController
   end
 
   def signup_params
-    params.permit(:username, :password, :password_confirmation, :creator, :pass_token) || ActionController::Parameters.new
+    params.permit(:username, :password, :password_confirmation, :pass_token) || ActionController::Parameters.new
   end
 
   def login_params
