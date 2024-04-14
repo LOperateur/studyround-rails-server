@@ -217,7 +217,7 @@ class AuthController < ApplicationController
     user = is_email ? User.find_by(email: email_or_username) : User.find_by(username: email_or_username)
 
     # If the user is not a creator or admin, they cannot login here
-    if !user.creator && user.user_type != :admin
+    if user.creator_status_none? && user.user_type != :admin
       raise Errors::AuthenticationError.new(message: "You are not an approved creator, please use the usual StudyRound login")
     end
 

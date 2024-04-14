@@ -153,7 +153,7 @@ class AdminController < ApplicationController
       # Email already exists, approve the user as a creator instead
       user = User.find_by!(email: email)
 
-      if !user.creator
+      if user.creator_status_none?
         # Update the user's creator status (limited) indicating they can create content
         user.update!( { creator: true, creator_status: :creator_status_limited } )
 
@@ -217,7 +217,7 @@ class AdminController < ApplicationController
     if User.exists?(email: email)
       user = User.find_by!(email: email)
 
-      if !user.creator
+      if user.creator_status_none?
         raise Errors::BaseError.new(message: "User is not a creator", status: 400)
       end
 
