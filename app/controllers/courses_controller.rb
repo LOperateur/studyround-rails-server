@@ -6,7 +6,7 @@ class CoursesController < ApplicationController
   include TestHelper
 
   before_action :default_12_page_size, only: [:index, :per_category, :enrolled_courses, :search, :my_courses, :tests, :purchased_courses, :purchased_tests, :created_courses]
-  skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search, :dummy_courses]
   before_action :check_creators_consent, only: [:create]
   before_action :load_creators_course, only: [:update, :publish, :destroy, :halt_attempts, :close_test]
 
@@ -430,6 +430,14 @@ class CoursesController < ApplicationController
         courses = courses.where(test: false)
       end
     end
+
+    paginated_courses = paginate(courses, params)
+    render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
+  end
+
+  def dummy_courses
+    # Get dummy courses for user feedback
+    courses = Course.where(course_status: :course_status_dummy).order(created_at: :desc)
 
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
