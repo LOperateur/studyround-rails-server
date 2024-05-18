@@ -350,6 +350,39 @@ class AdminController < ApplicationController
     render json: { message: "Bulk update successful!" }, status: :ok
   end
 
+  def dummy_course_toggle
+    course = Course.find(params[:course_id])
+
+    if course.creator.user_type != :admin
+      raise Errors::BaseError.new(message: "Dummy courses only apply to course owned by admin", status: 400)
+    end
+
+    # Ensure the course is active or dummy first
+    if !course.course_status_active? && !course.course_status_dummy?
+      raise Errors::BaseError.new(message: "Course is not an active or dummy course", status: 400)
+    end
+
+    if course.test?
+      raise Errors::BaseError.new(message: "Tests cannot be dummy courses", status: 400)
+    end
+
+    if course.course_status_active? && course.questions.non_deleted_questions.count > 0
+      raise Errors::BaseError.new(message: "Course has questions and cannot be made a dummy course", status: 400)
+    end
+
+    message = ""
+
+    if course.course_status_active?
+      course.course_status_dummy!
+      message = "Course is now a dummy course!"
+    elsif course.course_status_dummy?
+      course.course_status_active!
+      message = "Course is now an active course!"
+    end
+
+    render json: course, root: :data, status: :ok, meta: { message: message }
+  end
+
   private
 
   def check_admin
@@ -400,5 +433,9 @@ class AdminController < ApplicationController
 
   def update_creator_status_params
     params.permit(:user_id, :creator_status)
+  end
+
+  def dummy_course_toggle_params
+    params.permit(:course_id)
   end
 end
