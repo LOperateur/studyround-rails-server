@@ -35,6 +35,7 @@ Rails.application.routes.draw do
   get '/courses/recent', to: "courses#recent_courses"
   get '/courses/my-courses', to: "courses#my_courses"
   get '/courses/tests', to: "courses#tests"
+  get '/courses/placeholder', to: "courses#dummy_courses"
   get '/courses/created', to: "courses#created_courses"
   get '/courses/enrolled', to: "courses#enrolled_courses"
   get '/courses/purchased', to: "courses#purchased_courses"
@@ -121,6 +122,7 @@ Rails.application.routes.draw do
   patch '/admin/update-result', to: "admin#update_result"
   patch '/admin/update-creator-status', to: "admin#update_creator_status"
   patch '/admin/migrate-creator-status', to: "admin#temp_bulk_update_creator_status"
+  patch '/admin/dummy-course-toggle', to: "admin#dummy_course_toggle"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
