@@ -37,15 +37,6 @@ class User < ApplicationRecord
     user_status_deleted: 3,
   }
 
-  # This is a bare-bones implementation for this
-  # We'll revisit the logic for permissions and user types later
-  # Todo: Implement better access permission levels
-  enum user_type: {
-    standard: 1,
-    admin: 2,
-    content_support: 3,
-  }, _prefix: true
-
   enum creator_status: {
     creator_status_none: 1,
     creator_status_limited: 2,

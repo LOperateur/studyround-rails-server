@@ -55,6 +55,7 @@ class Course < ApplicationRecord
     course_status_expired: 3, # For tests
     course_status_closed: 4, # For tests
     course_status_deleted: 5,
+    course_status_dummy: 6,
   }
 
   # Don't change the order of 1 and 2, referenced in migration
