@@ -25,21 +25,20 @@ class SessionsController < ApplicationController
 
     case session_type
     when :study
-      session = course_based_session(@course, :study)
+      session = get_course_based_session(@course, :study)
       questions, paginated_metadata = published_active_ordered_questions(@course, params)
       render_session_data(session, questions, false, paginated_metadata)
-      return # Return early to avoid the rest of the method
+
     when :quiz, :practice
       session, questions = create_course_based_session(start_course_session_params, @course, current_user.id)
+      # Converting to array to calculate the offset page data w.r.t `num_questions`
+      # This is because we call `limit` on the questions to get the first `num_questions`
+      paginated_questions = paginate(questions.to_a)
+      render_session_data(session, paginated_questions, false)
+
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
-
-    # Converting to array to calculate the offset page data w.r.t `num_questions`
-    # This is because we call `limit` on the questions to get the first `num_questions`
-    paginated_questions = paginate(questions.to_a)
-
-    render_session_data(session, paginated_questions, false)
   end
 
   def end

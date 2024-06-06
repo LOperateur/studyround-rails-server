@@ -334,22 +334,6 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :ok, meta: { message: "Creator status updated!" }
   end
 
-  def temp_bulk_update_creator_status
-    # This is a temporary method to bulk update creator status for users
-    # This is a one-time operation and should be removed after use
-    # The method should be removed after use
-
-    User.where(creator: true).each do |user|
-      if user.user_type == :admin
-        user.creator_status_full!
-      else
-        user.creator_status_limited!
-      end
-    end
-
-    render json: { message: "Bulk update successful!" }, status: :ok
-  end
-
   def dummy_course_toggle
     course = Course.find(params[:course_id])
 

@@ -43,10 +43,10 @@ module SessionHelper
 
     session.save!
 
-    return course_based_session(course, session_type, session.id, duration), questions
+    return get_course_based_session(course, session_type, session.id, duration), questions
   end
 
-  def course_based_session(course, session_type, session_id = nil, duration = 0)
+  def get_course_based_session(course, session_type, session_id = nil, duration = 0)
     {
       # Remove the 0.xxxx decimal prefix
       id: session_id || SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
