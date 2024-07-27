@@ -338,11 +338,15 @@ class AdminController < ApplicationController
     course = Course.find(dummy_course_toggle_params[:course_id])
 
     if course.creator.user_type != :admin
-      raise Errors::BaseError.new(message: "Dummy courses only apply to course owned by admin", status: 400)
+      raise Errors::BaseError.new(message: "Dummy course status only applies to courses owned by admin", status: 400)
     end
 
     if course.test?
-      raise Errors::BaseError.new(message: "Tests cannot be dummy courses", status: 400)
+      raise Errors::BaseError.new(message: "Dummy course status doesn't apply to tests", status: 400)
+    end
+
+    if course.publish_status_published?
+      raise Errors::BaseError.new(message: "Dummy course status doesn't apply to published courses", status: 400)
     end
 
     if dummy_course_toggle_params[:undo_dummy_status] == true
@@ -354,10 +358,6 @@ class AdminController < ApplicationController
       end
     else
       if course.course_status_active?
-        if course.questions.non_deleted_questions.count > 0
-          raise Errors::BaseError.new(message: "Course has questions and cannot be made a dummy course", status: 400)
-        end
-
         course.course_status_dummy!
         message = "Course is now a dummy course!"
 
