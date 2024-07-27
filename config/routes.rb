@@ -121,7 +121,6 @@ Rails.application.routes.draw do
   delete '/admin/delete-result', to: "admin#delete_result"
   patch '/admin/update-result', to: "admin#update_result"
   patch '/admin/update-creator-status', to: "admin#update_creator_status"
-  patch '/admin/migrate-creator-status', to: "admin#temp_bulk_update_creator_status"
   patch '/admin/dummy-course-toggle', to: "admin#dummy_course_toggle"
 
   post '/automation/assign-course', to: "automation#assign_course"
