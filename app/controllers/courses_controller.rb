@@ -13,7 +13,7 @@ class CoursesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    found_courses = search_and_filter(Course.published_active_courses.ordered_by_result_count)
+    found_courses = search_and_filter(Course.published_active_or_dummy_courses.ordered_by_result_count)
 
     # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
@@ -64,7 +64,7 @@ class CoursesController < ApplicationController
 
     course_params = prepare_received_course_params(create_course_params)
     course = current_user.courses.build(course_params)
-    course.private = true if current_user.user_type != :admin # Temp solution
+    course.private = true if (current_user.creator_status_limited? && current_user.user_type != :admin)
 
     course.save!
     render json: course, root: :data, serializer: CreatorCourseSerializer
@@ -101,7 +101,7 @@ class CoursesController < ApplicationController
 
     handle_image_update(course_params)
     @course.assign_attributes(course_params.except(:image_url))
-    @course.private = true if current_user.user_type != :admin # Temp solution
+    @course.private = true if (current_user.creator_status_limited? && current_user.user_type != :admin)
 
     @course.save!
     render json: @course, root: :data, serializer: CreatorCourseSerializer
@@ -437,7 +437,7 @@ class CoursesController < ApplicationController
 
   def dummy_courses
     # Get dummy courses for user feedback
-    courses = Course.where(course_status: :course_status_dummy).order(created_at: :desc)
+    courses = Course.dummy_courses.order(created_at: :desc)
 
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
