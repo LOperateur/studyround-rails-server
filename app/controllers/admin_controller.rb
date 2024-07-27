@@ -144,7 +144,7 @@ class AdminController < ApplicationController
 
   # This method is used to create a new creator user or approve an existing user as a creator.
   # It is called when the admin wants to manually create or approve the creator request.
-  # This differs from the automatic approval that happens when `/user/creator-consent` is called by the user.
+  # This is similar to the approval that happens when `/user/creator-consent` is called by the user.
   def make_or_approve_creator
     email = approve_creator_params[:email]
 
@@ -257,9 +257,9 @@ class AdminController < ApplicationController
 
   def copy_question
     Question.transaction do
-      original_question = Question.find(params[:question_id])
+      original_question = Question.find(copy_question_params[:question_id])
       src_course = original_question.course
-      dest_course = Course.find(params[:course_id])
+      dest_course = Course.find(copy_question_params[:course_id])
 
       if src_course.test && src_course.publish_status_published?
         raise Errors::BaseError.new(message: "Published tests cannot get new questions", status: 400)
@@ -334,50 +334,38 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :ok, meta: { message: "Creator status updated!" }
   end
 
-  def temp_bulk_update_creator_status
-    # This is a temporary method to bulk update creator status for users
-    # This is a one-time operation and should be removed after use
-    # The method should be removed after use
-
-    User.where(creator: true).each do |user|
-      if user.user_type == :admin
-        user.creator_status_full!
-      else
-        user.creator_status_limited!
-      end
-    end
-
-    render json: { message: "Bulk update successful!" }, status: :ok
-  end
-
   def dummy_course_toggle
-    course = Course.find(params[:course_id])
+    course = Course.find(dummy_course_toggle_params[:course_id])
 
     if course.creator.user_type != :admin
       raise Errors::BaseError.new(message: "Dummy courses only apply to course owned by admin", status: 400)
-    end
-
-    # Ensure the course is active or dummy first
-    if !course.course_status_active? && !course.course_status_dummy?
-      raise Errors::BaseError.new(message: "Course is not an active or dummy course", status: 400)
     end
 
     if course.test?
       raise Errors::BaseError.new(message: "Tests cannot be dummy courses", status: 400)
     end
 
-    if course.course_status_active? && course.questions.non_deleted_questions.count > 0
-      raise Errors::BaseError.new(message: "Course has questions and cannot be made a dummy course", status: 400)
-    end
+    if dummy_course_toggle_params[:undo_dummy_status] == true
+      if course.course_status_dummy?
+        course.course_status_active!
+        message = "Course is now an active course!"
+      else
+        raise Errors::BaseError.new(message: "Course is not a dummy course", status: 400)
+      end
+    else
+      if course.course_status_active?
+        if course.questions.non_deleted_questions.count > 0
+          raise Errors::BaseError.new(message: "Course has questions and cannot be made a dummy course", status: 400)
+        end
 
-    message = ""
+        course.course_status_dummy!
+        message = "Course is now a dummy course!"
 
-    if course.course_status_active?
-      course.course_status_dummy!
-      message = "Course is now a dummy course!"
-    elsif course.course_status_dummy?
-      course.course_status_active!
-      message = "Course is now an active course!"
+      elsif course.course_status_dummy?
+        raise Errors::BaseError.new(message: "Course is already a dummy course", status: 400)
+      else
+        raise Errors::BaseError.new(message: "This course cannot be made a dummy course", status: 400)
+      end
     end
 
     render json: course, root: :data, status: :ok, meta: { message: message }
@@ -436,6 +424,6 @@ class AdminController < ApplicationController
   end
 
   def dummy_course_toggle_params
-    params.permit(:course_id)
+    params.permit(:course_id, :undo_dummy_status)
   end
 end

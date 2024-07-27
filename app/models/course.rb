@@ -18,6 +18,9 @@ class Course < ApplicationRecord
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
   scope :session_accessible_courses, -> { where(publish_status: :publish_status_published, course_status: [:course_status_active, :course_status_expired]) }
   scope :non_deleted_courses, -> { where.not(course_status: :course_status_deleted) }
+  scope :dummy_courses, -> { where(course_status: :course_status_dummy) }
+
+  scope :published_active_or_dummy_courses, -> { published_active_courses.or(dummy_courses) }
 
   scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
 

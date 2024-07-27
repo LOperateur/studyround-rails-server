@@ -1,5 +1,5 @@
 class QuestionAssetsController < ApplicationController
-  before_action :load_creator_course
+  before_action :load_creators_course
 
   wrap_parameters format: []
 
@@ -103,8 +103,9 @@ class QuestionAssetsController < ApplicationController
 
   private
 
-  def load_creator_course
+  def load_creators_course
     @course = Course.non_deleted_courses.find(params[:course_id])
+    raise Errors::BaseError.new(message: "Asset operations are forbidden in dummy courses", status: 400) if @course.course_status_dummy?
 
     # Todo: Add roles and permissions check for destroy-own
 

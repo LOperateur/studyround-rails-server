@@ -355,6 +355,7 @@ class QuestionsController < ApplicationController
 
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:course_id])
+    raise Errors::BaseError.new(message: "Question operations are forbidden in dummy courses", status: 400) if @course.course_status_dummy?
 
     # Todo: Add roles and permissions check for destroy-own
 
