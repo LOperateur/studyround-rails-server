@@ -55,9 +55,11 @@ class UsersController < ApplicationController
 
       # Send an email to the user to confirm their creator's consent
       UserMailer.with(email: current_user.email).creator_consent_email.deliver_later
+    else
+      raise Errors::BaseError.new(message: "You're already a creator", status: 400)
     end
 
-    render json: current_user, root: :data
+    render json: current_user, root: :data, status: :ok, meta: { message: "You're now approved as a creator!" }
   end
 
   private

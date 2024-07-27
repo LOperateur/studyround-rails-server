@@ -144,7 +144,7 @@ class AdminController < ApplicationController
 
   # This method is used to create a new creator user or approve an existing user as a creator.
   # It is called when the admin wants to manually create or approve the creator request.
-  # This differs from the automatic approval that happens when `/user/creator-consent` is called by the user.
+  # This is similar to the approval that happens when `/user/creator-consent` is called by the user.
   def make_or_approve_creator
     email = approve_creator_params[:email]
 
@@ -257,9 +257,9 @@ class AdminController < ApplicationController
 
   def copy_question
     Question.transaction do
-      original_question = Question.find(params[:question_id])
+      original_question = Question.find(copy_question_params[:question_id])
       src_course = original_question.course
-      dest_course = Course.find(params[:course_id])
+      dest_course = Course.find(copy_question_params[:course_id])
 
       if src_course.test && src_course.publish_status_published?
         raise Errors::BaseError.new(message: "Published tests cannot get new questions", status: 400)

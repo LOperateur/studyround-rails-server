@@ -64,7 +64,7 @@ class CoursesController < ApplicationController
 
     course_params = prepare_received_course_params(create_course_params)
     course = current_user.courses.build(course_params)
-    course.private = true if current_user.user_type != :admin # Temp solution
+    course.private = true if (current_user.creator_status_limited? && current_user.user_type != :admin)
 
     course.save!
     render json: course, root: :data, serializer: CreatorCourseSerializer
@@ -101,7 +101,7 @@ class CoursesController < ApplicationController
 
     handle_image_update(course_params)
     @course.assign_attributes(course_params.except(:image_url))
-    @course.private = true if current_user.user_type != :admin # Temp solution
+    @course.private = true if (current_user.creator_status_limited? && current_user.user_type != :admin)
 
     @course.save!
     render json: @course, root: :data, serializer: CreatorCourseSerializer
