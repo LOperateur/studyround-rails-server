@@ -35,7 +35,7 @@ class CoursesController < ApplicationController
       purchase_status[:sale_status_explanations] = current_user.present? && current_user.has_purchased_item(@course)
     end
 
-    review = @course.reviews.where(user: current_user).take.serialized_review
+    review = @course.reviews.where(user: current_user).take&.serialized_review
 
     # If current user is not a creator/collaborator on the course, return the user facing course
     if !is_course_owner?(@course, current_user)
