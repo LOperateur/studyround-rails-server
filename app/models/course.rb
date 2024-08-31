@@ -13,6 +13,8 @@ class Course < ApplicationRecord
   has_many :question_assets, dependent: :destroy
   has_many :reviews, dependent: :destroy
   has_many :sessions
+  has_many :course_collaborators, dependent: :destroy
+  has_many :collaborators, through: :course_collaborators, source: :user
   has_one_attached :image, dependent: :purge_later # Purge the image if the course is deleted
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
