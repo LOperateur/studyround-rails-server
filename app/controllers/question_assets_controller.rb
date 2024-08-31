@@ -114,9 +114,9 @@ class QuestionAssetsController < ApplicationController
 
       :creator => [:index, :show, :create, :update, :destroy],
 
-      :role_co_creator => [:index, :show, :create, :update, :destroy],
+      :co_creator => [:index, :show, :create, :update, :destroy],
 
-      :role_editor => [:index, :show, :create, :update, :destroy],
+      :editor => [:index, :show, :create, :update, :destroy],
     }
 
     # Check the user level/role and permissions
@@ -129,7 +129,7 @@ class QuestionAssetsController < ApplicationController
         raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
       end
     elsif CourseCollaborator.where(user: current_user, course: @course).exists?
-      role = CourseCollaborator.where(user: current_user, course: @course).role.to_sym
+      role = CourseCollaborator.where(user: current_user, course: @course).take.role.to_sym
       if !roles_and_methods[role].include?(action_name.to_sym)
         raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
       end

@@ -5,6 +5,7 @@ class UserCourseSerializer < CourseSerializer
   attributes :course_status, :about, :included_question_years, :review_count, :num_questions, :num_explanations, :test_expiration
 
   has_many :categories, serializer: MiniCategorySerializer
+  has_many :collaborators, serializer: ProfileSerializer
 
   def review_count
     object.reviews.count
