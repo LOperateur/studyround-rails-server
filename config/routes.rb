@@ -47,6 +47,8 @@ Rails.application.routes.draw do
   post '/tests/:id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     get '/similar', to: "courses#similar_courses"
+    post '/request-access', to: "collaborators#request_access"
+    post '/grant-access', to: "collaborators#grant_access"
     resources :questions, only: [:index] do
       get '/', to: "questions#preview"
       get '/explanation', to: "questions#explanation"
