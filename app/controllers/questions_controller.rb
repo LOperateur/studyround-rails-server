@@ -356,7 +356,7 @@ class QuestionsController < ApplicationController
   def load_creators_course
     @course = Course.non_deleted_courses.find(params[:course_id])
 
-    # Todo: Add roles and permissions check for destroy-own
+    # Todo: Add roles and permissions check for update-own, destroy-own
 
     # Mapping roles to their allowed methods
     roles_and_methods = {
@@ -367,10 +367,10 @@ class QuestionsController < ApplicationController
       :creator => [:questions, :show, :create, :update, :publish,
                  :destroy, :add_note, :remove_note, :resolve_notes, :publish_questions],
 
-      :role_co_creator => [:questions, :show, :create, :update, :publish,
+      :co_creator => [:questions, :show, :create, :update, :publish,
                            :destroy, :add_note, :remove_note, :publish_questions],
 
-      :role_editor => [:questions, :show, :create, :edit, :update,
+      :editor => [:questions, :show, :create, :update,
                        :destroy, :add_note, :remove_note],
     }
 
@@ -384,7 +384,7 @@ class QuestionsController < ApplicationController
         raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
       end
     elsif CourseCollaborator.where(user: current_user, course: @course).exists?
-      role = CourseCollaborator.where(user: current_user, course: @course).role.to_sym
+      role = CourseCollaborator.where(user: current_user, course: @course).take.role.to_sym
       if !roles_and_methods[role].include?(action_name.to_sym)
         raise Errors::ForbiddenError.new(message: "You don't have the authority to perform this action.")
       end
