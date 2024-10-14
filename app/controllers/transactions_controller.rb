@@ -41,7 +41,7 @@ class TransactionsController < ApplicationController
   end
 
   def build_trx_error_response(data, tx_ref, currency, price)
-    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: :transaction_status_failed, buyer: current_user)
+    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: :transaction_status_failed, buyer: current_user, gateway: gateway)
 
     transaction.payment_method = :payment_method_card
     transaction.purchase_item_id = process_transaction_params[:item_id]
@@ -62,10 +62,13 @@ class TransactionsController < ApplicationController
   end
 
   def build_trx_response(data, tx_ref, status)
-    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: status, buyer: current_user)
+    transaction = Transaction.new(transaction_ref: tx_ref, transaction_status: status, buyer: current_user, gateway: gateway)
     transaction.extra = data
     transaction.description = "User purchase transaction"
     transaction.save
+  end
+
+  def gateway
   end
 
   def save_card(card)

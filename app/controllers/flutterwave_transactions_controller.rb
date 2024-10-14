@@ -90,7 +90,7 @@ class FlutterwaveTransactionsController < TransactionsController
 
   def build_trx_success_response(data, save_card = true)
     transaction = Transaction.find_by(transaction_ref: data['tx_ref']) ||
-      Transaction.new(transaction_ref: data['tx_ref'], transaction_status: :transaction_status_pending, buyer: current_user)
+      Transaction.new(transaction_ref: data['tx_ref'], transaction_status: :transaction_status_pending, buyer: current_user, gateway: gateway)
 
     if current_user != transaction.buyer
       raise Errors::BaseError.new(message: "Invalid user", status: 400)
@@ -131,6 +131,10 @@ class FlutterwaveTransactionsController < TransactionsController
 
     transaction.save!
     render json: transaction, root: :data, status: :created
+  end
+
+  def gateway
+    "flutterwave"
   end
 
   def save_card(card)

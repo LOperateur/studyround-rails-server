@@ -27,12 +27,13 @@ class PaystackTransactionsController < TransactionsController
       response = conn.post("/transaction/initialize") do |req|
         req.body = post_data.to_json
       end
+      response_json = JSON.parse(response.body)
     rescue
       raise Errors::BaseError.new(message: "Unable to initiate transaction, please try again later", status: 400)
     end
 
-    access_code = JSON.parse(response.body)['data']['access_code']
-    transaction_ref = JSON.parse(response.body)['data']['reference']
+    access_code = response_json['data']['access_code']
+    transaction_ref = response_json['data']['reference']
     render json: { data: { access_code: access_code, transaction_ref: transaction_ref } }, status: :ok
   end
 
@@ -109,13 +110,11 @@ class PaystackTransactionsController < TransactionsController
       response = conn.post("/transaction/charge_authorization") do |req|
         req.body = post_data.to_json
       end
+      response_json = JSON.parse(response.body)
     rescue => error
       build_trx_error_response(error, tx_ref, currency, price)
       raise Errors::BaseError.new(message: "Unable to charge payment method, please contact customer care", status: 400)
     end
-
-    response_json = JSON.parse(response.body)
-    logger.info response_json
 
     if response_json['data']&.[]('status') === "success"
       # Success! Confirm the customer's payment
@@ -130,7 +129,7 @@ class PaystackTransactionsController < TransactionsController
 
   def build_trx_success_response(data, save_card = true)
     transaction = Transaction.find_by(transaction_ref: data['reference']) ||
-      Transaction.new(transaction_ref: data['reference'], transaction_status: :transaction_status_pending, buyer: current_user)
+      Transaction.new(transaction_ref: data['reference'], transaction_status: :transaction_status_pending, buyer: current_user, gateway: gateway)
 
     if current_user != transaction.buyer
       raise Errors::BaseError.new(message: "Invalid user", status: 400)
@@ -175,6 +174,10 @@ class PaystackTransactionsController < TransactionsController
 
     transaction.save!
     render json: transaction, root: :data, status: :created
+  end
+
+  def gateway
+    "paystack"
   end
 
   def save_card(card)
