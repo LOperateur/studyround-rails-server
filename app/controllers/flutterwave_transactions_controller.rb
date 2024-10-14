@@ -154,25 +154,6 @@ class FlutterwaveTransactionsController < TransactionsController
       provider: "flutterwave",
     )
 
-    # If the card token doesn't exist, (i.e. it's a new card token), attempt to save it
-    if FinancialCard.where(token: new_card.token).empty?
-      # Prevent saving the same card twice for a user assuming they open the modal again
-      # First check if the card exists for this user with the same first_six, last_four and expiry
-      existing_card = FinancialCard.where(
-        first_six: new_card.first_six,
-        last_four: new_card.last_four,
-        expiry: new_card.expiry,
-        user_id: current_user.id,
-        ).take
-
-      # If it exists, update the token
-      if existing_card.present?
-        existing_card.token = new_card.token
-        existing_card.save
-      else
-        # Otherwise, create a new card
-        new_card.save
-      end
-    end
+    create_or_update_card(new_card)
   end
 end
