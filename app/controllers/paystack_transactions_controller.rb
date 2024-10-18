@@ -32,8 +32,13 @@ class PaystackTransactionsController < TransactionsController
       raise Errors::BaseError.new(message: "Unable to initiate transaction, please try again later", status: 400)
     end
 
-    access_code = response_json['data']['access_code']
-    transaction_ref = response_json['data']['reference']
+    access_code = response_json['data']&.[]('access_code')
+    transaction_ref = response_json['data']&.[]('reference')
+
+    if access_code.blank? || transaction_ref.blank?
+      raise Errors::BaseError.new(message: "Unable to initiate transaction, please try again", status: 400)
+    end
+
     render json: { data: { access_code: access_code, transaction_ref: transaction_ref } }, status: :ok
   end
 
@@ -55,7 +60,7 @@ class PaystackTransactionsController < TransactionsController
 
     if response_json['data']&.[]('status') === "success"
       # Success! Confirm the customer's payment
-      build_trx_success_response response_json['data']
+      build_trx_success_response(response_json['data'], true) # Save card on Paystack
     else
       # Inform the customer their payment was unsuccessful
       build_trx_response(response_json, transaction_ref, :transaction_status_cancelled)
@@ -119,6 +124,15 @@ class PaystackTransactionsController < TransactionsController
     if response_json['data']&.[]('status') === "success"
       # Success! Confirm the customer's payment
       build_trx_success_response(response_json['data'], false)
+    elsif response_json['data']&.[]('paused') == true
+      # Inform the customer their payment requires further action
+      access_code = response_json['data']['access_code']
+      transaction_ref = response_json['data']['reference']
+
+      message = "Payment requires further authorization"
+
+      build_trx_response(response_json, tx_ref, :transaction_status_pending)
+      render json: { data: { access_code: access_code, transaction_ref: transaction_ref } }, status: :created, meta: { message: message }
     else
       build_trx_error_response(response_json, tx_ref, currency, price)
       raise Errors::BaseError.new(message: "Payment failed, please contact customer care", status: 400)
@@ -127,7 +141,7 @@ class PaystackTransactionsController < TransactionsController
 
   private
 
-  def build_trx_success_response(data, save_card = true)
+  def build_trx_success_response(data, save_card)
     transaction = Transaction.find_by(transaction_ref: data['reference']) ||
       Transaction.new(transaction_ref: data['reference'], transaction_status: :transaction_status_pending, buyer: current_user, gateway: gateway)
 
