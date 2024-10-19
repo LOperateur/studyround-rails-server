@@ -104,7 +104,7 @@ Rails.application.routes.draw do
   post '/transactions/process', to: "flutterwave_transactions#process_transaction"
   # Paystack Gateway
   post '/transactions/paystack/initiate', to: "paystack_transactions#initiate"
-  get '/transactions/paystack/verify', to: "paystack_transactions#verify"
+  post '/transactions/paystack/verify', to: "paystack_transactions#verify"
   post '/transactions/paystack/process', to: "paystack_transactions#process_transaction"
   # Generic Transaction data
   resources :transactions, only: [:index, :show]
