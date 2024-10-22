@@ -19,7 +19,7 @@ class FlutterwaveTransactionsController < TransactionsController
 
     if response['data']&.[]('status') === "successful"
       # Success! Confirm the customer's payment
-      build_trx_success_response(response['data'], false) # Don't save card on Flutterwave
+      build_trx_success_response(response['data'], true) # Save card on Flutterwave, TODO: Monitor this
     else
       # Inform the customer their payment was unsuccessful
       # Ideally this shouldn't be called even if the payment fails since flutterwave
