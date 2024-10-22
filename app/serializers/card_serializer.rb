@@ -6,12 +6,12 @@ class CardSerializer < ActiveModel::Serializer
   end
 
   def card_type
-    if object.card_type.include? "mastercard"
-      "mastercard"
-    elsif object.card_type.include? "visa"
-      "visa"
+    if object.card_type&.upcase&.include? "MASTERCARD"
+      "MASTERCARD"
+    elsif object.card_type&.upcase&.include? "VISA"
+      "VISA"
     else
-      object.card_type
+      object.card_type&.upcase
     end
   end
 end
