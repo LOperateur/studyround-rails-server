@@ -9,6 +9,32 @@ class TransactionsController < ApplicationController
   end
 
   def process_transaction
+    begin
+      card = current_user.financial_cards.find(process_transaction_params[:card_id])
+    rescue
+      raise Errors::NotFoundError.new(message: "Unable to find payment method attached")
+    end
+
+    if card.is_flutterwave_card?
+      transactions_controller = FlutterwaveTransactionsController.new
+    elsif card.is_paystack_card?
+      transactions_controller = PaystackTransactionsController.new
+    else
+      raise Errors::BaseError.new(message: "Unsupported payment method", status: 400)
+    end
+
+    transactions_controller.request = request
+    transactions_controller.response = response
+
+    item_id = process_transaction_params[:item_id]
+    card_id = process_transaction_params[:card_id]
+    item_type = process_transaction_params[:item_type]
+
+    purchase_params = { item_id: item_id, card_id: card_id, item_type: item_type }
+
+    transactions_controller.params = purchase_params
+
+    render json: transactions_controller.process_transaction
   end
 
   def index
@@ -78,11 +104,12 @@ class TransactionsController < ApplicationController
     # If the card token doesn't exist, (i.e. it's a new card token), attempt to save it
     if FinancialCard.where(token: new_card.token).empty?
       # Prevent saving the same card twice for a user assuming they open the modal again
-      # First check if the card exists for this user with the same first_six, last_four and expiry
+      # First check if the card exists for this user and provider with the same first_six, last_four and expiry
       existing_card = FinancialCard.where(
         first_six: new_card.first_six,
         last_four: new_card.last_four,
         expiry: new_card.expiry,
+        provider: new_card.provider,
         user_id: current_user.id,
       ).take
 
