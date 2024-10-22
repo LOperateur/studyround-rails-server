@@ -4,6 +4,7 @@ class CoursesController < ApplicationController
   include ActionView::Helpers::DateHelper
   include CourseHelper
   include TestHelper
+  include CardTransactionHelper
 
   before_action :default_12_page_size, only: [:index, :per_category, :enrolled_courses, :search, :my_courses, :tests, :purchased_courses, :purchased_tests, :created_courses]
   skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search, :dummy_courses]
@@ -379,23 +380,15 @@ class CoursesController < ApplicationController
       raise Errors::BaseError.new(message: "You have already purchased this item", status: 400)
     end
 
-    transactions_controller = TransactionsController.new
-    transactions_controller.request = request
-    transactions_controller.response = response
-
-    purchase_params = { item_id: params[:id], card_id: purchase_course_params[:card_id] }
-
     if @course.sale_status_paid?
-      purchase_params[:item_type] = :course
+      item_type = :course
     elsif @course.sale_status_explanations?
-      purchase_params[:item_type] = :explanations
+      item_type = :explanations
     else
       raise Errors::BaseError.new(message: "There's nothing to purchase here", status: 400)
     end
 
-    transactions_controller.params = purchase_params
-
-    render json: transactions_controller.process_transaction
+    render json: process_card_transaction(params[:id], purchase_course_params[:card_id], item_type)
   end
 
   def purchased_courses

@@ -12,6 +12,8 @@ class CollaboratorsController < ApplicationController
       if @course.course_status_dummy?
         add_to_collaborators(current_user, :editor)
         render json: @course, root: :data, status: :created, meta: { message: "You have been granted access to this course as an Editor" }, serializer: CreatorCourseSerializer
+      elsif !@course.course_status_active?
+        raise Errors::ForbiddenError.new(message: "You cannot request access to this course anymore")
       else
         # Todo: Send an email to the course creator
         render json: { data: {}, message: "Request sent" }, status: :ok
@@ -35,6 +37,6 @@ class CollaboratorsController < ApplicationController
   end
 
   def load_course
-    @course = Course.published_active_or_dummy_courses.find(params[:course_id])
+    @course = Course.non_deleted_courses.find(params[:course_id])
   end
 end
