@@ -1,7 +1,15 @@
 class ResultSerializer < ActiveModel::Serializer
-  attributes :id, :score, :total, :percent, :elapsed_time, :created_at, :can_reveal_answers, :has_session_items
+  attributes :id, :score, :total, :percent, :elapsed_time, :created_at, :can_reveal_answers, :has_session_items, :courses
 
-  belongs_to :course, serializer: MiniCourseSerializer
+  def courses
+    if object.course.present?
+      [object.course.serialized_mini_course]
+    else
+      object.multi_courses.map do |course|
+        course.serialized_mini_course
+      end
+    end
+  end
 
   def percent
     ((object.score.to_f / object.total.to_f) * 100).round(2)
