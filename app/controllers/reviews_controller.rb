@@ -11,9 +11,9 @@ class ReviewsController < ApplicationController
   end
 
   def create
-    existing_review = @course.reviews.where(user: current_user).take
-
     Review.transaction do
+      existing_review = @course.reviews.where(user: current_user).take
+
       if existing_review.nil?
         review = @course.reviews.build(create_update_review_params.merge(user: current_user))
         save_and_calculate review
