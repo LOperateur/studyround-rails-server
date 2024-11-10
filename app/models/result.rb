@@ -1,6 +1,11 @@
 class Result < ApplicationRecord
   belongs_to :user
-  belongs_to :course
+  belongs_to :course, optional: true
+  belongs_to :session, foreign_key: :session_key, optional: true # Using custom session_key
+
+  has_many :course_result_links, -> { order(order: :asc) }, dependent: :destroy
+  has_many :multi_courses, through: :course_result_links, source: :course
+
 
   # Quick note
   # For Belongs to, the joins is singular
@@ -20,12 +25,12 @@ class Result < ApplicationRecord
 
   # Used to serialize the result model (with session data) on the go without having to render
   def serialized_result
-    ActiveModelSerializers::SerializableResource.new(self, serializer: SessionResultSerializer).as_json
+    SessionResultSerializer.new(self).as_json
   end
 
   # Used to serialize the result model (with profile data) on the go without having to render
   def serialized_profile_result
-    ActiveModelSerializers::SerializableResource.new(self, serializer: ProfileResultSerializer).as_json
+    ProfileResultSerializer.new(self).as_json
   end
 
   def disqualified

@@ -1,6 +1,10 @@
 class Session < ApplicationRecord
   belongs_to :user, optional: true
-  belongs_to :course
+  belongs_to :course, optional: true
+  has_one :result, foreign_key: :session_key # Using custom session_key
+
+  has_many :course_session_links, -> { order(order: :asc) }, dependent: :destroy
+  has_many :multi_courses, through: :course_session_links, source: :course
 
   enum session_type: {
     quiz: 1,
@@ -11,6 +15,6 @@ class Session < ApplicationRecord
 
   # Used to serialize the session model on the go without having to render
   def serialized_session
-    ActiveModelSerializers::SerializableResource.new(self, serializer: SessionSerializer).as_json
+    SessionSerializer.new(self).as_json
   end
 end

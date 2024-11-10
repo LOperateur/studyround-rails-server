@@ -8,11 +8,18 @@ class Course < ApplicationRecord
 
   has_many :categorizations, dependent: :destroy
   has_many :categories, through: :categorizations
+
   has_many :results
+  has_many :course_result_links, dependent: :destroy
+  has_many :multi_course_results, through: :course_result_links, source: :result
+
+  has_many :sessions
+  has_many :course_session_links, dependent: :destroy
+  has_many :multi_course_sessions, through: :course_session_links, source: :session
+
   has_many :questions, dependent: :destroy
   has_many :question_assets, dependent: :destroy
   has_many :reviews, dependent: :destroy
-  has_many :sessions
   has_many :course_collaborators, dependent: :destroy
   has_many :collaborators, through: :course_collaborators, source: :user
   has_one_attached :image, dependent: :purge_later # Purge the image if the course is deleted
@@ -73,22 +80,22 @@ class Course < ApplicationRecord
 
   # Used to serialize the course model on the go without having to render
   def serialized_course
-    ActiveModelSerializers::SerializableResource.new(self, serializer: CourseSerializer).as_json
+    CourseSerializer.new(self).as_json
   end
 
   # Used to serialize the course mini-model on the go without having to render
   def serialized_mini_course
-    ActiveModelSerializers::SerializableResource.new(self, serializer: MiniCourseSerializer).as_json
+    MiniCourseSerializer.new(self).as_json
   end
 
   # Used to serialize the user-facing course model on the go without having to render
   def serialized_user_facing_course
-    ActiveModelSerializers::SerializableResource.new(self, serializer: UserCourseSerializer).as_json
+    UserCourseSerializer.new(self).as_json
   end
 
   # Used to serialize the creator-facing course model on the go without having to render
   def serialized_creators_course
-    ActiveModelSerializers::SerializableResource.new(self, serializer: CreatorCourseSerializer).as_json
+    CreatorCourseSerializer.new(self).as_json
   end
 
   def courses_average_rating
