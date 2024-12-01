@@ -43,13 +43,11 @@ Rails.application.routes.draw do
   get '/search', to: "courses#search"
   patch '/courses/:id/publish', to: "courses#publish"
   post '/courses/:id/purchase', to: "courses#purchase"
-  post '/tests/:id/halt-attempts', to: "courses#halt_attempts"
-  post '/tests/:id/complete', to: "courses#close_test"
   resources :courses, only: [:index, :show, :create, :update, :destroy] do
     get '/similar', to: "courses#similar_courses"
     post '/request-access', to: "collaborators#request_access"
     post '/grant-access', to: "collaborators#grant_access"
-    resources :questions, only: [:index] do
+    resources :questions, only: [] do
       get '/', to: "questions#preview"
       get '/explanation', to: "questions#explanation"
     end
@@ -72,8 +70,8 @@ Rails.application.routes.draw do
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
   post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
-  # Todo: Remove this route, questions & explanations should be scoped to courses
-  resources :questions do
+  # Todo: Remove this route, question explanations should be scoped to courses
+  resources :questions, only: [] do
     get '/explanation', to: "questions#explanation"
   end
 
@@ -87,16 +85,20 @@ Rails.application.routes.draw do
     get '/session-items', to: "results#session_items"
   end
 
-  get '/tests/:course_id/instructions', to: "sessions#test_instructions"
-  get '/sessions/:id/verify', to: "sessions#verify_active_session"
+  get '/tests/:course_id/instructions', to: "tests#test_instructions"
+  post '/tests/:course_id/start', to: "tests#start_test"
+  post '/tests/:course_id/end', to: "tests#end_test"
+  post '/tests/:course_id/questions', to: "tests#questions"
+  post '/tests/:course_id/halt-attempts', to: "tests#halt_attempts"
+  post '/tests/:course_id/complete', to: "tests#close_test"
+  get '/sessions/:id/verify', to: "tests#verify_active_test_session"
+  patch '/sessions/:id', to: "tests#update_test_session"
 
-  post '/sessions/:course_id/start', to: "sessions#start"
-  post '/sessions/:course_id/start-demo', to: "sessions#start_demo"
-  post '/tests/:course_id/start', to: "sessions#start_test"
-  post '/sessions/:course_id/end', to: "sessions#end"
-  post '/sessions/:course_id/end-demo', to: "sessions#end_demo"
-  post '/tests/:course_id/end', to: "sessions#end_test"
-  resources :sessions, only: [:update]
+  post '/session/start', to: "sessions#start"
+  post '/session/start-demo', to: "sessions#start_demo"
+  get '/sessions/:id/questions', to: "sessions#questions"
+  post '/sessions/:id/end', to: "sessions#end"
+  post '/sessions/:id/end-demo', to: "sessions#end_demo"
 
   # Flutterwave Gateway
   get '/transactions/initiate', to: "flutterwave_transactions#initiate"

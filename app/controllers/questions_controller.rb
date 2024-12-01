@@ -10,19 +10,6 @@ class QuestionsController < ApplicationController
 
   wrap_parameters format: []
 
-  def index
-    # Not using non_deleted_courses here due to the possibility
-    # of a creator deleting a course while a user is taking its session.
-    # Todo: Reconsider this later
-    @course = Course.find(params[:course_id])
-
-    if @course.test?
-      handle_test_index
-    else
-      handle_course_index
-    end
-  end
-
   def explanation
     # Todo: Rewrite this starting from the context of a course
     question = Question.find(params[:question_id])
@@ -399,54 +386,6 @@ class QuestionsController < ApplicationController
     rescue
       raise Errors::NotFoundError.new(message: "Cannot find this question in the course")
     end
-  end
-
-  def handle_course_index
-    session_type = require_session_type(params[:session_type])
-
-    case session_type
-    when :study
-      questions, paginated_metadata = published_active_ordered_questions(@course, params)
-      render json: { data: questions.map do |question|
-        question.serialized_question_with_answer[:question]
-      end
-      }.merge(paginated_metadata)
-
-    when :quiz, :practice
-      session = Session.find(params[:session_id])
-      question_ids = session.session_items.map { |session_item| session_item["question_id"] }
-
-      # Sort by the order of ids supplied
-      questions = Question.where(id: question_ids).sort_by { |i| question_ids.index(i.id) }
-
-      paginated_questions = paginate(questions, params)
-      render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
-
-    else
-      raise Errors::BaseError.new(message: "Invalid session type", status: 400)
-    end
-  end
-
-  def handle_test_index
-    session_param = get_start_test_session(current_user, @course)
-
-    if session_param.nil?
-      raise_ended_test_error(@course)
-    end
-
-    # Existing session, simply assign it
-    session = session_param
-
-    # If session doesn't have an id, then it doesn't exist in the DB yet.
-    if !session[:id].present?
-      raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
-    end
-
-    questions, paginated_metadata = published_active_ordered_questions(@course, params)
-    render json: { data: questions.map do |question|
-      question.serialized_question[:question]
-    end
-    }.merge(paginated_metadata)
   end
 
   def establish_position_and_save(question, position)

@@ -9,7 +9,7 @@ class CoursesController < ApplicationController
   before_action :default_12_page_size, only: [:index, :per_category, :enrolled_courses, :search, :my_courses, :tests, :purchased_courses, :purchased_tests, :created_courses]
   skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search, :dummy_courses]
   before_action :check_creators_consent, only: [:create]
-  before_action :load_creators_course, only: [:update, :publish, :destroy, :halt_attempts, :close_test]
+  before_action :load_creators_course, only: [:update, :publish, :destroy]
 
   wrap_parameters format: []
 
@@ -263,49 +263,6 @@ class CoursesController < ApplicationController
     # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
     courses = paginate(found_courses, params, entries = found_courses.count.size)
     render json: courses, root: :data, meta: paginated_meta(courses), each_serializer: SearchCourseSerializer
-  end
-
-  def halt_attempts
-    message = halt_new_attempts(@course)
-
-    render json: @course, meta: { message: message }, root: :data, serializer: CreatorCourseSerializer
-  end
-
-  def close_test
-    # Todo: Review this in pt. 2 of the collaborator change
-    # Admins have superuser privileges but can't close tests that aren't theirs.
-    if !is_course_creator?(@course, current_user)
-      raise Errors::ForbiddenError.new(message: "You don't have the authority to close this test")
-    end
-
-    # Confirm that the lag time is exceeded and the test is closeable
-    expiration = @course.test_expiration
-    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
-    closing_time = expiration + (@course.instructions['time']).seconds + lag_time
-    is_closeable = closing_time < Time.now
-
-    time_left = distance_of_time_in_words(closing_time, Time.now)
-    if !is_closeable
-      raise Errors::BaseError.new(message: "Please wait #{time_left} before you can close this test", status: 400)
-    end
-
-    # Submit all remaining sessions
-    # Alternative?: CourseSessionSubmissionJob.perform_later(course)
-    @course.sessions.each do |session|
-      begin
-        get_end_test_result(session.user, session.course)
-      rescue Errors::BaseError
-        # Ignored
-      end
-    end
-
-    # Close the test
-    @course.course_status_closed!
-
-    # Send an email to all test-takers
-    TestResultsEmailSendJob.perform_later(@course)
-
-    render json: @course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
   end
 
   def my_courses

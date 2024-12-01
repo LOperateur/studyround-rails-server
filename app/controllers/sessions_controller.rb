@@ -1,23 +1,16 @@
 class SessionsController < ApplicationController
   include SessionHelper
-  include TestHelper
   include UserInterest
 
   skip_before_action :authorize!, only: [:start_demo, :end_demo]
-  before_action :load_course, except: [:update, :verify_active_session]
+  before_action :load_courses, only: [:start, :start_demo]
 
   wrap_parameters format: []
 
-  # Courses
-
   def start
-    if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
-    end
-
-    if @course.sale_status_paid?
-      if !current_user.has_purchased_item(@course)
-        raise Errors::ForbiddenError.new(message: "Please purchase this course before using it")
+    @courses.each do |course|
+      if course.sale_status_paid? && !current_user.has_purchased_item(course)
+        raise Errors::ForbiddenError.new(message: "Please purchase selected course(s) before use")
       end
     end
 
@@ -25,12 +18,12 @@ class SessionsController < ApplicationController
 
     case session_type
     when :study
-      session = get_course_based_session(@course, :study)
-      questions, paginated_metadata = published_active_ordered_questions(@course, params)
+      session = get_course_based_session(@courses, :study)
+      questions, paginated_metadata = published_active_ordered_questions(@courses.first, params)
       render_session_data(session, questions, false, paginated_metadata)
 
     when :quiz, :practice
-      session, questions = create_course_based_session(start_course_session_params, @course, current_user.id)
+      session, questions = create_course_based_session(start_course_session_params, @courses, current_user.id)
       # Converting to array to calculate the offset page data w.r.t `num_questions`
       # This is because we call `limit` on the questions to get the first `num_questions`
       paginated_questions = paginate(questions.to_a)
@@ -42,68 +35,75 @@ class SessionsController < ApplicationController
   end
 
   def end
-    if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
-    end
-
-    type = end_course_session_params[:session_type]
-    if type.nil? || type.to_sym == :study || type.to_sym == :test
-      raise Errors::BaseError.new(message: "Invalid session type", status: 400)
-    end
-
-    # Include the question json data here to save
-    session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
-    num_questions = end_course_session_params[:questions]
-
-    begin
-      score, total = mark(session_items_with_answers)
-
-      # User's session items didn't get to paginate through the total number of questions
-      if session_items_with_answers.length < num_questions
-        # Assume the remaining questions were 1-point questions and add that to the total
-        total += num_questions - session_items_with_answers.length
-      end
-
-    rescue
-      raise Errors::BaseError.new(message: "Unable to calculate result")
-    end
-
-    if end_course_session_params[:session_id].nil?
-      raise Errors::BaseError.new(message: "Unknown session!", status: 400)
-    end
-
-    session = Session.find_by(id: end_course_session_params[:session_id])
+    session = Session.find_by(id: params[:id])
 
     if session
+      # Include the question json data here to save
+      session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
+      num_questions = session.session_items.length
+
+      begin
+        score, total = mark(session_items_with_answers)
+
+        # User's session items didn't get to paginate through the total number of questions
+        if session_items_with_answers.length < num_questions
+          # Assume the remaining questions were 1-point questions and add that to the total
+          total += num_questions - session_items_with_answers.length
+        end
+
+      rescue
+        raise Errors::BaseError.new(message: "Unable to calculate result")
+      end
+
+      if params[:id].nil?
+        raise Errors::BaseError.new(message: "Unknown session!", status: 400)
+      end
+
+
+      type = session.session_type
       duration = session.duration
       elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
 
       # Idempotency check to prevent double submissions
-      session_key = idempotent_session_key(current_user.id, session.id, type)
-      result = Result.find_by(session_key: session_key) ||
-        Result.create!(
-          course: @course,
-          user: current_user,
-          score: score,
-          total: total,
-          duration: duration,
-          num_questions: num_questions,
-          elapsed_time: elapsed_time,
-          session_type: type,
-          session_key: session_key,
-          session_items: session_items_with_answers
-        )
+      session_key = idempotent_session_key(current_user.id, session.id)
+
+      # Check if the result already exists
+      result = Result.find_by(session_key: session_key)
+
+      # Get the courses from the session
+      courses = session.multi_courses
+
+      if result.nil?
+        # Create the result if it doesn't already exist
+        Result.transaction do
+          result = Result.create!(
+            user: current_user,
+            score: score,
+            total: total,
+            duration: duration,
+            num_questions: num_questions,
+            elapsed_time: elapsed_time,
+            session_type: type,
+            session_key: session_key,
+            session_items: session_items_with_answers
+          )
+
+          result.set_multi_courses_with_order(courses)
+        end
+      end
 
       # Delete the session
       session.destroy
 
-      # Register interest in the course's categories
-      register_interest(current_user, @course.categories.pluck(:id))
+      courses.each do |course|
+        # Register interest in the course's categories
+        register_interest(current_user, course.categories.pluck(:id))
+      end
 
     else
       # If for some reason, the session no longer exists or has been destroyed
-      # Use the id passed in the params to find the session's result
-      session_key = idempotent_session_key(current_user.id, end_course_session_params[:session_id], type)
+      # Use the session key to find the session's result
+      session_key = idempotent_session_key(current_user.id, params[:id])
       begin
         result = Result.find_by!(session_key: session_key)
       rescue
@@ -119,12 +119,8 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Logged in users cannot take a demo", status: 400)
     end
 
-    if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
-    end
-
-    if @course.sale_status_paid?
-      raise Errors::BaseError.new(message: "Invalid course type - paid tests not available for demo", status: 400)
+    if @courses.any? { |course| course.sale_status_paid? }
+      raise Errors::BaseError.new(message: "Invalid course type - paid courses not available for demo", status: 400)
     end
 
     # Solely for the purpose of this demo
@@ -134,7 +130,7 @@ class SessionsController < ApplicationController
       questions: 10,
     }
 
-    session, questions = create_course_based_session(start_course_session_params, @course, nil)
+    session, questions = create_course_based_session(start_course_session_params, @courses, nil)
 
     # Converting to array to calculate the offset page data w.r.t num_questions
     paginated_questions = paginate(questions.to_a)
@@ -147,51 +143,41 @@ class SessionsController < ApplicationController
       raise Errors::BaseError.new(message: "Logged in users cannot take a demo", status: 400)
     end
 
-    if @course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
-    end
-
-    # Solely for the purpose of this demo
-    session_type = :practice
-    num_questions = 10
-
-    # Include the question json data here
-    session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
-
-    begin
-      score, total = mark(session_items_with_answers)
-    rescue
-      raise Errors::BaseError.new(message: "Unable to calculate result")
-    end
-
+    # Obtain guest information
     guest_id = end_course_session_params[:guest_id]
-
     if guest_id.nil?
       raise Errors::BaseError.new(message: "Unknown guest user!", status: 400)
     end
 
-    guest_email = end_course_session_params[:guest_email]
-
-    if end_course_session_params[:session_id].nil?
-      raise Errors::BaseError.new(message: "Unknown session!", status: 400)
-    end
-
-    session = Session.find_by(id: end_course_session_params[:session_id])
+    session = Session.find_by(id: params[:id])
 
     if session
+      # Include the question json data here
+      session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
+
+      begin
+        score, total = mark(session_items_with_answers)
+      rescue
+        raise Errors::BaseError.new(message: "Unable to calculate result")
+      end
+
       duration = session.duration
-      elapsed_time = [(DateTime.now.to_time - session.created_at).ceil, duration].min
+      elapsed_time = [(Time.now - session.created_at).ceil, duration].min
 
       # Idempotency check
-      session_key = idempotent_session_key(guest_id, session.id, session_type)
+      session_key = idempotent_session_key(guest_id, session.id)
+
+      # Get the courses from the session
+      courses = session.multi_courses
+      course_ids = courses.map(&:id)
+
       result = Result.new(
-        course: @course,
         score: score,
         total: total,
         duration: duration,
-        num_questions: num_questions,
+        num_questions: session.session_items.length,
         elapsed_time: elapsed_time,
-        session_type: session_type,
+        session_type: session.session_type,
         session_key: session_key,
         session_items: session_items_with_answers
       )
@@ -201,8 +187,22 @@ class SessionsController < ApplicationController
 
       # Save the result to the guest
       guest = Guest.find(guest_id)
-      guest.update!(result: result.as_json)
+      guest.update!(result: result.as_json.merge('multi_course_ids' => course_ids))
+    else
+      # If for some reason, the session no longer exists or has been destroyed
+      # Use the guest details to find the session's result
+      begin
+        guest = Guest.find(guest_id)
+        result = guest.result
+        score = result['score'].to_i
+        total = result['total'].to_i
+      rescue
+        raise Errors::NotFoundError.new(message: "Unable to obtain session")
+      end
     end
+
+    # Send the invite/results email if the guest provided an email
+    guest_email = end_course_session_params[:guest_email]
 
     if guest_email.present?
       # TODO: Move this to a shared concern
@@ -230,171 +230,65 @@ class SessionsController < ApplicationController
     end
   end
 
-  # Tests
-
-  def test_instructions
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
-    instructions_response = init_test_instructions(current_user, @course)
-
-    render json: {
-      data: instructions_response
-    }
-  end
-
-  def start_test
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
-    if @course.sale_status_paid? && !current_user.has_purchased_item(@course)
-      raise Errors::ForbiddenError.new(message: "Please purchase this test before using it")
-    end
-
-    session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
-
-    if session_param.nil?
-      raise_ended_test_error(@course)
-    end
-
-    # If session_param already has an id, return the existing session, otherwise, create a new one
-    session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
-
-    questions, paginated_metadata = published_active_ordered_questions(@course, params)
-    render_session_data(session.serialized_session[:session], questions, true, paginated_metadata)
-  end
-
-  def end_test
-    if !@course.test?
-      raise Errors::BaseError.new(message: "Invalid course type - must be a test", status: 400)
-    end
-
-    result = get_end_test_result(
-      current_user,
-      @course,
-      end_test_session_params[:session_items],
-      end_test_session_params[:session_id]
-    )
-
-    render json: result, root: :data, serializer: SessionResultSerializer, status: :created
-  end
-
-  def update
+  def questions
     session = Session.find(params[:id])
+    session_type = session.session_type.to_sym
 
-    if check_session_for_valid_update(session)
-      # Update session
-      session.update_attributes!(update_session_params)
-    else
-      raise_ended_test_error(session.course)
-    end
-
-    render json: {}, status: :ok
-  end
-
-  # Returns nil if the session is active indicating it can be resumed
-  # Or creates/returns a result if the session is over.
-  def verify_active_session
-    session_id = params[:id]
-
-    if session_id.nil?
-      raise Errors::BaseError.new(message: "No session ID provided", status: 400)
-    end
-
-    # Confirm the presence of the session
-    # Using find_by to prevent throwing an error
-    session = Session.find_by(id: session_id)
-
-    if session.nil?
-      # Check for the result if there's no session
-      result = current_user.results.find_by(
-        session_key: idempotent_session_key(current_user.id, session_id, :test)
-      )
-
-      # Ideally, the result should not be nil if this endpoint is called when resuming a test
-      if result.nil?
-        # Both Session and Result are non-existent, throw an error
-        raise Errors::NotFoundError.new(message: "Cannot find session or result. Please refresh this page")
-      else
-        # Result available, render that for the user to see
-        render json: result, root: :data, serializer: SessionResultSerializer, status: :ok
+    case session_type
+    when :study
+      questions, paginated_metadata = published_active_ordered_questions(session.multi_courses.first, params)
+      render json: { data: questions.map do |question|
+        question.serialized_question_with_answer[:question]
       end
+      }.merge(paginated_metadata)
 
-      return
-    end
+    when :quiz, :practice
+      session = Session.find(params[:id])
+      question_ids = session.session_items.map { |session_item| session_item["question_id"] }
 
-    if session.user != current_user
-      raise Errors::ForbiddenError.new(message: "This is not your session to resume!")
-    end
+      # Sort by the order of ids supplied
+      questions = Question.where(id: question_ids).sort_by { |i| question_ids.index(i.id) }
 
-    if check_session_for_valid_update(session)
-      # Session still valid, `/start` will be called to resume it
-      render json: { data: nil }, status: :ok
+      paginated_questions = paginate(questions, params)
+      render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
+
     else
-      # Session is stale, convert it to a result
-      result = get_end_test_result(current_user, session.course)
-      render json: result, root: :data, serializer: SessionResultSerializer, status: :created
+      raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
   end
 
   private
 
-  def create_test_based_session(params)
-    session = Session.create(params.merge(start_test_session_params))
+  def load_courses
+    begin
+      @courses = []
+      course_ids = params[:courses]
 
-    if !session
-      raise Errors::BaseError.new(message: "Unable to start or resume test", status: 400)
+      course_ids.each do |course_id|
+        @courses << Course.session_accessible_courses.find(course_id)
+      end
+
+    rescue ActiveRecord::RecordNotFound
+      error_message = "Some course data was not found - it may have been removed"
+      raise Errors::NotFoundError.new(message: error_message)
     end
 
-    return session
-  end
+    if @courses.empty?
+      raise Errors::BaseError.new(message: "Please select at least 1 course", status: 400)
+    end
 
-  def raise_ended_test_error(course)
-    # Calculate and return result in the data of the surfaced error
-    result = get_end_test_result(
-      current_user,
-      course,
-    ).serialized_result
-
-    raise Errors::ForbiddenError.new(
-      message: "Time up! Submitting session...",
-      action: :submit,
-      data: result[:result]
-    )
-  end
-
-  def load_course
-    begin
-      @course = Course.session_accessible_courses.find(params[:course_id])
-    rescue ActiveRecord::RecordNotFound
-      error_message = "Course data not found - it may have been ended or removed"
-      raise Errors::NotFoundError.new(message: error_message)
+    if @courses.any? { |course| course.test? }
+      raise Errors::BaseError.new(message: "Invalid course type - cannot be a test", status: 400)
     end
   end
 
   def start_course_session_params
     params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration, :year,
-                  :tags => [])
+                  :courses => [], :tags => [])
   end
 
   def end_course_session_params
-    params.permit(:session_type, :session_id, :questions, :guest_id, :guest_email,
+    params.permit(:guest_id, :guest_email,
                   :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
-  end
-
-  def start_test_session_params
-    params.permit(:extra_id, :device_id, :web_tab_id)
-  end
-
-  def end_test_session_params
-    params.permit(:session_id, :device_id, :web_tab_id,
-                  :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
-  end
-
-  def update_session_params
-    params.permit(:current_question_number, :device_id, :web_tab_id,
-                  :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
   end
 end

@@ -135,6 +135,7 @@ module TestHelper
         raise Errors::BaseError.new(message: "Unable to obtain session, please check your results", status: 400)
       end
     end
+
     session_items_with_answers = []
 
     # Merge session items and correct answers to form an answers marking scheme array
@@ -165,7 +166,7 @@ module TestHelper
       elapsed_time = [(Time.now - session.created_at).ceil, duration].min
 
       # Idempotency check to prevent double submissions
-      session_key = idempotent_session_key(user.id, session.id, :test)
+      session_key = idempotent_session_key(user.id, session.id)
       result = Result.find_by(session_key: session_key) ||
         Result.create!(
           course: course,
@@ -190,7 +191,7 @@ module TestHelper
     elsif params_session_id.present?
       # If for some reason, the session no longer exists or has been destroyed
       # Use the id passed in the params to find the session's result
-      session_key = idempotent_session_key(current_user.id, params_session_id, :test)
+      session_key = idempotent_session_key(current_user.id, params_session_id)
       begin
         result = Result.find_by!(session_key: session_key)
       rescue

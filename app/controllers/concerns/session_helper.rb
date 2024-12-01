@@ -1,39 +1,45 @@
 module SessionHelper
   extend ActiveSupport::Concern
-  # Creates a lightweight session for Quiz and Practice modes
-  # It never stores answers nor is it used to mark
+  # Creates a basic course session for Quiz and Practice modes
+  # It never stores answers nor is it used to mark (i.e: Session items is always blank)
   # It's sole purpose is to keep reference to the questions started with as
   # well as some other basic session data
-  def create_course_based_session(session_params, course, user_id)
+  def create_course_based_session(session_params, courses, user_id)
     num_questions = session_params[:questions]
     duration = session_params[:duration]
     session_type = require_session_type(session_params[:session_type])
     year = session_params[:year].presence
     check_course_session_limits(num_questions)
 
-    light_course_session = {
+    basic_course_session = {
       user_id: user_id,
-      course: course,
       duration: duration,
       session_type: session_type,
       session_items: [],
     }
 
-    session = Session.new(light_course_session)
+    session = Session.new(basic_course_session)
 
-    if user_id.nil?
-      # Demo session
-      # This gives an array of the first 20 questions of which a random 10 are selected just for guest demo purposes
-      questions = course.questions.published_active_questions.limit(20).shuffle.first(num_questions)
-    else
-      if session.session_type_quiz?
-        questions = course.questions.published_active_questions.filtered_by_year(year).order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
+    questions = []
+
+    courses.each do |course|
+      if user_id.nil?
+        # Demo session
+        # This gives an array of the first 20 questions of which a random 10 are selected just for guest demo purposes
+        course_questions = course.questions.published_active_questions.limit(20).shuffle.first(num_questions)
       else
-        questions = course.questions.published_active_questions.filtered_by_year(year).order(Arel.sql("RANDOM()")).limit(num_questions)
+        if session.session_type_quiz?
+          course_questions = course.questions.published_active_questions.filtered_by_year(year).order(Arel.sql("RANDOM()")).where.not({ options: nil, multi_answer: true }).limit(num_questions)
+        else
+          course_questions = course.questions.published_active_questions.filtered_by_year(year).order(Arel.sql("RANDOM()")).limit(num_questions)
+        end
       end
-    end
 
-    check_min_available_questions(questions.length)
+      check_min_available_questions(course_questions.length, course.title)
+
+      # Add all course_questions to the questions array
+      questions += course_questions
+    end
 
     questions.each do |question|
       session.session_items << {
@@ -41,12 +47,19 @@ module SessionHelper
       }
     end
 
-    session.save!
+    begin
+      Session.transaction do
+        session.save!
+        session.set_multi_courses_with_order(courses)
+      end
+    rescue
+      raise Errors::BaseError.new(message: "Error creating session", status: 400)
+    end
 
-    return get_course_based_session(course, session_type, session.id, duration), questions
+    return get_course_based_session(courses, session_type, session.id, duration), questions
   end
 
-  def get_course_based_session(course, session_type, session_id = nil, duration = 0)
+  def get_course_based_session(courses, session_type, session_id = nil, duration = 0)
     {
       # Remove the 0.xxxx decimal prefix
       id: session_id || SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
@@ -55,8 +68,7 @@ module SessionHelper
       start_time: DateTime.now.utc,
       duration: duration,
       session_type: session_type,
-      course_id: course.id,
-      course_name: course.title,
+      courses: courses.map { |course| course.serialized_mini_course },
       session_items: [],
     }
   end
@@ -83,9 +95,9 @@ module SessionHelper
     end
   end
 
-  def check_min_available_questions(num_questions)
+  def check_min_available_questions(num_questions, course_title)
     if num_questions < 10
-      raise Errors::BaseError.new(message: "There aren't enough questions to take this course. Please try another course", status: 400)
+      raise Errors::BaseError.new(message: "There aren't enough questions to take \"#{course_title}\". Please try another course", status: 400)
     end
   end
 
@@ -117,9 +129,9 @@ module SessionHelper
   end
 
   # Returns a uuid that comes from a random seed generated from a deterministic
-  # pseudorandom transformation of the user id, session id and session type.
-  def idempotent_session_key(user_id, session_id, session_type)
-    input = "#{user_id}:#{session_id}:#{session_type.to_s}"
+  # pseudorandom transformation of the user id and session id.
+  def idempotent_session_key(user_id, session_id)
+    input = "#{user_id}:#{session_id}"
     hash = Digest::MurmurHash64A.rawdigest(input) # Returns an integer
     rnd = Random.new(hash) # Use that integer to seed a new random uuid
     rnd.uuid
@@ -130,6 +142,44 @@ module SessionHelper
   def published_active_ordered_questions(course, params)
     # Optional year filter
     year = params[:year].presence
+
+    # Custom pagination for find_by_sql
+    total_questions = course.questions.published_active_questions.filtered_by_year(year).count
+    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
+
+    # Recursive CTE to get questions in order
+    cte_query = <<-SQL
+    WITH RECURSIVE ordered_questions AS (
+      SELECT * FROM questions
+      WHERE course_id = ?
+      AND previous_id IS NULL
+
+      UNION ALL
+
+      SELECT q.* FROM questions q
+      INNER JOIN ordered_questions oq ON q.previous_id = oq.id
+    )
+    SELECT * FROM ordered_questions
+    WHERE publish_status = 2
+    AND question_status = 1
+    AND (? IS NULL OR year = ?) -- Filter by year
+    LIMIT ? OFFSET ?
+    SQL
+
+    questions = Question.find_by_sql([cte_query, course.id, year, year, limit, offset])
+
+    return questions, paginated_metadata
+  end
+
+  def published_active_ordered_multi_questions(courses, params)
+    number_of_courses = courses.size
+
+    # Optional year filter
+    if number_of_courses == 1
+      year = params[:year].presence
+    else
+      year = nil
+    end
 
     # Custom pagination for find_by_sql
     total_questions = course.questions.published_active_questions.filtered_by_year(year).count

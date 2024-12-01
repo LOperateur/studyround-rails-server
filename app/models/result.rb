@@ -1,7 +1,6 @@
 class Result < ApplicationRecord
   belongs_to :user
   belongs_to :course, optional: true
-  belongs_to :session, foreign_key: :session_key, optional: true # Using custom session_key
 
   has_many :course_result_links, -> { order(order: :asc) }, dependent: :destroy
   has_many :multi_courses, through: :course_result_links, source: :course
@@ -46,5 +45,22 @@ class Result < ApplicationRecord
       course_id: self.course.id,
       result_id: self.id,
     ).test_results_email.deliver_later
+  end
+
+  # Manually set courses with order
+  def set_multi_courses_with_order(courses)
+    # Iterate over course_ids with index
+    courses.each_with_index do |course, index|
+      # Create a new link with the course_id and order based on the index
+      course_result_links.create!(course_id: course.id, order: index + 1)
+    end
+  end
+
+  def set_multi_course_ids_with_order(course_ids)
+    # Iterate over course_ids with index
+    course_ids.each_with_index do |course_id, index|
+      # Create a new link with the course_id and order based on the index
+      course_result_links.create!(course_id: course_id, order: index + 1)
+    end
   end
 end
