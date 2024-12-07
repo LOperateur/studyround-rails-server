@@ -28,20 +28,19 @@ module TestHelper
       instructions_array.append instructions_map[:pause_on_quit]
     end
 
-    course.serialized_mini_course.merge(
-      {
-        resuming: is_user_resuming,
-        session_id: if is_user_resuming then @current_session.id else nil end,
-        server_time: Time.now.utc, # Send server time to API in UTC T..Z format
-        time_left: get_time_left(@instructions[:time]),
-        start_time: if is_user_resuming then @current_session.created_at else nil end,
-        expiration: @course.test_expiration,
-        duration: @instructions[:time],
-        attempts_left: get_max_trials_left(@instructions[:max_trials]),
-        extra_id_title: @instructions[:extra_id_title],
-        instructions: is_closed ? ["This test has been ended"] : instructions_array.compact
-      }
-    )
+    {
+      course: course.serialized_mini_course,
+      resuming: is_user_resuming,
+      session_id: if is_user_resuming then @current_session.id else nil end,
+      server_time: Time.now.utc, # Send server time to API in UTC T..Z format
+      time_left: get_time_left(@instructions[:time]),
+      start_time: if is_user_resuming then @current_session.created_at else nil end,
+      expiration: @course.test_expiration,
+      duration: @instructions[:time],
+      attempts_left: get_max_trials_left(@instructions[:max_trials]),
+      extra_id_title: @instructions[:extra_id_title],
+      instructions: is_closed ? ["This test has been ended"] : instructions_array.compact
+    }
   end
 
   def get_start_test_session(user, course, extra_id = nil)

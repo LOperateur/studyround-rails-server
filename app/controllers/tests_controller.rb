@@ -191,7 +191,7 @@ class TestsController < ApplicationController
     raise Errors::ForbiddenError.new(
       message: "Time up! Submitting session...",
       action: :submit,
-      data: result[:result]
+      data: result
     )
   end
 

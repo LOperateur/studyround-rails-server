@@ -446,20 +446,6 @@ class QuestionsController < ApplicationController
     end
   end
 
-  def raise_ended_test_error(course)
-    # Calculate and return result in the data of the surfaced error
-    result = get_end_test_result(
-      current_user,
-      course,
-    ).serialized_result
-
-    raise Errors::ForbiddenError.new(
-      message: "Time up! Submitting session...",
-      action: :submit,
-      data: result
-    )
-  end
-
   def create_draft(question_params)
     if question_params.key?(:options)
       options_json = JSON.parse(question_params[:options])
