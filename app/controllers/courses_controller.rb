@@ -36,16 +36,16 @@ class CoursesController < ApplicationController
       purchase_status[:sale_status_explanations] = current_user.present? && current_user.has_purchased_item(@course)
     end
 
-    review = @course.reviews.where(user: current_user).take&.serialized_review&.dig(:review)
+    review = @course.reviews.where(user: current_user).take&.serialized_review
 
     # If current user is not a creator/collaborator on the course, return the user facing course
     if !is_course_owner?(@course, current_user)
       if (@course.publish_status_draft? || @course.course_status_suspended?) && !@course.course_status_dummy?
         raise Errors::ForbiddenError.new(message: "This #{course_or_test(@course)} is currently unavailable. It may have been unpublished or suspended.")
       end
-      render json: { data: @course.serialized_user_facing_course[:course].merge(purchase_status: purchase_status, user_review: review) }
+      render json: { data: @course.serialized_user_facing_course.merge(purchase_status: purchase_status, user_review: review) }
     else
-      render json: { data: @course.serialized_creators_course[:course].merge(purchase_status: purchase_status, user_review: review) }
+      render json: { data: @course.serialized_creators_course.merge(purchase_status: purchase_status, user_review: review) }
     end
   end
 
@@ -172,7 +172,7 @@ class CoursesController < ApplicationController
 
     render json: {
       data: ordered_categories.map do |category|
-        category.serialized_categorised_course[:category]
+        category.serialized_categorised_course
       end
     }
   end
@@ -300,7 +300,7 @@ class CoursesController < ApplicationController
     my_courses = Course.find_by_sql([sql, current_user.id, current_user.id, limit, offset])
 
     render json: { data: my_courses.map do |course|
-      course.serialized_course[:course]
+      course.serialized_course
     end
     }.merge(paginated_metadata)
   end
@@ -325,7 +325,7 @@ class CoursesController < ApplicationController
     end
 
     render json: { data: top_tests.map do |test|
-      test.serialized_course[:course]
+      test.serialized_course
     end
     }.merge(paginated_metadata)
   end

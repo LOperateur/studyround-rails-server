@@ -177,7 +177,7 @@ class ResultsController < ApplicationController
                  users: user_count,
                  closing_time: closing_time,
                  rankings: paginated_submissions.map do |ranked_result|
-                   ranked_result.serialized_profile_result[:result]
+                   ranked_result.serialized_profile_result
                  end
                },
              }.merge(paginated_meta(paginated_submissions)),

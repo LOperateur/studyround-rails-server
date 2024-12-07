@@ -28,6 +28,6 @@ class Category < ApplicationRecord
 
   # Used to serialize the category model for categorised courses on the go without having to render
   def serialized_categorised_course
-    ActiveModelSerializers::SerializableResource.new(self, serializer: CategorisedCourseSerializer).as_json
+    CategorisedCourseSerializer.new(self).as_json
   end
 end

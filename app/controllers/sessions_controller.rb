@@ -238,7 +238,7 @@ class SessionsController < ApplicationController
     when :study
       questions, paginated_metadata = published_active_ordered_questions(session.multi_courses.first, params)
       render json: { data: questions.map do |question|
-        question.serialized_question_with_answer[:question]
+        question.serialized_question_with_answer
       end
       }.merge(paginated_metadata)
 

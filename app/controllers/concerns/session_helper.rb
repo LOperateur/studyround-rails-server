@@ -178,9 +178,9 @@ module SessionHelper
         questions: {
           data: paginated_questions.map do |question|
             if is_test
-              question.serialized_question[:question]
+              question.serialized_question
             else
-              question.serialized_question_with_answer[:question]
+              question.serialized_question_with_answer
             end
           end
         }.merge(paginated_metadata)
@@ -203,7 +203,7 @@ module SessionHelper
       #If the question is not found, just skip it
       next if question.nil?
       # Merge the question data into the session item
-      session_item.merge!(question.serialized_question_with_answer)
+      session_item.merge!({question: question.serialized_question_with_answer})
       # Todo: Consider adding the explanation data (would be hidden when rendering session items)
       # session_item[:explanation] = { explanation: question.explanation, explanation_image_asset: question.explanation_image_asset }
       # Then add the full session item to the array

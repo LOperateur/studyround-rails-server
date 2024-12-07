@@ -95,7 +95,7 @@ class QuestionsController < ApplicationController
     questions = Question.find_by_sql([cte_query, @course.id, year, year, year, limit, offset])
 
     render json: { data: questions.map do |question|
-      question.serialized_creator_question_list_item[:question]
+      question.serialized_creator_question_list_item
     end
     }.merge(paginated_metadata)
 
@@ -456,7 +456,7 @@ class QuestionsController < ApplicationController
     raise Errors::ForbiddenError.new(
       message: "Time up! Submitting session...",
       action: :submit,
-      data: result[:result]
+      data: result
     )
   end
 

@@ -64,7 +64,7 @@ class TestsController < ApplicationController
 
     questions, paginated_metadata = published_active_ordered_questions(@course, params)
     render json: { data: questions.map do |question|
-      question.serialized_question[:question]
+      question.serialized_question
     end
     }.merge(paginated_metadata)
   end
