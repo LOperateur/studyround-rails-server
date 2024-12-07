@@ -171,44 +171,6 @@ module SessionHelper
     return questions, paginated_metadata
   end
 
-  def published_active_ordered_multi_questions(courses, params)
-    number_of_courses = courses.size
-
-    # Optional year filter
-    if number_of_courses == 1
-      year = params[:year].presence
-    else
-      year = nil
-    end
-
-    # Custom pagination for find_by_sql
-    total_questions = course.questions.published_active_questions.filtered_by_year(year).count
-    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
-
-    # Recursive CTE to get questions in order
-    cte_query = <<-SQL
-    WITH RECURSIVE ordered_questions AS (
-      SELECT * FROM questions
-      WHERE course_id = ?
-      AND previous_id IS NULL
-
-      UNION ALL
-
-      SELECT q.* FROM questions q
-      INNER JOIN ordered_questions oq ON q.previous_id = oq.id
-    )
-    SELECT * FROM ordered_questions
-    WHERE publish_status = 2
-    AND question_status = 1
-    AND (? IS NULL OR year = ?) -- Filter by year
-    LIMIT ? OFFSET ?
-    SQL
-
-    questions = Question.find_by_sql([cte_query, course.id, year, year, limit, offset])
-
-    return questions, paginated_metadata
-  end
-
   def render_session_data(session, paginated_questions, is_test, paginated_metadata = paginated_meta(paginated_questions))
     render json: {
       data: {

@@ -31,7 +31,7 @@ class TestsController < ApplicationController
     session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
 
     questions, paginated_metadata = published_active_ordered_questions(@course, params)
-    render_session_data(session.serialized_session[:session], questions, true, paginated_metadata)
+    render_session_data(session.serialized_session, questions, true, paginated_metadata)
   end
 
   def end_test

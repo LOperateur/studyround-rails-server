@@ -88,7 +88,7 @@ Rails.application.routes.draw do
   get '/tests/:course_id/instructions', to: "tests#test_instructions"
   post '/tests/:course_id/start', to: "tests#start_test"
   post '/tests/:course_id/end', to: "tests#end_test"
-  post '/tests/:course_id/questions', to: "tests#questions"
+  get '/tests/:course_id/questions', to: "tests#questions"
   post '/tests/:course_id/halt-attempts', to: "tests#halt_attempts"
   post '/tests/:course_id/complete', to: "tests#close_test"
   get '/sessions/:id/verify', to: "tests#verify_active_test_session"
