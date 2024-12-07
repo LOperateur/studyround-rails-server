@@ -23,7 +23,7 @@ class QuestionAsset < ApplicationRecord
 
   # Used to serialize the question asset model on the go without having to render
   def serialized_question_asset
-    ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionAssetSerializer).as_json[:question_asset]
+    QuestionAssetSerializer.new(self).as_json
   end
 
   def generated_asset_file_url

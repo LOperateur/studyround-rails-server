@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_10_14_203329) do
+ActiveRecord::Schema.define(version: 2024_11_10_182203) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -71,6 +71,26 @@ ActiveRecord::Schema.define(version: 2024_10_14_203329) do
     t.datetime "updated_at", null: false
     t.index ["course_id"], name: "index_course_collaborators_on_course_id"
     t.index ["user_id"], name: "index_course_collaborators_on_user_id"
+  end
+
+  create_table "course_result_links", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "result_id"
+    t.integer "order"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_course_result_links_on_course_id"
+    t.index ["result_id"], name: "index_course_result_links_on_result_id"
+  end
+
+  create_table "course_session_links", force: :cascade do |t|
+    t.bigint "course_id"
+    t.bigint "session_id"
+    t.integer "order"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id"], name: "index_course_session_links_on_course_id"
+    t.index ["session_id"], name: "index_course_session_links_on_session_id"
   end
 
   create_table "courses", force: :cascade do |t|
@@ -311,6 +331,10 @@ ActiveRecord::Schema.define(version: 2024_10_14_203329) do
   add_foreign_key "categorizations", "courses"
   add_foreign_key "course_collaborators", "courses"
   add_foreign_key "course_collaborators", "users"
+  add_foreign_key "course_result_links", "courses"
+  add_foreign_key "course_result_links", "results"
+  add_foreign_key "course_session_links", "courses"
+  add_foreign_key "course_session_links", "sessions"
   add_foreign_key "courses", "users", column: "creator_id"
   add_foreign_key "financial_cards", "users"
   add_foreign_key "interests", "categories"

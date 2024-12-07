@@ -73,6 +73,7 @@ class User < ApplicationRecord
 
   # Used to serialize the user model on the go without having to render
   def serialized_user
+    # Rendering like this to ensure the "user" root key is present
     ActiveModelSerializers::SerializableResource.new(self, serializer: UserSerializer).as_json
     # ActiveModelSerializers::SerializableResource.new(self, serializer: UserSerializer, root: :profile).as_json
   end
