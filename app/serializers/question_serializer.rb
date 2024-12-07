@@ -1,6 +1,8 @@
 class QuestionSerializer < ActiveModel::Serializer
-  attributes :id, :order, :question, :question_image_url, :options,
+  attributes :id, :question, :question_image_url, :options,
              :multi_answer, :version, :multiplier, :year, :question_image_asset, :passage_asset
+
+  belongs_to :course, serializer: MiniCourseSerializer
 
   def question_image_url
     object.generated_question_image_url
