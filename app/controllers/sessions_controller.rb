@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   include SessionHelper
+  # include TriviaHelper
   include UserInterest
 
   skip_before_action :authorize!, only: [:start_demo, :end_demo]
@@ -18,7 +19,7 @@ class SessionsController < ApplicationController
 
     case session_type
     when :study
-      session = get_course_based_session(@courses, :study)
+      session = create_placeholder_study_session(@courses.first, current_user.id)
       questions, paginated_metadata = published_active_ordered_questions(@courses.first, params)
       render_session_data(session, questions, false, paginated_metadata)
 
@@ -29,6 +30,9 @@ class SessionsController < ApplicationController
       paginated_questions = paginate(questions.to_a)
       render_session_data(session, paginated_questions, false)
 
+    when :trivia
+      # session = create_trivia_session(start_course_session_params, @courses, current_user.id)
+
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -38,6 +42,10 @@ class SessionsController < ApplicationController
     session = Session.find_by(id: params[:id])
 
     if session
+      if session.session_type.to_sym == :study
+        raise Errors::BaseError.new(message: "Invalid session type - Study", status: 400)
+      end
+
       # Include the question json data here to save
       session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
       num_questions = session.session_items.length
@@ -152,6 +160,10 @@ class SessionsController < ApplicationController
     session = Session.find_by(id: params[:id])
 
     if session
+      if session.session_type.to_sym == :study
+        raise Errors::BaseError.new(message: "Invalid session type - Study", status: 400)
+      end
+
       # Include the question json data here
       session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
 

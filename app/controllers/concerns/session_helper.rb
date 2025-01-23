@@ -59,10 +59,24 @@ module SessionHelper
     return get_course_based_session(courses, session_type, session.id, duration), questions
   end
 
+  def create_placeholder_study_session(course, user_id)
+    session = Session.new(user_id: user_id, session_type: :study)
+
+    begin
+      Session.transaction do
+        session.save!
+        session.set_multi_courses_with_order([course])
+      end
+    rescue
+      raise Errors::BaseError.new(message: "Error creating session", status: 400)
+    end
+
+    return get_course_based_session([course], :study, session.id)
+  end
+
   def get_course_based_session(courses, session_type, session_id = nil, duration = 0)
     {
-      # Remove the 0.xxxx decimal prefix
-      id: session_id || SecureRandom.random_number.to_s.delete_prefix("0.").to_i,
+      id: session_id,
       current_question_number: 1,
       server_time: DateTime.now.utc,
       start_time: DateTime.now.utc,
@@ -185,7 +199,7 @@ module SessionHelper
           end
         }.merge(paginated_metadata)
       }
-    }
+    }, status: :created
   end
 
   # Populate the session items from the post body with the current question in full

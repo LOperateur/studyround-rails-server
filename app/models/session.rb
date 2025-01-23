@@ -10,6 +10,7 @@ class Session < ApplicationRecord
     practice: 2,
     study: 3,
     test: 4,
+    trivia: 5,
   }, _prefix: true
 
   # Used to serialize the session model on the go without having to render
