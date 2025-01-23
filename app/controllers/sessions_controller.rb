@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   include SessionHelper
+  # include TriviaHelper
   include UserInterest
 
   skip_before_action :authorize!, only: [:start_demo, :end_demo]
@@ -18,7 +19,7 @@ class SessionsController < ApplicationController
 
     case session_type
     when :study
-      session = get_course_based_session(@courses, :study)
+      session = create_placeholder_study_session(@courses.first, current_user.id)
       questions, paginated_metadata = published_active_ordered_questions(@courses.first, params)
       render_session_data(session, questions, false, paginated_metadata)
 
@@ -28,6 +29,9 @@ class SessionsController < ApplicationController
       # This is because we call `limit` on the questions to get the first `num_questions`
       paginated_questions = paginate(questions.to_a)
       render_session_data(session, paginated_questions, false)
+
+    when :trivia
+      # session = create_trivia_session(start_course_session_params, @courses, current_user.id)
 
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
