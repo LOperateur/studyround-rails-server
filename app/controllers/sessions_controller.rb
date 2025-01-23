@@ -42,6 +42,10 @@ class SessionsController < ApplicationController
     session = Session.find_by(id: params[:id])
 
     if session
+      if session.session_type.to_sym == :study
+        raise Errors::BaseError.new(message: "Invalid session type - Study", status: 400)
+      end
+
       # Include the question json data here to save
       session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
       num_questions = session.session_items.length
@@ -156,6 +160,10 @@ class SessionsController < ApplicationController
     session = Session.find_by(id: params[:id])
 
     if session
+      if session.session_type.to_sym == :study
+        raise Errors::BaseError.new(message: "Invalid session type - Study", status: 400)
+      end
+
       # Include the question json data here
       session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
 
