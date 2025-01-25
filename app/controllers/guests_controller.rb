@@ -4,27 +4,8 @@ class GuestsController < ApplicationController
   wrap_parameters format: []
 
   def create
-    email = create_guest_params[:email].presence
-
-    if email.present?
-      if User.exists?(email: email)
-        raise Errors::BaseError.new(
-          message: "This email is already associated with a StudyRound account",
-          action: :login,
-          status: 400
-        )
-      end
-
-      guest = Guest.where(email: email).first_or_initialize
-    else
-      guest = Guest.new
-    end
-
-    begin
-      guest.save!
-    rescue ActiveRecord::RecordInvalid
-      raise Errors::InvalidError.new(guest.errors.to_h)
-    end
+    guest = Guest.new
+    guest.save!
 
     render json: guest, root: :data, status: :created
   end
@@ -48,14 +29,15 @@ class GuestsController < ApplicationController
 
     guest.update!(email: email)
 
-    course = Course.find(guest.result['course_id'])
+    # Get courses from multi course ids
+    courses = Course.select("title").where(id: guest.result['multi_course_ids'])
 
     pass_token = JsonWebToken.encode({ guest_id: guest_id }, 30.days.from_now)
 
     ResultMailer.with(
       email: email,
       score: score,
-      title: course.title,
+      title: courses.map(&:title).join(', '),
       pass_token: pass_token
     ).demo_result_signup_email.deliver_later
 
@@ -63,10 +45,6 @@ class GuestsController < ApplicationController
   end
 
   private
-
-  def create_guest_params
-    params.permit(:email)
-  end
 
   def invite_guest_params
     params.permit(:email)

@@ -78,7 +78,14 @@ class ResultsController < ApplicationController
   def recent
     results = current_user.results.order(created_at: :desc)
     if params[:course_id].present?
-      results = results.where(course_id: params[:course_id])
+      # Directly associated results
+      direct_results = results.where(course_id: params[:course_id])
+
+      # Indirectly associated results via course_result_links
+      multi_course_results = results.joins(:course_result_links).where('course_result_links.course_id = ?', params[:course_id])
+
+      # Combine the two sets
+      results = Result.where(id: direct_results).or(Result.where(id: multi_course_results)).order(created_at: :desc)
     end
 
     paginated_results = paginate(results, params)
@@ -170,7 +177,7 @@ class ResultsController < ApplicationController
                  users: user_count,
                  closing_time: closing_time,
                  rankings: paginated_submissions.map do |ranked_result|
-                   ranked_result.serialized_profile_result[:result]
+                   ranked_result.serialized_profile_result
                  end
                },
              }.merge(paginated_meta(paginated_submissions)),

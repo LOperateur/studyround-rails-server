@@ -152,9 +152,12 @@ class AuthController < ApplicationController
     # Include additional details if guest info is available, then destroy the stale guest record
     if optional_guest.present?
       if optional_guest.result
-        result = Result.new(ActiveSupport::JSON.decode(optional_guest.result.to_json))
-        result.user = user
-        result.save!
+        Result.transaction do
+          result = Result.new(optional_guest.result.except("multi_course_ids"))
+          result.user = user
+          result.save!
+          result.set_multi_course_ids_with_order(optional_guest.result["multi_course_ids"])
+        end
       end
       optional_guest.destroy
     end
