@@ -41,15 +41,15 @@ class Question < ApplicationRecord
 
   # Used to serialize the question model on the go without having to render
   def serialized_question
-    ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionSerializer).as_json
+    QuestionSerializer.new(self).as_json
   end
 
   def serialized_question_with_answer
-    ActiveModelSerializers::SerializableResource.new(self, serializer: QuestionAnswerSerializer).as_json
+    QuestionAnswerSerializer.new(self).as_json
   end
 
   def serialized_creator_question_list_item
-    ActiveModelSerializers::SerializableResource.new(self, serializer: CreatorQuestionListSerializer).as_json
+    CreatorQuestionListSerializer.new(self).as_json
   end
 
   # Assets
