@@ -59,7 +59,9 @@ module SessionHelper
     return get_course_based_session(courses, session_type, session.id, duration), questions
   end
 
-  def create_placeholder_study_session(course, user_id)
+  # Creates a minimal study session for Study modes
+  # It stores nothing and is used to reference basic session data like the session courses
+  def create_study_session(course, user_id)
     session = Session.new(user_id: user_id, session_type: :study)
 
     begin
