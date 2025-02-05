@@ -1,6 +1,6 @@
 class SessionsController < ApplicationController
   include SessionHelper
-  # include TriviaHelper
+  include TriviaHelper
   include UserInterest
 
   skip_before_action :authorize!, only: [:start_demo, :end_demo]
@@ -31,8 +31,9 @@ class SessionsController < ApplicationController
       render_session_data(session, paginated_questions, false)
 
     when :trivia
-      # session = create_trivia_session(start_course_session_params, @courses, current_user.id)
-
+      trivia = TriviaSet.find(start_course_session_params[:trivia_id])
+      session = start_trivia_session(current_user, @courses, trivia, start_course_session_params[:extra_id])
+      # Todo
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -296,6 +297,7 @@ class SessionsController < ApplicationController
 
   def start_course_session_params
     params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration, :year,
+                  :trivia_id, :extra_id,
                   :courses => [], :tags => [])
   end
 
