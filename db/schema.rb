@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_11_10_182203) do
+ActiveRecord::Schema.define(version: 2025_02_01_151732) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -61,6 +61,15 @@ ActiveRecord::Schema.define(version: 2024_11_10_182203) do
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_categorizations_on_category_id"
     t.index ["course_id"], name: "index_categorizations_on_course_id"
+  end
+
+  create_table "course_bundles", force: :cascade do |t|
+    t.string "name"
+    t.jsonb "course_ids", default: [], null: false
+    t.bigint "creator_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_course_bundles_on_creator_id"
   end
 
   create_table "course_collaborators", force: :cascade do |t|
@@ -248,8 +257,10 @@ ActiveRecord::Schema.define(version: 2024_11_10_182203) do
     t.jsonb "tags"
     t.string "session_key"
     t.integer "num_questions"
+    t.bigint "trivia_set_id"
     t.index ["course_id"], name: "index_results_on_course_id"
     t.index ["session_key"], name: "index_results_on_session_key", unique: true
+    t.index ["trivia_set_id"], name: "index_results_on_trivia_set_id"
     t.index ["user_id"], name: "index_results_on_user_id"
   end
 
@@ -276,7 +287,9 @@ ActiveRecord::Schema.define(version: 2024_11_10_182203) do
     t.jsonb "session_items"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "trivia_set_id"
     t.index ["course_id"], name: "index_sessions_on_course_id"
+    t.index ["trivia_set_id"], name: "index_sessions_on_trivia_set_id"
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
@@ -298,6 +311,22 @@ ActiveRecord::Schema.define(version: 2024_11_10_182203) do
     t.string "gateway"
     t.index ["buyer_id"], name: "index_transactions_on_buyer_id"
     t.index ["transaction_ref"], name: "index_transactions_on_transaction_ref", unique: true
+  end
+
+  create_table "trivia_sets", force: :cascade do |t|
+    t.string "title"
+    t.text "subtitle"
+    t.jsonb "course_ids", default: []
+    t.jsonb "course_bundle_ids", default: []
+    t.bigint "creator_id"
+    t.jsonb "rules"
+    t.jsonb "dq_results", default: []
+    t.boolean "private"
+    t.integer "trivia_status"
+    t.datetime "expiration"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_trivia_sets_on_creator_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -329,6 +358,7 @@ ActiveRecord::Schema.define(version: 2024_11_10_182203) do
   add_foreign_key "auth_providers", "users"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
+  add_foreign_key "course_bundles", "users", column: "creator_id"
   add_foreign_key "course_collaborators", "courses"
   add_foreign_key "course_collaborators", "users"
   add_foreign_key "course_result_links", "courses"
@@ -350,10 +380,13 @@ ActiveRecord::Schema.define(version: 2024_11_10_182203) do
   add_foreign_key "questions", "users", column: "creator_id"
   add_foreign_key "refresh_tokens", "users"
   add_foreign_key "results", "courses"
+  add_foreign_key "results", "trivia_sets"
   add_foreign_key "results", "users"
   add_foreign_key "reviews", "courses"
   add_foreign_key "reviews", "users"
   add_foreign_key "sessions", "courses"
+  add_foreign_key "sessions", "trivia_sets"
   add_foreign_key "sessions", "users"
   add_foreign_key "transactions", "users", column: "buyer_id"
+  add_foreign_key "trivia_sets", "users", column: "creator_id"
 end

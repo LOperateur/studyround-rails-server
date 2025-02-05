@@ -1,6 +1,7 @@
 class Session < ApplicationRecord
   belongs_to :user, optional: true
-  belongs_to :course, optional: true
+  belongs_to :course, optional: true # Deprecated
+  belongs_to :trivia_set, optional: true
 
   has_many :course_session_links, -> { order(order: :asc) }, dependent: :destroy
   has_many :multi_courses, through: :course_session_links, source: :course
