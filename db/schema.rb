@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_02_01_151732) do
+ActiveRecord::Schema.define(version: 2025_02_06_022821) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -63,9 +63,19 @@ ActiveRecord::Schema.define(version: 2025_02_01_151732) do
     t.index ["course_id"], name: "index_categorizations_on_course_id"
   end
 
+  create_table "course_bundle_pairs", force: :cascade do |t|
+    t.bigint "course_bundle_id", null: false
+    t.bigint "course_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_bundle_id", "course_id"], name: "index_course_bundle_pairs_on_course_bundle_id_and_course_id", unique: true
+    t.index ["course_bundle_id"], name: "index_course_bundle_pairs_on_course_bundle_id"
+    t.index ["course_id"], name: "index_course_bundle_pairs_on_course_id"
+  end
+
   create_table "course_bundles", force: :cascade do |t|
     t.string "name"
-    t.jsonb "course_ids", default: [], null: false
+    t.text "description"
     t.bigint "creator_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -358,6 +368,8 @@ ActiveRecord::Schema.define(version: 2025_02_01_151732) do
   add_foreign_key "auth_providers", "users"
   add_foreign_key "categorizations", "categories"
   add_foreign_key "categorizations", "courses"
+  add_foreign_key "course_bundle_pairs", "course_bundles"
+  add_foreign_key "course_bundle_pairs", "courses"
   add_foreign_key "course_bundles", "users", column: "creator_id"
   add_foreign_key "course_collaborators", "courses"
   add_foreign_key "course_collaborators", "users"
