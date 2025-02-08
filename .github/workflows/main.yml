@@ -58,7 +58,7 @@ jobs:
           ref: staging
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "studyround-backend", "queue": "sidekiq"}'
       - name: Deploy App to AWS
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{  github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
