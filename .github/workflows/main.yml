@@ -34,7 +34,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY --all-tags
       - name: Build and push image to Amazon ECR production repo
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: production-studyround-ruby-backend
@@ -58,7 +58,7 @@ jobs:
           ref: staging
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "studyround-backend", "queue": "sidekiq"}'
       - name: Deploy App to AWS
-        if: ${{  github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
+        if: ${{ github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
