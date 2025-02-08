@@ -21,8 +21,8 @@ class CourseBundlesController < ApplicationController
       raise Errors::ForbiddenError.new(message: "You need to specify at least one course to create a course bundle")
     end
 
-    if course_ids.length > 4
-      raise Errors::ForbiddenError.new(message: "You can't create a course bundle with more than 4 courses")
+    if course_ids.length > 10
+      raise Errors::ForbiddenError.new(message: "You can't create a course bundle with more than 10 courses")
     end
 
     # Verify that all courses exist, and are available
