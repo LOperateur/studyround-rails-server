@@ -19,7 +19,7 @@ class SessionsController < ApplicationController
 
     case session_type
     when :study
-      session = create_placeholder_study_session(@courses.first, current_user.id)
+      session = create_study_session(@courses.first, current_user.id)
       questions, paginated_metadata = published_active_ordered_questions(@courses.first, params)
       render_session_data(session, questions, false, paginated_metadata)
 

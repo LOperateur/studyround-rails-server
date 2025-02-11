@@ -2,9 +2,7 @@ name: Deploy From Github To AWS
 
 on:
   push:
-    branches: [staging, main]
-  pull_request:
-    branches: [staging]
+    branches: [main]
 
 permissions:
   id-token: write
@@ -28,16 +26,16 @@ jobs:
         if: ${{ github.base_ref == 'staging' || github.ref == 'refs/heads/staging' }}
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: studyround-staging/ruby-backend
+          ECR_REPOSITORY: staging-studyround-ruby-backend
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY --all-tags
       - name: Build and push image to Amazon ECR production repo
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: studyround-production/ruby-backend
+          ECR_REPOSITORY: production-studyround-ruby-backend
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
@@ -58,7 +56,7 @@ jobs:
           ref: staging
           client_payload: '{"triggered": "true", "tag": "${{ github.sha }}", "container": "studyround-backend", "queue": "sidekiq"}'
       - name: Deploy App to AWS
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: LOperateur
