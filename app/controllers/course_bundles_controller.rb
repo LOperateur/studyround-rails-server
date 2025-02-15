@@ -5,8 +5,8 @@ class CourseBundlesController < ApplicationController
   wrap_parameters format: []
 
   def index
-    course_bundles = CourseBundle.all.order(created_at: :desc)
-    render json: course_bundles, root: :data, each_serializer: CourseBundleSerializer
+    course_bundles = paginate(CourseBundle.all.order(created_at: :desc), params)
+    render json: course_bundles, root: :data, meta: paginated_meta(course_bundles)
   end
 
   def show
