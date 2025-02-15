@@ -232,19 +232,12 @@ class CoursesController < ApplicationController
   end
 
   def recent_courses
-    # Fetch the test for any ongoing test sessions for this user
-    ongoing_tests = Session.where(session_type: :test).limit(10).map { |session| session.course }
+    recent_courses = search_and_filter(Course.published_active_courses.ordered_by_user_recent_results(current_user))
 
-    # Get recently used course results
-    results = current_user.results.published_active_course_results.limit(500)
-
-    # Group courses selecting the most recent result for each and sorting them in descending order
-    grouped_courses = results.group(:course).order('maximum_created_at desc').maximum(:created_at).take(10).to_h.keys
-    # grouped_courses = results.group(:course).maximum(:created_at).sort { |a, b| b.last <=> a.last }.take(10).to_h.keys
-
-    # Render both lists
-    combined = (ongoing_tests + grouped_courses).uniq
-    render json: combined, root: :data
+    # Specifying entry count here due to the result group count query which returns a hash of { grouped courses -> result count }
+    # https://api.rubyonrails.org/v7.0.6/classes/ActiveRecord/Calculations.html#method-i-count
+    paginated_recent_courses = paginate(recent_courses, params, entries = recent_courses.count.size)
+    render json: paginated_recent_courses, root: :data, meta: paginated_meta(paginated_recent_courses)
   end
 
   def enrolled_courses

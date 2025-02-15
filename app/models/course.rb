@@ -45,14 +45,27 @@ class Course < ApplicationRecord
   scope :filtered_by_test, -> (test) { where(test: test) }
 
   scope :ordered_by_result_count, -> {
-    left_joins(:results).group(:id).order('COUNT(results.id) DESC')
+    left_joins(:results) # Backwards compatible with old results that don't have course_result_links
+      .left_joins(:course_result_links)
+      .group(:id)
+      .order(Arel.sql('COUNT(results.id) + COUNT(course_result_links.id) DESC'))
   }
+
   scope :ordered_by_recent_result_count, -> {
-    left_joins(:results).where('results.created_at > ?', 180.days.ago).group(:id).order('COUNT(results.id) DESC')
+    left_joins(:results) # Backwards compatible with old results that don't have course_result_links, Todo: remove
+      .left_joins(:course_result_links)
+      .where('results.created_at > ? OR course_result_links.created_at > ?', 180.days.ago, 180.days.ago)
+      .group(:id)
+      .order(Arel.sql('COUNT(results.id) + COUNT(course_result_links.id) DESC'))
   }
+
+  # Not backwards compatible with old results that don't have course_result_links
   # joins is more appropriate here than left_joins because we want to exclude courses with no results
   scope :ordered_by_user_recent_results, -> (user) {
-    joins(:results).where(results: { user: user }).group(:id).order('MAX(results.created_at) DESC')
+    joins(course_result_links: :result) # Join through course_result_links to results
+      .where(results: { user: user })
+      .group(:id)
+      .order('MAX(results.created_at) DESC')
   }
 
   enum sale_status: {
