@@ -10,7 +10,7 @@ class CourseBundleSerializer < ActiveModel::Serializer
       {
         id: pair.course.id,
         name: pair.course.title,
-        description: pair.course.version,
+        version: pair.course.version,
         optional: pair.optional
       }
     end
