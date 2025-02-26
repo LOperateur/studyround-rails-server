@@ -55,6 +55,8 @@ Rails.application.routes.draw do
     resources :question_assets, only: [:index, :create, :update, :show, :destroy]
   end
 
+  resources :course_bundles, only: [:index, :show, :create, :destroy]
+
   get '/creator/courses/:course_id/questions', to: "questions#questions"
   post '/creator/courses/:course_id/questions', to: "questions#create"
   post '/creator/courses/:course_id/questions/import', to: "questions#bulk_import_questions_json"
