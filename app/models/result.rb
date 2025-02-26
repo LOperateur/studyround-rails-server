@@ -1,6 +1,7 @@
 class Result < ApplicationRecord
   belongs_to :user
-  belongs_to :course, optional: true
+  belongs_to :course, optional: true # Deprecated
+  belongs_to :trivia_set, optional: true
 
   has_many :course_result_links, -> { order(order: :asc) }, dependent: :destroy
   has_many :multi_courses, through: :course_result_links, source: :course
@@ -20,6 +21,7 @@ class Result < ApplicationRecord
     practice: 2,
     study: 3,
     test: 4,
+    trivia: 5,
   }, _prefix: true
 
   # Used to serialize the result model (with session data) on the go without having to render

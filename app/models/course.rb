@@ -17,6 +17,9 @@ class Course < ApplicationRecord
   has_many :course_session_links, dependent: :destroy
   has_many :multi_course_sessions, through: :course_session_links, source: :session
 
+  has_many :course_bundle_pairs, dependent: :destroy
+  has_many :course_bundles, through: :course_bundle_pairs
+
   has_many :questions, dependent: :destroy
   has_many :question_assets, dependent: :destroy
   has_many :reviews, dependent: :destroy

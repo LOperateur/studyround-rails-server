@@ -25,6 +25,7 @@ class ResultsController < ApplicationController
     result = Result.find(params[:result_id])
     course = result.course
 
+    # Todo: Handle Trivia Results
     if result.user != current_user
       if result.session_type_test?
 
