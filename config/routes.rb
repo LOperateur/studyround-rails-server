@@ -55,7 +55,9 @@ Rails.application.routes.draw do
     resources :question_assets, only: [:index, :create, :update, :show, :destroy]
   end
 
-  resources :course_bundles, only: [:index, :show, :create, :destroy]
+  resources :course_bundles, only: [:index, :show, :create, :update, :destroy] do
+    put '/modify', to: "course_bundles#modify"
+  end
 
   get '/creator/courses/:course_id/questions', to: "questions#questions"
   post '/creator/courses/:course_id/questions', to: "questions#create"
