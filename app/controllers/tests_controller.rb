@@ -1,4 +1,5 @@
 class TestsController < ApplicationController
+  include ActionView::Helpers::DateHelper
   include SessionHelper
   include CourseHelper
   include TestHelper
@@ -58,7 +59,7 @@ class TestsController < ApplicationController
     session = session_param
 
     # If session doesn't have an id, then it doesn't exist in the DB yet.
-    if !session[:id].present?
+    if session[:id].blank?
       raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
@@ -221,7 +222,7 @@ class TestsController < ApplicationController
   end
 
   def end_test_session_params
-    params.permit(:session_id, :device_id, :web_tab_id,
+    params.permit(:session_id,
                   :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
   end
 

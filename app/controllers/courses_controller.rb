@@ -1,7 +1,4 @@
 class CoursesController < ApplicationController
-  require 'action_view'
-  require 'action_view/helpers'
-  include ActionView::Helpers::DateHelper
   include CourseHelper
   include TestHelper
   include CardTransactionHelper

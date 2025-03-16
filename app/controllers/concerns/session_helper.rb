@@ -60,7 +60,7 @@ module SessionHelper
   end
 
   # Creates a minimal study session for Study modes
-  # It stores nothing and is used to reference basic session data like the session courses
+  # It is only used to reference basic session data like the session's courses
   def create_study_session(course, user_id)
     session = Session.new(user_id: user_id, session_type: :study)
 
@@ -121,7 +121,7 @@ module SessionHelper
     score = 0
     total = 0
 
-    session_items_with_answers.each do |answer|
+    session_items_with_answers.symbolize_keys.each do |answer|
       # Default to false
       answer[:correct] = false
 

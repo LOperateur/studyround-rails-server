@@ -95,7 +95,7 @@ module TestHelper
 
       # Start test session
       new_session = {
-        user: current_user,
+        user: user,
         course: @course,
         duration: @instructions[:time],
         session_type: :test,
@@ -190,7 +190,7 @@ module TestHelper
     elsif params_session_id.present?
       # If for some reason, the session no longer exists or has been destroyed
       # Use the id passed in the params to find the session's result
-      session_key = idempotent_session_key(current_user.id, params_session_id)
+      session_key = idempotent_session_key(user.id, params_session_id)
       begin
         result = Result.find_by!(session_key: session_key)
       rescue
