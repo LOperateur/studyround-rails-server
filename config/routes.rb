@@ -74,6 +74,11 @@ Rails.application.routes.draw do
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
   post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
+  resources :trivia_sets, path: "trivia", only: [:index, :show, :create, :update] do
+    post '/complete', to: "trivia_sets#close"
+    post '/delete', to: "trivia_sets#delete"
+  end
+
   # Todo: Remove this route, question explanations should be scoped to courses
   resources :questions, only: [] do
     get '/explanation', to: "questions#explanation"

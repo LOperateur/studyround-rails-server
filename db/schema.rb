@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_02_08_202834) do
+ActiveRecord::Schema.define(version: 2025_03_16_213034) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -333,7 +333,7 @@ ActiveRecord::Schema.define(version: 2025_02_08_202834) do
     t.jsonb "rules"
     t.jsonb "dq_results", default: []
     t.boolean "private"
-    t.integer "trivia_status"
+    t.integer "trivia_status", default: 1
     t.datetime "expiration"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
