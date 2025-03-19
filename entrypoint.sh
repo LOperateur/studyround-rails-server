@@ -4,7 +4,8 @@ echo $JSON_VAR | jq -r 'to_entries[] | .key + ": \"" + (.value|tostring) + "\""'
 
 bundle exec rake db:migrate
 
-if [[ $? -eq 0 ]] ; then
+# Check if migration failed
+if [[ $? -ne 0 ]]; then
   echo -e "\n== Failed to migrate. Running setup first. ==\n"
   bundle exec rails db:setup
 fi
