@@ -24,7 +24,7 @@ class TriviaSet < ApplicationRecord
         email: self.creator.email,
         title: self.title,
         trivia_id: self.id,
-        ).close_trivia_email.deliver_later
+      ).close_trivia_email.deliver_later
     else
       time_left = closing_time - Time.now
 
@@ -33,13 +33,13 @@ class TriviaSet < ApplicationRecord
         title: self.title,
         trivia_id: self.id,
         closing_time: "#{closing_time.to_formatted_s(:long_ordinal)} GMT",
-        ).expired_trivia_email.deliver_later
+      ).expired_trivia_email.deliver_later
 
       TriviaMailer.with(
         email: self.creator.email,
         title: self.title,
         trivia_id: self.id,
-        ).close_trivia_email.deliver_later(wait: (time_left).seconds)
+      ).close_trivia_email.deliver_later(wait: (time_left).seconds)
     end
   end
 end

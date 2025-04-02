@@ -100,7 +100,105 @@ class TriviaSetsController < ApplicationController
     render json: trivia, meta: { message: "Trivia is now Closed!" }, root: :data
   end
 
+  def submissions
+    trivia = TriviaSet.non_deleted_trivia.find(params[:trivia_set_id])
+
+    if current_user != trivia.creator
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to view these test submissions")
+    end
+
+    submissions = trivia.results.order(created_at: :desc)
+    paginated_submissions = paginate(submissions, params)
+
+    render json: paginated_submissions,
+           root: :data,
+           meta: paginated_meta(paginated_submissions),
+           each_serializer: ProfileResultSerializer,
+           status: :ok
+  end
+
+  def leaderboard
+    trivia = TriviaSet.non_deleted_trivia.find(params[:trivia_set_id])
+
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
+    user_count = trivia.results.distinct.count(:user_id)
+    closing_time = trivia.expiration + (trivia.rules['time']).seconds + lag_time
+
+    # Get first result that isn't disqualified (if any) or the first result (if all are disqualified)
+    results = trivia.results.where(user: current_user)&.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    result = results&.to_a&.find { |r| !r.disqualified? } || results&.first
+
+    score = result&.score
+    disqualified = result&.disqualified? || false
+
+    # Return empty rankings to unauthorised users who want to view the leaderboard before the trivia is closed
+    if !trivia.trivia_status_closed? && current_user != trivia.creator
+      _, _, paginated_metadata = custom_paginate(0, params)
+      render json:
+               {
+                 data: {
+                   has_result: !score.nil?,
+                   position: nil,
+                   score: score,
+                   total: result&.total,
+                   extra_id: result&.extra_id,
+                   disqualified: disqualified,
+                   users: user_count,
+                   closing_time: closing_time,
+                   rankings: []
+                 }
+               }.merge(paginated_metadata),
+             status: :ok
+      return
+    end
+
+    position = get_ranked_position(trivia, current_user)
+
+    top_submissions = trivia.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    paginated_submissions = paginate(top_submissions, params)
+
+    render json:
+             {
+               data: {
+                 has_result: !score.nil?,
+                 position: disqualified ? nil : position, # In case the user has more than one result ranked
+                 score: score,
+                 total: result&.total,
+                 extra_id: result&.extra_id,
+                 disqualified: disqualified,
+                 users: user_count,
+                 closing_time: closing_time,
+                 rankings: paginated_submissions.map do |ranked_result|
+                   ranked_result.serialized_profile_result
+                 end
+               },
+             }.merge(paginated_meta(paginated_submissions)),
+           status: :ok
+  end
+
   private
+
+  def get_ranked_position(trivia, user)
+    # Todo: Update the disqualification logic here too to use a list of disqualified results
+    #  For now, disqualified results are not going to exist
+    ranked_results_sql = <<~SQL
+      SELECT id, user_id, RANK() OVER (ORDER BY score DESC, elapsed_time ASC, created_at ASC) as rank
+      FROM results
+      WHERE trivia_set_id = ?
+    SQL
+    # WHERE trivia_set_id = ? AND (extra_id IS NOT NULL AND extra_id NOT LIKE '%Disqualified')
+
+    user_rank_sql = <<~SQL
+      SELECT rank
+      FROM (#{ranked_results_sql}) as ranked_results
+      WHERE user_id = ?
+      LIMIT 1
+    SQL
+
+    user_rank = Result.find_by_sql([user_rank_sql, trivia.id, user.id]).first&.rank
+
+    return user_rank
+  end
 
   def create_trivia_set_params
     params.permit(:title, :subtitle, :rules, :expiration, :private, :course_bundles)

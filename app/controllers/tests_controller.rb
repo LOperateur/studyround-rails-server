@@ -170,6 +170,87 @@ class TestsController < ApplicationController
     render json: @course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
   end
 
+  def test_submissions
+    course = Course.find(params[:course_id])
+    if !course.test
+      raise Errors::ForbiddenError.new(message: "The Course must be a Test!")
+    end
+
+    if !is_course_creator?(course, current_user)
+      raise Errors::ForbiddenError.new(message: "You don't have authority to view these test submissions")
+    end
+
+    submissions = course.results.order(created_at: :desc)
+    paginated_submissions = paginate(submissions, params)
+
+    render json: paginated_submissions,
+           root: :data,
+           meta: paginated_meta(paginated_submissions),
+           each_serializer: ProfileResultSerializer,
+           status: :ok
+  end
+
+  def leaderboard
+    course = Course.find(params[:course_id])
+    if !course.test
+      raise Errors::ForbiddenError.new(message: "The Course must be a Test to have a Leaderboard!")
+    end
+
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
+    user_count = course.results.distinct.count(:user_id)
+    closing_time = course.test_expiration + (course.instructions['time']).seconds + lag_time
+
+    # Get first result
+    results = course.results.where(user: current_user)&.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    result = results&.first
+
+    score = result&.score
+
+    # Return empty rankings to unauthorised users who want to view the leaderboard before the test is closed
+    if !course.course_status_closed? && !is_course_owner?(course, current_user)
+      _, _, paginated_metadata = custom_paginate(0, params)
+      render json:
+               {
+                 data: {
+                   has_result: !score.nil?,
+                   position: nil,
+                   score: score,
+                   total: result&.total,
+                   extra_id: result&.extra_id,
+                   disqualified: false,
+                   users: user_count,
+                   closing_time: closing_time,
+                   rankings: []
+                 }
+               }.merge(paginated_metadata),
+             status: :ok
+      return
+    end
+
+    position = get_ranked_position(course, current_user)
+
+    top_submissions = course.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    paginated_submissions = paginate(top_submissions, params)
+
+    render json:
+             {
+               data: {
+                 has_result: !score.nil?,
+                 position: position,
+                 score: score,
+                 total: result&.total,
+                 extra_id: result&.extra_id,
+                 disqualified: false,
+                 users: user_count,
+                 closing_time: closing_time,
+                 rankings: paginated_submissions.map do |ranked_result|
+                   ranked_result.serialized_profile_result
+                 end
+               },
+             }.merge(paginated_meta(paginated_submissions)),
+           status: :ok
+  end
+
   private
 
   def create_test_based_session(params)
@@ -194,6 +275,26 @@ class TestsController < ApplicationController
       action: :submit,
       data: result
     )
+  end
+
+  def get_ranked_position(course, user)
+    ranked_results_sql = <<~SQL
+      SELECT id, user_id, RANK() OVER (ORDER BY score DESC, elapsed_time ASC, created_at ASC) as rank
+      FROM results
+      WHERE course_id = ?
+    SQL
+    # WHERE course_id = ? AND (extra_id IS NOT NULL AND extra_id NOT LIKE '%Disqualified')
+
+    user_rank_sql = <<~SQL
+      SELECT rank
+      FROM (#{ranked_results_sql}) as ranked_results
+      WHERE user_id = ?
+      LIMIT 1
+    SQL
+
+    user_rank = Result.find_by_sql([user_rank_sql, course.id, user.id]).first&.rank
+
+    return user_rank
   end
 
   def load_test
