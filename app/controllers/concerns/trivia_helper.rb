@@ -42,7 +42,7 @@ module TriviaHelper
       attempts_left: get_max_trials_left(@rules[:max_trials]),
       retry_delay_left: get_retry_delay_left(@rules[:retry_delay]),
       extra_id_title: @rules[:extra_id_title],
-      rules: is_closed ? ["This Trivia has been ended"] : instructions_array.compact
+      instructions: is_closed ? ["This Trivia has been ended"] : instructions_array.compact
     }
   end
 
