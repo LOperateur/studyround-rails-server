@@ -70,11 +70,8 @@ class SessionsController < ApplicationController
 
         # User's session items didn't get to paginate through the total number of questions
         if session_items_with_answers.length < num_questions
-          # Recalculate the total possible score
-          total = 0
-          session_items_with_answers.each do |item|
-            total += item["multiplier"]
-          end
+          # Assume the remaining questions were 1-point questions and add that to the total
+          total += num_questions - session_items_with_answers.length
         end
 
       rescue

@@ -200,11 +200,12 @@ class TestsController < ApplicationController
     user_count = course.results.distinct.count(:user_id)
     closing_time = course.test_expiration + (course.instructions['time']).seconds + lag_time
 
-    # Get first result
+    # Get first result for the user that isn't disqualified (if any) or the first result (if all are disqualified)
     results = course.results.where(user: current_user)&.order(score: :desc, elapsed_time: :asc, created_at: :asc)
-    result = results&.first
+    result = results&.to_a&.find { |r| !r.disqualified } || results&.first
 
     score = result&.score
+    disqualified = result&.disqualified || false
 
     # Return empty rankings to unauthorised users who want to view the leaderboard before the test is closed
     if !course.course_status_closed? && !is_course_owner?(course, current_user)
@@ -217,7 +218,7 @@ class TestsController < ApplicationController
                    score: score,
                    total: result&.total,
                    extra_id: result&.extra_id,
-                   disqualified: false,
+                   disqualified: disqualified,
                    users: user_count,
                    closing_time: closing_time,
                    rankings: []
@@ -236,11 +237,11 @@ class TestsController < ApplicationController
              {
                data: {
                  has_result: !score.nil?,
-                 position: position,
+                 position: disqualified ? nil : position,
                  score: score,
                  total: result&.total,
                  extra_id: result&.extra_id,
-                 disqualified: false,
+                 disqualified: disqualified,
                  users: user_count,
                  closing_time: closing_time,
                  rankings: paginated_submissions.map do |ranked_result|
@@ -278,6 +279,8 @@ class TestsController < ApplicationController
   end
 
   def get_ranked_position(course, user)
+    # Todo: Update the disqualification logic here too to use a course list of disqualified results
+    #  For now, disqualified results are not going to exist
     ranked_results_sql = <<~SQL
       SELECT id, user_id, RANK() OVER (ORDER BY score DESC, elapsed_time ASC, created_at ASC) as rank
       FROM results
@@ -323,7 +326,7 @@ class TestsController < ApplicationController
   end
 
   def end_test_session_params
-    params.permit(:session_id,
+    params.permit(:session_id, :device_id, :web_tab_id,
                   :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
   end
 

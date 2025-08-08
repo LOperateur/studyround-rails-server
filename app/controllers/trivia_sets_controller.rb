@@ -23,6 +23,7 @@ class TriviaSetsController < ApplicationController
       trivia_set.rules = rules_json
     end
 
+    # Currently, course bundles are required to create a trivia set, not just plain course ids
     if create_trivia_set_params.key?(:course_bundles)
       course_bundles_json = JSON.parse(create_trivia_set_params[:course_bundles])
       trivia_set.course_bundle_ids = course_bundles_json
@@ -161,7 +162,7 @@ class TriviaSetsController < ApplicationController
              {
                data: {
                  has_result: !score.nil?,
-                 position: disqualified ? nil : position, # In case the user has more than one result ranked
+                 position: disqualified ? nil : position,
                  score: score,
                  total: result&.total,
                  extra_id: result&.extra_id,

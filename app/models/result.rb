@@ -34,7 +34,7 @@ class Result < ApplicationRecord
     ProfileResultSerializer.new(self).as_json
   end
 
-  # TODO: Applies to Trivia results, work on it later
+  # TODO: Applies to Test and Trivia results, work on it later
   def disqualified
     false
   end

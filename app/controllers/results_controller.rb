@@ -28,14 +28,14 @@ class ResultsController < ApplicationController
 
   def session_items
     result = Result.find(params[:result_id])
-    course = result.course
-    trivia = result.trivia_set
+    test = result.course # Applies if the result is a test (or course, now deprecated)
+    trivia = result.trivia_set # Applies if the result is a trivia
 
     if result.user != current_user
       if result.session_type_test?
 
         # For tests, raise exception if a user other than the candidate or creator tries to access it
-        if !is_course_creator?(course, current_user)
+        if !is_course_creator?(test, current_user)
           raise Errors::ForbiddenError.new(message: "You cannot view this result session")
         end
 
@@ -49,16 +49,16 @@ class ResultsController < ApplicationController
       elsif result.session_type_trivia?
         # For trivia, raise exception if a user other than the candidate or creator tries to access it
         if trivia.creator != current_user
-          raise Errors::ForbiddenError.new(message: "You cannot view this result session")
+          raise Errors::ForbiddenError.new(message: "You cannot view this result's session")
         end
       else
-        raise Errors::ForbiddenError.new(message: "You cannot view this result session")
+        raise Errors::ForbiddenError.new(message: "You cannot view this result's session")
       end
     end
 
     if result.session_type_test?
       # Restrict session item access if reveal answers is false and the course isn't closed yet
-      if !course.instructions['reveal_answers'] && !course.course_status_closed?
+      if !test.instructions['reveal_answers'] && !test.course_status_closed?
         raise Errors::ForbiddenError.new(message: "The creator of this course has restricted viewing answers until they close the test. Please check back later.")
       end
     end
@@ -72,8 +72,9 @@ class ResultsController < ApplicationController
 
     if !result.session_type_test?
       # For non-test sessions, if session items is empty or nil, then just raise an error
+      # Since tests keep refs to session items permanently, this is not an issue for tests
       if result.session_items.blank?
-        raise Errors::BaseError.new(message: "This result session is no longer available", status: 400)
+        raise Errors::BaseError.new(message: "This result's session is no longer available", status: 400)
       end
     end
 

@@ -121,7 +121,9 @@ module SessionHelper
     score = 0
     total = 0
 
-    session_items_with_answers.symbolize_keys.each do |answer|
+    # This is from ActionController::Parameters which extends HashWithIndifferentAccess
+    # so we can access keys with symbols or strings
+    session_items_with_answers.each do |answer|
       # Default to false
       answer[:correct] = false
 
