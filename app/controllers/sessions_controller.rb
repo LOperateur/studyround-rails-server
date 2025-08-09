@@ -15,7 +15,7 @@ class SessionsController < ApplicationController
       end
     end
 
-    session_type = require_session_type(start_course_session_params[:session_type])
+    session_type = require_session_type(start_session_params[:session_type])
 
     case session_type
     when :study
@@ -24,16 +24,19 @@ class SessionsController < ApplicationController
       render_session_data(session, questions, false, paginated_metadata)
 
     when :quiz, :practice
-      session, questions = create_course_based_session(start_course_session_params, @courses, current_user.id)
+      session, questions = create_course_based_session(start_session_params, @courses, current_user.id)
       # Converting to array to calculate the offset page data w.r.t `num_questions`
       # This is because we call `limit` on the questions to get the first `num_questions`
       paginated_questions = paginate(questions.to_a)
       render_session_data(session, paginated_questions, false)
 
     when :trivia
-      trivia = TriviaSet.find(start_course_session_params[:trivia_id])
-      session = start_trivia_session(current_user, @courses, trivia, start_course_session_params[:extra_id])
-      # Todo
+      trivia = TriviaSet.non_deleted_trivia.find(start_session_params[:trivia_id])
+      session, questions = start_or_resume_trivia_session(current_user, @courses, trivia, start_session_params[:extra_id])
+      # Converting to array to calculate the offset page data w.r.t `num_questions`
+      # This is because we call `limit` on the questions to get the first `num_questions`
+      paginated_questions = paginate(questions.to_a)
+      render_session_data(session, paginated_questions, false)
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -47,8 +50,19 @@ class SessionsController < ApplicationController
         raise Errors::BaseError.new(message: "Invalid session type - Study", status: 400)
       end
 
+      if session.session_type.to_sym == :trivia
+        result = get_end_trivia_result(
+          current_user,
+          session.trivia_set,
+          end_session_params[:session_items],
+          params[:id],
+        )
+        render json: result, root: :data, serializer: SessionResultSerializer, status: :created
+        return
+      end
+
       # Include the question json data here to save
-      session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
+      session_items_with_answers = flesh_out_session_items(end_session_params[:session_items])
       num_questions = session.session_items.length
 
       begin
@@ -153,7 +167,7 @@ class SessionsController < ApplicationController
     end
 
     # Obtain guest information
-    guest_id = end_course_session_params[:guest_id]
+    guest_id = end_session_params[:guest_id]
     if guest_id.nil?
       raise Errors::BaseError.new(message: "Unknown guest user!", status: 400)
     end
@@ -166,7 +180,7 @@ class SessionsController < ApplicationController
       end
 
       # Include the question json data here
-      session_items_with_answers = flesh_out_session_items(end_course_session_params[:answers])
+      session_items_with_answers = flesh_out_session_items(end_session_params[:session_items])
 
       begin
         score, total = mark(session_items_with_answers)
@@ -215,7 +229,7 @@ class SessionsController < ApplicationController
     end
 
     # Send the invite/results email if the guest provided an email
-    guest_email = end_course_session_params[:guest_email]
+    guest_email = end_session_params[:guest_email]
 
     if guest_email.present?
       # TODO: Move this to a shared concern
@@ -255,8 +269,7 @@ class SessionsController < ApplicationController
       end
       }.merge(paginated_metadata)
 
-    when :quiz, :practice
-      session = Session.find(params[:id])
+    when :quiz, :practice,
       question_ids = session.session_items.map { |session_item| session_item["question_id"] }
 
       # Sort by the order of ids supplied
@@ -265,6 +278,14 @@ class SessionsController < ApplicationController
       paginated_questions = paginate(questions, params)
       render json: paginated_questions, root: :data, each_serializer: QuestionAnswerSerializer, meta: paginated_meta(paginated_questions)
 
+    when :trivia
+      question_ids = session.session_items.map { |session_item| session_item["question_id"] }
+
+      # Sort by the order of ids supplied
+      questions = Question.where(id: question_ids).sort_by { |i| question_ids.index(i.id) }
+
+      paginated_questions = paginate(questions, params)
+      render json: paginated_questions, root: :data, each_serializer: QuestionSerializer, meta: paginated_meta(paginated_questions)
     else
       raise Errors::BaseError.new(message: "Invalid session type", status: 400)
     end
@@ -275,7 +296,7 @@ class SessionsController < ApplicationController
   def load_courses
     begin
       @courses = []
-      course_ids = params[:courses]
+      course_ids = start_session_params[:courses]
 
       course_ids.each do |course_id|
         @courses << Course.session_accessible_courses.find(course_id)
@@ -295,14 +316,14 @@ class SessionsController < ApplicationController
     end
   end
 
-  def start_course_session_params
+  def start_session_params
     params.permit(:session_type, :questions, :device_id, :web_tab_id, :duration, :year,
                   :trivia_id, :extra_id,
                   :courses => [], :tags => [])
   end
 
-  def end_course_session_params
+  def end_session_params
     params.permit(:guest_id, :guest_email,
-                  :answers => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
+                  :session_items => [:question_id, :question_version, :multiplier, :user_answer => [], :correct_answer => []])
   end
 end

@@ -60,7 +60,7 @@ module SessionHelper
   end
 
   # Creates a minimal study session for Study modes
-  # It stores nothing and is used to reference basic session data like the session courses
+  # It is only used to reference basic session data like the session's courses
   def create_study_session(course, user_id)
     session = Session.new(user_id: user_id, session_type: :study)
 
@@ -121,6 +121,8 @@ module SessionHelper
     score = 0
     total = 0
 
+    # This is from ActionController::Parameters which extends HashWithIndifferentAccess
+    # so we can access keys with symbols or strings
     session_items_with_answers.each do |answer|
       # Default to false
       answer[:correct] = false
@@ -153,8 +155,9 @@ module SessionHelper
     rnd.uuid
   end
 
-  # Fetches ALL the paginated questions for a session in an ordered
+  # Fetches ALL the paginated questions for a Course in an ordered
   # manner using the linked list approach.
+  # This is used for Study mode.
   def published_active_ordered_questions(course, params)
     # Optional year filter
     year = params[:year].presence

@@ -1,4 +1,5 @@
 class TestsController < ApplicationController
+  include ActionView::Helpers::DateHelper
   include SessionHelper
   include CourseHelper
   include TestHelper
@@ -22,6 +23,7 @@ class TestsController < ApplicationController
     end
 
     session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
+    is_randomized = @course.instructions['randomize_questions'] || false
 
     if session_param.nil?
       raise_ended_test_error(@course)
@@ -30,7 +32,11 @@ class TestsController < ApplicationController
     # If session_param already has an id, return the existing session, otherwise, create a new one
     session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
 
-    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    questions, paginated_metadata = if is_randomized
+                                      published_active_random_questions(@course, params, session.id)
+                                    else
+                                      published_active_ordered_questions(@course, params)
+                                    end
     render_session_data(session.serialized_session, questions, true, paginated_metadata)
   end
 
@@ -49,6 +55,7 @@ class TestsController < ApplicationController
     @course = Course.non_deleted_courses.find(params[:course_id])
 
     session_param = get_start_test_session(current_user, @course)
+    is_randomized = @course.instructions['randomize_questions'] || false
 
     if session_param.nil?
       raise_ended_test_error(@course)
@@ -58,11 +65,15 @@ class TestsController < ApplicationController
     session = session_param
 
     # If session doesn't have an id, then it doesn't exist in the DB yet.
-    if !session[:id].present?
+    if session[:id].blank?
       raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
-    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    questions, paginated_metadata = if is_randomized
+                                      published_active_random_questions(@course, params, session.id)
+                                    else
+                                      published_active_ordered_questions(@course, params)
+                                    end
     render json: { data: questions.map do |question|
       question.serialized_question
     end
@@ -169,6 +180,88 @@ class TestsController < ApplicationController
     render json: @course, meta: { message: "Test is now Closed!" }, root: :data, serializer: CreatorCourseSerializer
   end
 
+  def test_submissions
+    course = Course.find(params[:course_id])
+    if !course.test
+      raise Errors::ForbiddenError.new(message: "The Course must be a Test!")
+    end
+
+    if !is_course_creator?(course, current_user)
+      raise Errors::ForbiddenError.new(message: "You don't have authority to view these test submissions")
+    end
+
+    submissions = course.results.order(created_at: :desc)
+    paginated_submissions = paginate(submissions, params)
+
+    render json: paginated_submissions,
+           root: :data,
+           meta: paginated_meta(paginated_submissions),
+           each_serializer: ProfileResultSerializer,
+           status: :ok
+  end
+
+  def leaderboard
+    course = Course.find(params[:course_id])
+    if !course.test
+      raise Errors::ForbiddenError.new(message: "The Course must be a Test to have a Leaderboard!")
+    end
+
+    lag_time = ENV['TEST_LAG_TIME_SECONDS'].to_i.seconds
+    user_count = course.results.distinct.count(:user_id)
+    closing_time = course.test_expiration + (course.instructions['time']).seconds + lag_time
+
+    # Get first result for the user that isn't disqualified (if any) or the first result (if all are disqualified)
+    results = course.results.where(user: current_user)&.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    result = results&.to_a&.find { |r| !r.disqualified } || results&.first
+
+    score = result&.score
+    disqualified = result&.disqualified || false
+
+    # Return empty rankings to unauthorised users who want to view the leaderboard before the test is closed
+    if !course.course_status_closed? && !is_course_owner?(course, current_user)
+      _, _, paginated_metadata = custom_paginate(0, params)
+      render json:
+               {
+                 data: {
+                   has_result: !score.nil?,
+                   position: nil,
+                   score: score,
+                   total: result&.total,
+                   extra_id: result&.extra_id,
+                   disqualified: disqualified,
+                   users: user_count,
+                   closing_time: closing_time,
+                   rankings: []
+                 }
+               }.merge(paginated_metadata),
+             status: :ok
+      return
+    end
+
+    position = get_ranked_position(course, current_user)
+
+    top_submissions = course.results.order(score: :desc, elapsed_time: :asc, created_at: :asc)
+    paginated_submissions = paginate(top_submissions, params)
+
+    render json:
+             {
+               data: {
+                 has_result: !score.nil?,
+                 position: disqualified ? nil : position,
+                 score: score,
+                 total: result&.total,
+                 extra_id: result&.extra_id,
+                 disqualified: disqualified,
+                 users: user_count,
+                 closing_time: closing_time,
+                 rankings: paginated_submissions.map do |ranked_result|
+                   ranked_result.serialized_profile_result
+                 end
+               },
+             }.merge(paginated_meta(paginated_submissions)),
+           status: :ok
+  end
+
   private
 
   def create_test_based_session(params)
@@ -193,6 +286,28 @@ class TestsController < ApplicationController
       action: :submit,
       data: result
     )
+  end
+
+  def get_ranked_position(course, user)
+    # Todo: Update the disqualification logic here too to use a course list of disqualified results
+    #  For now, disqualified results are not going to exist
+    ranked_results_sql = <<~SQL
+      SELECT id, user_id, RANK() OVER (ORDER BY score DESC, elapsed_time ASC, created_at ASC) as rank
+      FROM results
+      WHERE course_id = ?
+    SQL
+    # WHERE course_id = ? AND (extra_id IS NOT NULL AND extra_id NOT LIKE '%Disqualified')
+
+    user_rank_sql = <<~SQL
+      SELECT rank
+      FROM (#{ranked_results_sql}) as ranked_results
+      WHERE user_id = ?
+      LIMIT 1
+    SQL
+
+    user_rank = Result.find_by_sql([user_rank_sql, course.id, user.id]).first&.rank
+
+    return user_rank
   end
 
   def load_test

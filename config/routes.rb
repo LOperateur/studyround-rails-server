@@ -74,6 +74,13 @@ Rails.application.routes.draw do
   post '/creator/courses/:course_id/set-source', to: "questions#bulk_set_source"
   post '/creator/courses/:course_id/set-year', to: "questions#bulk_set_year"
 
+  resources :trivia_sets, path: "trivia", only: [:index, :show, :create, :update] do
+    post '/complete', to: "trivia_sets#close"
+    post '/delete', to: "trivia_sets#delete"
+    get '/submissions', to: "trivia_sets#submissions"
+    get '/leaderboard', to: "trivia_sets#leaderboard"
+  end
+
   # Todo: Remove this route, question explanations should be scoped to courses
   resources :questions, only: [] do
     get '/explanation', to: "questions#explanation"
@@ -83,26 +90,31 @@ Rails.application.routes.draw do
 
   get '/user/results', to: "results#recent"
   get 'results/grouped', to: "results#grouped"
-  get '/tests/:course_id/submissions', to: "results#test_submissions"
-  get '/tests/:course_id/leaderboard', to: "results#leaderboard"
   resources :results, only: [:show] do
     get '/session-items', to: "results#session_items"
   end
 
+  get '/tests/:course_id/submissions', to: "tests#test_submissions"
+  get '/tests/:course_id/leaderboard', to: "tests#leaderboard"
   get '/tests/:course_id/instructions', to: "tests#test_instructions"
   post '/tests/:course_id/start', to: "tests#start_test"
   post '/tests/:course_id/end', to: "tests#end_test"
   get '/tests/:course_id/questions', to: "tests#questions"
   post '/tests/:course_id/halt-attempts', to: "tests#halt_attempts"
   post '/tests/:course_id/complete', to: "tests#close_test"
-  get '/sessions/:id/verify', to: "tests#verify_active_test_session"
-  patch '/sessions/:id', to: "tests#update_test_session"
+  get '/tests/sessions/:id/verify', to: "tests#verify_active_test_session"
+  patch '/tests/sessions/:id', to: "tests#update_test_session"
 
   post '/session/start', to: "sessions#start"
   post '/session/start-demo', to: "sessions#start_demo"
   get '/sessions/:id/questions', to: "sessions#questions"
   post '/sessions/:id/end', to: "sessions#end"
   post '/sessions/:id/end-demo', to: "sessions#end_demo"
+
+  # Trivia Sessions
+  post '/sessions/instructions', to: "trivia_sessions#trivia_instructions"
+  get '/sessions/:id/verify', to: "trivia_sessions#verify_active_trivia_session"
+  patch '/sessions/:id', to: "trivia_sessions#update_trivia_session"
 
   # Flutterwave Gateway
   get '/transactions/initiate', to: "flutterwave_transactions#initiate"

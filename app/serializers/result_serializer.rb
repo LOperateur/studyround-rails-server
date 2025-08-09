@@ -28,6 +28,12 @@ class ResultSerializer < ActiveModel::Serializer
       if !course.instructions['reveal_answers'] && !course.course_status_closed?
         can_reveal_answers = false
       end
+    elsif object.session_type_trivia?
+      trivia = object.trivia_set
+      # Restrict session item access if reveal answers is false and the trivia isn't closed yet
+      if !trivia.rules['reveal_answers'] && !trivia.trivia_status_closed?
+        can_reveal_answers = false
+      end
     end
 
     return can_reveal_answers

@@ -17,4 +17,13 @@ class ResultMailer < ApplicationMailer
     @result_id = params[:result_id]
     mail(to: @email, subject: 'Your StudyRound Test Results!')
   end
+
+  def trivia_results_email
+    @email = params[:email]
+    @title = params[:title]
+    @score = params[:score]
+    @trivia_id = params[:trivia_id]
+    @result_id = params[:result_id]
+    mail(to: @email, subject: 'Your StudyRound Trivia Results!')
+  end
 end
