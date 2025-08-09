@@ -23,6 +23,7 @@ class TestsController < ApplicationController
     end
 
     session_param = get_start_test_session(current_user, @course, start_test_session_params[:extra_id])
+    is_randomized = @course.instructions['randomize_questions'] || false
 
     if session_param.nil?
       raise_ended_test_error(@course)
@@ -31,7 +32,11 @@ class TestsController < ApplicationController
     # If session_param already has an id, return the existing session, otherwise, create a new one
     session = session_param[:id].present? ? session_param : create_test_based_session(session_param)
 
-    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    questions, paginated_metadata = if is_randomized
+                                      published_active_random_questions(@course, params, session.id)
+                                    else
+                                      published_active_ordered_questions(@course, params)
+                                    end
     render_session_data(session.serialized_session, questions, true, paginated_metadata)
   end
 
@@ -50,6 +55,7 @@ class TestsController < ApplicationController
     @course = Course.non_deleted_courses.find(params[:course_id])
 
     session_param = get_start_test_session(current_user, @course)
+    is_randomized = @course.instructions['randomize_questions'] || false
 
     if session_param.nil?
       raise_ended_test_error(@course)
@@ -63,7 +69,11 @@ class TestsController < ApplicationController
       raise Errors::BaseError.new(message: "No existing session for this user. Please refresh or check your results", status: 400)
     end
 
-    questions, paginated_metadata = published_active_ordered_questions(@course, params)
+    questions, paginated_metadata = if is_randomized
+                                      published_active_random_questions(@course, params, session.id)
+                                    else
+                                      published_active_ordered_questions(@course, params)
+                                    end
     render json: { data: questions.map do |question|
       question.serialized_question
     end

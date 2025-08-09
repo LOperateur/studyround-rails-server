@@ -155,8 +155,9 @@ module SessionHelper
     rnd.uuid
   end
 
-  # Fetches ALL the paginated questions for a session in an ordered
+  # Fetches ALL the paginated questions for a Course in an ordered
   # manner using the linked list approach.
+  # This is used for Study mode.
   def published_active_ordered_questions(course, params)
     # Optional year filter
     year = params[:year].presence
