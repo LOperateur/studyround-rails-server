@@ -234,9 +234,13 @@ class TriviaSetsController < ApplicationController
     end
 
     if failure_count > 0
-      message += "#{failure_count} #{'invitation'.pluralize(failure_count)} failed to send."
+      message += "#{failure_count} #{'invitation'.pluralize(failure_count)} failed to send. "
 
       if success_count == 0
+        if failed_invites.any? { |inv| inv[:reason] == "Already invited" }
+          message += "Provided email(s) have already been invited."
+        end
+
         raise Errors::BaseError.new(message: message, status: 400)
       end
     end
@@ -251,6 +255,21 @@ class TriviaSetsController < ApplicationController
       },
       message: message,
     }
+  end
+
+  def invitees
+    trivia_set = TriviaSet.non_deleted_trivia.find(params[:trivia_set_id])
+
+    # Check if user has permission to view invitees
+    if current_user != trivia_set.creator && current_user.user_type != :admin
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to view invitees for this trivia")
+    end
+
+    # Get all invitations for this trivia
+    invitations = trivia_set.trivia_invitations.includes(:user).order(created_at: :desc)
+
+    paginated_invitees = paginate(invitations, params)
+    render json: paginated_invitees, root: :data, each_serializer: TriviaInvitationSerializer, meta: paginated_meta(paginated_invitees)
   end
 
   private

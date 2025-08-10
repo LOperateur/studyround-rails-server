@@ -324,9 +324,13 @@ class TestsController < ApplicationController
     end
 
     if failure_count > 0
-      message += "#{failure_count} #{'invitation'.pluralize(failure_count)} failed to send."
+      message += "#{failure_count} #{'invitation'.pluralize(failure_count)} failed to send. "
 
       if success_count == 0
+        if failed_invites.any? { |inv| inv[:reason] == "Already invited" }
+          message += "Provided email(s) have already been invited."
+        end
+
         raise Errors::BaseError.new(message: message, status: 400)
       end
     end
@@ -341,6 +345,26 @@ class TestsController < ApplicationController
       },
       message: message,
     }
+  end
+
+  def invitees
+    course = Course.session_accessible_courses.find(params[:course_id])
+
+    # Ensure the course is a test
+    unless course.test?
+      raise Errors::BaseError.new(message: "You can only view invitees for a test", status: 400)
+    end
+
+    # Check if user has permission to view invitees
+    if !is_course_owner?(course, current_user)
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to view invitees for this test")
+    end
+
+    # Get all invitations for this test
+    invitations = course.test_invitations.includes(:user).order(created_at: :desc)
+
+    paginated_invitees = paginate(invitations, params)
+    render json: paginated_invitees, root: :data, each_serializer: TestInvitationSerializer, meta: paginated_meta(paginated_invitees)
   end
 
   private
