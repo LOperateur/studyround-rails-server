@@ -79,6 +79,7 @@ Rails.application.routes.draw do
     post '/delete', to: "trivia_sets#delete"
     get '/submissions', to: "trivia_sets#submissions"
     get '/leaderboard', to: "trivia_sets#leaderboard"
+    post '/invite', to: "trivia_sets#invite_users"
   end
 
   # Todo: Remove this route, question explanations should be scoped to courses
@@ -97,6 +98,7 @@ Rails.application.routes.draw do
   get '/tests/:course_id/submissions', to: "tests#test_submissions"
   get '/tests/:course_id/leaderboard', to: "tests#leaderboard"
   get '/tests/:course_id/instructions', to: "tests#test_instructions"
+  post '/tests/:course_id/invite', to: "tests#invite_users"
   post '/tests/:course_id/start', to: "tests#start_test"
   post '/tests/:course_id/end', to: "tests#end_test"
   get '/tests/:course_id/questions', to: "tests#questions"

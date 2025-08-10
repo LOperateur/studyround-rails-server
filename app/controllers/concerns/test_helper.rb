@@ -12,7 +12,7 @@ module TestHelper
     @current_session = user.sessions.find_by(course: course)
 
     instructions_array = [
-      instructions_map[:private], # Provided by the Test Info
+      instructions_map[:invitation], # Provided by the Test Info
       instructions_map[:num_questions], # Provided by the Test Info
       instructions_map[:expiration], # Provided by the Test Info
     ]
@@ -41,8 +41,9 @@ module TestHelper
     end
 
     {
-      course: course.serialized_mini_course,
+      course: @course.serialized_mini_course,
       resuming: is_user_resuming,
+      has_invite: @course.user_eligible?(@user),
       session_id: if is_user_resuming then @current_session.id else nil end,
       server_time: Time.now.utc, # Send server time to API in UTC T..Z format
       time_left: get_time_left(@instructions[:time]),
@@ -62,9 +63,9 @@ module TestHelper
 
     @current_session = user.sessions.find_by(course: course)
 
-    # Check privacy and invitation key
-    if @course.private && !has_valid_invitation
-      raise Errors::ForbiddenError.new(message: "Invalid invitation key")
+    # Check if user is eligible for invite-only tests
+    if @course.invite_only? && !@course.user_eligible?(@user)
+      raise Errors::ForbiddenError.new(message: "This test is invite-only. You need an invitation to access it.")
     end
 
     # Check if it has been closed by the creator
@@ -281,7 +282,7 @@ module TestHelper
   def instructions_map
     {
       # Default test instructions
-      private: privacy_instruction,
+      invitation: invitation_instruction,
       num_questions: num_questions_instruction,
 
       # Restrictive instructions
@@ -302,12 +303,12 @@ module TestHelper
 
   # region Instruction Mapping
 
-  def privacy_instruction
+  def invitation_instruction
     invited_text = "You have been invited by #{@course.creator.username} to take this test"
-    uninvited_text = "This test is private, you need a valid invitation to partake"
+    uninvited_text = "This test is invite-only, you need a valid invitation to partake"
 
-    if @course.private
-      has_valid_invitation ? invited_text : uninvited_text
+    if @course.invite_only?
+      @course.user_eligible?(@user) ? invited_text : uninvited_text
     else
       nil
     end
@@ -421,13 +422,6 @@ module TestHelper
   # endregion
 
   # region Validation Checks
-
-  # Check if the user was invited for the private test
-  def has_valid_invitation
-    # Todo: Validate Invitation properly and pass the key through method parameters
-    # return validate(params[:invite_key])
-    return true
-  end
 
   def is_user_resuming
     return !@current_session.nil?

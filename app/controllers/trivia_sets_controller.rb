@@ -177,6 +177,82 @@ class TriviaSetsController < ApplicationController
            status: :ok
   end
 
+  def invite_users
+    trivia_set = TriviaSet.non_deleted_trivia.find(params[:trivia_set_id])
+
+    # Check if user has permission to invite
+    if current_user != trivia_set.creator || current_user.user_type == :admin
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to invite users to this trivia")
+    end
+
+    # Check if trivia is invite-only
+    unless trivia_set.invite_only?
+      raise Errors::BaseError.new(message: "This trivia is not set to invite-only", status: 400)
+    end
+
+    emails = invite_user_params[:emails] || []
+
+    # Validate email limit (100 max)
+    existing_invitations_count = trivia_set.trivia_invitations.count
+    if existing_invitations_count + emails.length > 100
+      raise Errors::BaseError.new(message: "Cannot exceed 100 invitations per trivia", status: 400)
+    end
+
+    successful_invites = []
+    failed_invites = []
+
+    emails.each do |email|
+      begin
+        # Check if invitation already exists
+        if trivia_set.trivia_invitations.exists?(email: email)
+          failed_invites << { email: email, reason: "Already invited" }
+          next
+        end
+
+        # Create invitation
+        invitation = trivia_set.trivia_invitations.create!(
+          email: email,
+          invited_by: current_user,
+          user: User.find_by(email: email) # Link user if they exist
+        )
+
+        successful_invites << invitation
+      rescue ActiveRecord::RecordInvalid => e
+        failed_invites << { email: email, reason: e.message }
+      end
+    end
+
+    # TODO: Send invitation emails here
+    # InvitationMailer.with(invitations: successful_invites, trivia_set: trivia_set).send_invitations.deliver_later
+
+    message = ""
+    success_count = successful_invites.length
+    failure_count = failed_invites.length
+
+    if success_count > 0
+      message += "Sent #{success_count} #{'invitation'.pluralize(success_count)} successfully. "
+    end
+
+    if failure_count > 0
+      message += "#{failure_count} #{'invitation'.pluralize(failure_count)} failed to send."
+
+      if success_count == 0
+        raise Errors::BaseError.new(message: message, status: 400)
+      end
+    end
+
+    if message.blank?
+      message = "No invitations were sent."
+    end
+
+    render json: {
+      data: {
+        successful_invites: successful_invites.map(&:email)
+      },
+      message: message,
+    }
+  end
+
   private
 
   def get_ranked_position(trivia, user)
@@ -203,5 +279,9 @@ class TriviaSetsController < ApplicationController
 
   def create_trivia_set_params
     params.permit(:title, :subtitle, :rules, :expiration, :private, :course_bundles)
+  end
+
+  def invite_user_params
+    params.permit(:emails => [])
   end
 end

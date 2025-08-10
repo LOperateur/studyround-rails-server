@@ -3,6 +3,10 @@ class TriviaSet < ApplicationRecord
   has_many :sessions, dependent: :nullify
   has_many :results, dependent: :nullify
 
+  # Invitation relationships
+  has_many :trivia_invitations, dependent: :destroy
+  has_many :invited_users, through: :trivia_invitations, source: :user
+
   enum trivia_status: {
     active: 1,
     suspended: 2,
@@ -41,5 +45,15 @@ class TriviaSet < ApplicationRecord
         trivia_id: self.id,
       ).close_trivia_email.deliver_later(wait: (time_left).seconds)
     end
+  end
+
+  # Invitation eligibility methods
+  def user_eligible?(user)
+    return true unless invite_only?
+    return false unless user
+    return true if creator == user || current_user.user_type == :admin
+
+    invitation = trivia_invitations.find_by(email: user.email)
+    return invitation&.present? || false
   end
 end
