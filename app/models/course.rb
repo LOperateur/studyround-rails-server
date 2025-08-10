@@ -1,5 +1,6 @@
 class Course < ApplicationRecord
   include Rails.application.routes.url_helpers
+  include CourseHelper
 
   belongs_to :creator, class_name: 'User'
 
@@ -25,6 +26,11 @@ class Course < ApplicationRecord
   has_many :reviews, dependent: :destroy
   has_many :course_collaborators, dependent: :destroy
   has_many :collaborators, through: :course_collaborators, source: :user
+
+  # Test invitation relationships
+  has_many :test_invitations, dependent: :destroy
+  has_many :invited_users, through: :test_invitations, source: :user
+
   has_one_attached :image, dependent: :purge_later # Purge the image if the course is deleted
 
   scope :published_active_courses, -> { where(publish_status: :publish_status_published, course_status: :course_status_active, private: false) }
@@ -189,4 +195,13 @@ class Course < ApplicationRecord
     end
   end
 
+  # Invitation eligibility methods for tests
+  def user_eligible?(user)
+    return true unless invite_only?
+    return false unless user
+    return true if is_course_owner?(self, user)
+
+    invitation = test_invitations.find_by(email: user.email)
+    return invitation&.present? || false
+  end
 end

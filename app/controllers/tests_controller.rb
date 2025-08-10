@@ -262,6 +262,111 @@ class TestsController < ApplicationController
            status: :ok
   end
 
+  def invite_users
+    course = Course.session_accessible_courses.find(params[:course_id])
+
+    # Ensure the course is a test
+    unless course.test?
+      raise Errors::BaseError.new(message: "You can only invite users to a test", status: 400)
+    end
+
+    # Check if user has permission to invite
+    if !is_course_owner?(course, current_user)
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to invite users to this test")
+    end
+
+    # Check if course is invite-only
+    unless course.invite_only?
+      raise Errors::BaseError.new(message: "This #{course_or_test(course)} is not set to invite-only", status: 400)
+    end
+
+    emails = invite_user_params[:emails] || []
+
+    # Validate email limit (100 max)
+    existing_invitations_count = course.test_invitations.count
+    if existing_invitations_count + emails.length > 100
+      raise Errors::BaseError.new(message: "Cannot exceed 100 invitations per #{course_or_test(course)}", status: 400)
+    end
+
+    successful_invites = []
+    failed_invites = []
+
+    emails.each do |email|
+      begin
+        # Check if invitation already exists
+        if course.test_invitations.exists?(email: email)
+          failed_invites << { email: email, reason: "Already invited" }
+          next
+        end
+
+        # Create invitation
+        invitation = course.test_invitations.create!(
+          email: email,
+          invited_by: current_user,
+          user: User.find_by(email: email) # Link user if they exist
+        )
+
+        successful_invites << invitation
+      rescue ActiveRecord::RecordInvalid => e
+        failed_invites << { email: email, reason: e.message }
+      end
+    end
+
+    # TODO: Send invitation emails here
+    # InvitationMailer.with(invitations: successful_invites, course: @course).send_invitations.deliver_later
+
+    message = ""
+    success_count = successful_invites.length
+    failure_count = failed_invites.length
+
+    if success_count > 0
+      message += "Sent #{success_count} #{'invitation'.pluralize(success_count)} successfully. "
+    end
+
+    if failure_count > 0
+      message += "#{failure_count} #{'invitation'.pluralize(failure_count)} failed to send. "
+
+      if success_count == 0
+        if failed_invites.any? { |inv| inv[:reason] == "Already invited" }
+          message += "Provided email(s) have already been invited."
+        end
+
+        raise Errors::BaseError.new(message: message, status: 400)
+      end
+    end
+
+    if message.blank?
+      message = "No invitations were sent."
+    end
+
+    render json: {
+      data: {
+        successful_invites: successful_invites.map(&:email)
+      },
+      message: message,
+    }
+  end
+
+  def invitees
+    course = Course.session_accessible_courses.find(params[:course_id])
+
+    # Ensure the course is a test
+    unless course.test?
+      raise Errors::BaseError.new(message: "You can only view invitees for a test", status: 400)
+    end
+
+    # Check if user has permission to view invitees
+    if !is_course_owner?(course, current_user)
+      raise Errors::ForbiddenError.new(message: "You don't have the authority to view invitees for this test")
+    end
+
+    # Get all invitations for this test
+    invitations = course.test_invitations.includes(:user).order(created_at: :desc)
+
+    paginated_invitees = paginate(invitations, params)
+    render json: paginated_invitees, root: :data, each_serializer: TestInvitationSerializer, meta: paginated_meta(paginated_invitees)
+  end
+
   private
 
   def create_test_based_session(params)
@@ -343,5 +448,9 @@ class TestsController < ApplicationController
   def update_test_session_params
     params.permit(:current_question_number, :device_id, :web_tab_id,
                   :session_items => [:question_id, :question_version, :multiplier, :user_answer => []])
+  end
+
+  def invite_user_params
+    params.permit(:emails => [])
   end
 end

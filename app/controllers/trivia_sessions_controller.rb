@@ -40,7 +40,7 @@ class TriviaSessionsController < ApplicationController
 
     if check_session_for_valid_update(session)
       # Update session
-      session.update_attributes!(update_test_session_params)
+      session.update_attributes!(update_session_params)
     else
       raise_ended_trivia_session_error(current_user, session.trivia_set)
     end

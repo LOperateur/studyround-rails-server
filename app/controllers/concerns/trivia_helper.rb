@@ -8,7 +8,7 @@ module TriviaHelper
     init_helper_fields(user, trivia, courses, tz_offset)
 
     instructions_array = [
-      rules_to_instructions_map[:private], # Provided by the Trivia Info
+      rules_to_instructions_map[:invitation], # Provided by the Trivia Info
       rules_to_instructions_map[:expiration], # Provided by the Trivia Info
     ]
 
@@ -33,6 +33,7 @@ module TriviaHelper
       trivia: @trivia,
       courses: @courses.map(&:serialized_mini_course),
       resuming: is_user_resuming,
+      has_invite: @trivia.user_eligible?(@user),
       session_id: if is_user_resuming then @current_session.id else nil end,
       server_time: Time.now.utc, # Send server time to API in UTC T..Z format
       time_left: get_time_left(@rules[:time]),
@@ -49,9 +50,9 @@ module TriviaHelper
   def start_or_resume_trivia_session(user, trivia, courses, extra_id = nil)
     init_helper_fields(user, trivia, courses)
 
-    # Check privacy and invitation key
-    if @trivia.private && !has_valid_invitation
-      raise Errors::ForbiddenError.new(message: "Invalid invitation key")
+    # Check if user is eligible for invite-only trivia
+    if @trivia.invite_only? && !@trivia.user_eligible?(@user)
+      raise Errors::ForbiddenError.new(message: "This trivia is invite-only. You need an invitation to access it.")
     end
 
     # Check if it has been closed by the creator
@@ -120,9 +121,15 @@ module TriviaHelper
         questions += course_questions
       end
 
+      # Todo: The session items will be overwritten if update session is called
+      #  So this code becomes redundant.
+      #  This will cause the session to have no questions and lead to empty question data returned.
+      #  The only reason this works for tests is because we don't prepopulate the session items
+      #  in the tests, so the session items are empty by default.
       questions.each do |question|
         session.session_items << {
-          question_id: question.id
+          question_id: question.id,
+          multiplier: question.multiplier,
         }
       end
 
@@ -176,7 +183,7 @@ module TriviaHelper
       if session_items_with_answers.length < num_questions
         # Recalculate the total possible score
         total = 0
-        session_items_with_answers.each do |item|
+        session_items.each do |item|
           total += item["multiplier"]
         end
       end
@@ -271,7 +278,7 @@ module TriviaHelper
   def rules_to_instructions_map
     {
       # Default Trivia Information
-      private: privacy_instruction,
+      invitation: invitation_instruction,
       expiration: expiration_instruction,
 
       # Restrictive rules
@@ -289,12 +296,12 @@ module TriviaHelper
 
   # region Instruction Mapping
 
-  def privacy_instruction
+  def invitation_instruction
     invited_text = "You have been invited by #{@trivia.creator.username} to take this session"
-    uninvited_text = "This session is private, you need a valid invitation to partake"
+    uninvited_text = "This session is invite-only, you need a valid invitation to partake"
 
-    if @trivia.private
-      has_valid_invitation ? invited_text : uninvited_text
+    if @trivia.invite_only?
+      @trivia.user_eligible?(@user) ? invited_text : uninvited_text
     else
       nil
     end
@@ -440,13 +447,6 @@ module TriviaHelper
   # endregion
 
   # region Validation Checks
-
-  # Check if the user was invited for the private Trivia
-  def has_valid_invitation
-    # Todo: Validate Invitation properly and pass the key through method parameters
-    # return validate(params[:invite_key])
-    return true
-  end
 
   def is_user_resuming
     return !@current_session.nil?

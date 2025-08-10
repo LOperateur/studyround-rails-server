@@ -70,8 +70,11 @@ class SessionsController < ApplicationController
 
         # User's session items didn't get to paginate through the total number of questions
         if session_items_with_answers.length < num_questions
-          # Assume the remaining questions were 1-point questions and add that to the total
-          total += num_questions - session_items_with_answers.length
+          # Recalculate the total possible score
+          total = 0
+          session.session_items.each do |item|
+            total += item["multiplier"]
+          end
         end
 
       rescue
@@ -269,7 +272,7 @@ class SessionsController < ApplicationController
       end
       }.merge(paginated_metadata)
 
-    when :quiz, :practice,
+    when :quiz, :practice
       question_ids = session.session_items.map { |session_item| session_item["question_id"] }
 
       # Sort by the order of ids supplied
