@@ -464,12 +464,12 @@ class CoursesController < ApplicationController
 
   def create_course_params
     params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
-                  :test, :about, :image, :test_expiration, :instructions, :category_ids)
+                  :test, :about, :image, :test_expiration, :instructions, :invite_only, :category_ids)
   end
 
   def update_course_params
     params.permit(:creator_id, :title, :sale_status, :price, :currency, :private,
-                  :about, :image, :image_url, :test_expiration, :instructions, :category_ids)
+                  :about, :image, :image_url, :test_expiration, :instructions, :invite_only, :category_ids)
   end
 
   def purchase_course_params

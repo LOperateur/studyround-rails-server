@@ -297,7 +297,7 @@ class TriviaSetsController < ApplicationController
   end
 
   def create_trivia_set_params
-    params.permit(:title, :subtitle, :rules, :expiration, :private, :course_bundles)
+    params.permit(:title, :subtitle, :rules, :expiration, :private, :course_bundles, :invite_only)
   end
 
   def invite_user_params

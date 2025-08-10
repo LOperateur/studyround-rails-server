@@ -1,5 +1,6 @@
 class TriviaSetSerializer < ActiveModel::Serializer
-  attributes :id, :title, :subtitle, :private, :expiration, :trivia_status, :course_bundles, :rules
+  attributes :id, :title, :subtitle, :private, :expiration, :trivia_status,
+             :invite_only, :course_bundles, :rules
 
   belongs_to :creator, serializer: MiniProfileSerializer
 
