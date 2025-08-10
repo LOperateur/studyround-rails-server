@@ -121,9 +121,15 @@ module TriviaHelper
         questions += course_questions
       end
 
+      # Todo: The session items will be overwritten if update session is called
+      #  So this code becomes redundant.
+      #  This will cause the session to have no questions and lead to empty question data returned.
+      #  The only reason this works for tests is because we don't prepopulate the session items
+      #  in the tests, so the session items are empty by default.
       questions.each do |question|
         session.session_items << {
-          question_id: question.id
+          question_id: question.id,
+          multiplier: question.multiplier,
         }
       end
 
@@ -177,7 +183,7 @@ module TriviaHelper
       if session_items_with_answers.length < num_questions
         # Recalculate the total possible score
         total = 0
-        session_items_with_answers.each do |item|
+        session_items.each do |item|
           total += item["multiplier"]
         end
       end

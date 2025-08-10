@@ -43,7 +43,8 @@ module SessionHelper
 
     questions.each do |question|
       session.session_items << {
-        question_id: question.id
+        question_id: question.id,
+        multiplier: question.multiplier,
       }
     end
 
