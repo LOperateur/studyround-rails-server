@@ -43,3 +43,4 @@ docker-compose.yml
 db.sql
 
 .DS_STORE
+env.list
