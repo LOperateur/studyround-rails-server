@@ -64,6 +64,10 @@ gem 'lograge'
 # For Rest API calls
 gem 'faraday'
 
+# Todo: Remove this when we upgrade to Ruby 3.3 or later
+# Fix ffi issue on certain platforms by locking ffi version
+gem 'ffi', '~> 1.15.5'
+
 group :development, :test do
   gem 'rspec-rails', '~> 4.0.2'
   gem 'factory_bot_rails'
