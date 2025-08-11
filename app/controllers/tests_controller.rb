@@ -277,7 +277,7 @@ class TestsController < ApplicationController
 
     # Check if course is invite-only
     unless course.invite_only?
-      raise Errors::BaseError.new(message: "This #{course_or_test(course)} is not set to invite-only", status: 400)
+      raise Errors::BaseError.new(message: "This test is not set to invite-only", status: 400)
     end
 
     emails = invite_user_params[:emails] || []
@@ -285,7 +285,7 @@ class TestsController < ApplicationController
     # Validate email limit (100 max)
     existing_invitations_count = course.test_invitations.count
     if existing_invitations_count + emails.length > 100
-      raise Errors::BaseError.new(message: "Cannot exceed 100 invitations per #{course_or_test(course)}", status: 400)
+      raise Errors::BaseError.new(message: "Cannot exceed 100 invitations per test", status: 400)
     end
 
     successful_invites = []
