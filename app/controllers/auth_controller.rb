@@ -149,6 +149,9 @@ class AuthController < ApplicationController
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
+    # Link any pending test/trivia invitations for this user's email
+    link_pending_invitations(user)
+
     # Include additional details if guest info is available, then destroy the stale guest record
     if optional_guest.present?
       if optional_guest.result
@@ -496,6 +499,14 @@ class AuthController < ApplicationController
 
   def random_otp
     (0..9).to_a.shuffle[0..3].join
+  end
+
+  def link_pending_invitations(user)
+    # Link pending test invitations
+    TestInvitation.where(email: user.email, user: nil).update_all(user_id: user.id)
+
+    # Link pending trivia invitations
+    TriviaInvitation.where(email: user.email, user: nil).update_all(user_id: user.id)
   end
 
   def generate_otp_params

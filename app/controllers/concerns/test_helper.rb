@@ -12,14 +12,26 @@ module TestHelper
     @current_session = user.sessions.find_by(course: course)
 
     instructions_array = [
-      instructions_map[:private],
-      instructions_map[:num_questions],
-      instructions_map[:expiration],
+      instructions_map[:invitation], # Provided by the Test Info
+      instructions_map[:num_questions], # Provided by the Test Info
+      instructions_map[:expiration], # Provided by the Test Info
     ]
 
     @instructions.each do |k, v|
       instructions_array.append instructions_map[k]
     end
+
+    # Instructions sample structure
+    # {
+    #   "time": 3600,
+    #   "graded": true,
+    #   "max_trials": 30,
+    #   "user_limit": 3,
+    #   "pause_on_quit": false,
+    #   "extra_id_title": "Matriculation Number",
+    #   "reveal_answers": true,
+    #   "randomize_questions": false,
+    # }
 
     # This should always be present
     # Todo: If it's not, then it's a bug from the frontend, fix that
@@ -29,8 +41,9 @@ module TestHelper
     end
 
     {
-      course: course.serialized_mini_course,
+      course: @course.serialized_mini_course,
       resuming: is_user_resuming,
+      has_invite: @course.user_eligible?(@user),
       session_id: if is_user_resuming then @current_session.id else nil end,
       server_time: Time.now.utc, # Send server time to API in UTC T..Z format
       time_left: get_time_left(@instructions[:time]),
@@ -50,9 +63,9 @@ module TestHelper
 
     @current_session = user.sessions.find_by(course: course)
 
-    # Check privacy and invitation key
-    if @course.private && !has_valid_invitation
-      raise Errors::ForbiddenError.new(message: "Invalid invitation key")
+    # Check if user is eligible for invite-only tests
+    if @course.invite_only? && !@course.user_eligible?(@user)
+      raise Errors::ForbiddenError.new(message: "This test is invite-only. You need an invitation to access it.")
     end
 
     # Check if it has been closed by the creator
@@ -95,7 +108,7 @@ module TestHelper
 
       # Start test session
       new_session = {
-        user: current_user,
+        user: user,
         course: @course,
         duration: @instructions[:time],
         session_type: :test,
@@ -122,8 +135,23 @@ module TestHelper
   end
 
   def get_end_test_result(user, course, params_session_items = nil, params_session_id = nil)
+    is_randomized = course.instructions['randomize_questions'] || false
+    question_count = course.questions.published_active_questions.count
     session = user.sessions.find_by(course: course)
-    questions = course.questions.order(created_at: :asc)
+
+    # If the session id is not found, raise an error
+    session_id = session&.id || params_session_id
+      if session_id.nil?
+      raise Errors::BaseError.new(message: "Unable to obtain session info, please check your results", status: 400)
+    end
+
+    questions, _ = if is_randomized
+                     # If the questions are randomized, fetch them using the session id as a seed
+                     published_active_random_questions(course, { page_size: question_count }, session_id)
+                   else
+                     # If not randomized, fetch them in the default order
+                     published_active_ordered_questions(course, { page_size: question_count })
+                   end
 
     if params_session_items.present?
       session_items = params_session_items
@@ -190,7 +218,7 @@ module TestHelper
     elsif params_session_id.present?
       # If for some reason, the session no longer exists or has been destroyed
       # Use the id passed in the params to find the session's result
-      session_key = idempotent_session_key(current_user.id, params_session_id)
+      session_key = idempotent_session_key(user.id, params_session_id)
       begin
         result = Result.find_by!(session_key: session_key)
       rescue
@@ -227,6 +255,26 @@ module TestHelper
     end
   end
 
+  # Fetches ALL the paginated questions for a Course in a random order.
+  # The session_id is used to set a random seed for the randomization.
+  # This is used for Tests with the random question option set.
+  def published_active_random_questions(course, params, session_id)
+    total_questions = course.questions.published_active_questions.count
+    limit, offset, paginated_metadata = custom_paginate(total_questions, params)
+
+    # Set a random seed based on the session id to a float between 0 and 1
+    seed = Random.new(session_id.to_i).rand
+    Course.connection.execute("SELECT SETSEED(#{seed})")
+
+    # Randomly select questions
+    questions = course.questions.published_active_questions
+                      .order(Arel.sql("RANDOM()"))
+                      .limit(limit)
+                      .offset(offset)
+
+    return questions, paginated_metadata
+  end
+
   private
 
   # region Basic private functions
@@ -234,7 +282,7 @@ module TestHelper
   def instructions_map
     {
       # Default test instructions
-      private: privacy_instruction,
+      invitation: invitation_instruction,
       num_questions: num_questions_instruction,
 
       # Restrictive instructions
@@ -246,6 +294,7 @@ module TestHelper
       reveal_answers: map_reveal_answers_instruction,
       extra_id_title: map_extra_id_instruction,
       graded: map_grading_instruction,
+      randomize_questions: nil, # Not used in the test instructions
       pause_on_quit: "You can leave this test and resume later but your timer would count down while you're away"
     }
   end
@@ -254,12 +303,12 @@ module TestHelper
 
   # region Instruction Mapping
 
-  def privacy_instruction
+  def invitation_instruction
     invited_text = "You have been invited by #{@course.creator.username} to take this test"
-    uninvited_text = "This test is private, you need a valid invitation to partake"
+    uninvited_text = "This test is invite-only, you need a valid invitation to partake"
 
-    if @course.private
-      has_valid_invitation ? invited_text : uninvited_text
+    if @course.invite_only?
+      @course.user_eligible?(@user) ? invited_text : uninvited_text
     else
       nil
     end
@@ -373,13 +422,6 @@ module TestHelper
   # endregion
 
   # region Validation Checks
-
-  # Check if the user was invited for the private test
-  def has_valid_invitation
-    # Todo: Validate Invitation properly and pass the key through method parameters
-    # return validate(params[:invite_key])
-    return true
-  end
 
   def is_user_resuming
     return !@current_session.nil?

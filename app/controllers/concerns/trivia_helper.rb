@@ -8,7 +8,7 @@ module TriviaHelper
     init_helper_fields(user, trivia, courses, tz_offset)
 
     instructions_array = [
-      rules_to_instructions_map[:private], # Provided by the Trivia Info
+      rules_to_instructions_map[:invitation], # Provided by the Trivia Info
       rules_to_instructions_map[:expiration], # Provided by the Trivia Info
     ]
 
@@ -17,10 +17,23 @@ module TriviaHelper
       instructions_array.append rules_to_instructions_map[k]
     end
 
+    # Rules structure sample
+    # {
+    #   "time": 600,                         in seconds
+    #   "graded": true,
+    #   "max_trials": 2,
+    #   "user_limit": 0,
+    #   "retry_delay": 0,                    in seconds, 0 means no delay
+    #   "questions_per_course": 10,
+    #   "extra_id_title": "Mat. Number",
+    #   "reveal_answers": true
+    # }
+
     {
       trivia: @trivia,
       courses: @courses.map(&:serialized_mini_course),
       resuming: is_user_resuming,
+      has_invite: @trivia.user_eligible?(@user),
       session_id: if is_user_resuming then @current_session.id else nil end,
       server_time: Time.now.utc, # Send server time to API in UTC T..Z format
       time_left: get_time_left(@rules[:time]),
@@ -30,16 +43,16 @@ module TriviaHelper
       attempts_left: get_max_trials_left(@rules[:max_trials]),
       retry_delay_left: get_retry_delay_left(@rules[:retry_delay]),
       extra_id_title: @rules[:extra_id_title],
-      rules: is_closed ? ["This Trivia has been ended"] : instructions_array.compact
+      instructions: is_closed ? ["This Trivia has been ended"] : instructions_array.compact
     }
   end
 
-  def start_trivia_session(user, trivia, courses, extra_id = nil)
+  def start_or_resume_trivia_session(user, trivia, courses, extra_id = nil)
     init_helper_fields(user, trivia, courses)
 
-    # Check privacy and invitation key
-    if @trivia.private && !has_valid_invitation
-      raise Errors::ForbiddenError.new(message: "Invalid invitation key")
+    # Check if user is eligible for invite-only trivia
+    if @trivia.invite_only? && !@trivia.user_eligible?(@user)
+      raise Errors::ForbiddenError.new(message: "This trivia is invite-only. You need an invitation to access it.")
     end
 
     # Check if it has been closed by the creator
@@ -53,11 +66,12 @@ module TriviaHelper
       # If there's still time to submit (usually less than the lag time), let them resume
       if get_time_left(@rules[:time]) > 0
         # Resume session
-        return @current_session
+        question_ids = @current_session.session_items.map { |session_item| session_item["question_id"] }
+        return @current_session, Question.non_deleted_questions.where(id: question_ids)
 
       else
         # Indicate that the session is over and results should be calculated
-        return nil
+        raise_ended_trivia_session_error(user, trivia)
       end
 
     else
@@ -84,22 +98,56 @@ module TriviaHelper
         raise Errors::BaseError.new(message: "Your #{@rules[:extra_id_title]} is required", status: 400)
       end
 
-      # Start test session
-      # Todo: Multi-course sessions
-      new_session = {
-        user: current_user,
+      # Create trivia session
+      basic_trivia_session = {
+        user: user,
         trivia: @trivia,
         duration: @rules[:time],
         session_type: :trivia,
         session_items: [],
       }
 
-      return new_session
+      session = Session.new(basic_trivia_session)
+
+      questions = []
+      num_questions = @rules[:questions_per_course]
+
+      courses.each do |course|
+        course_questions = course.questions.published_active_questions.order(Arel.sql("RANDOM()")).limit(num_questions)
+
+        check_min_available_questions(course_questions.length, course.title)
+
+        # Add all course_questions to the questions array
+        questions += course_questions
+      end
+
+      # Todo: The session items will be overwritten if update session is called
+      #  So this code becomes redundant.
+      #  This will cause the session to have no questions and lead to empty question data returned.
+      #  The only reason this works for tests is because we don't prepopulate the session items
+      #  in the tests, so the session items are empty by default.
+      questions.each do |question|
+        session.session_items << {
+          question_id: question.id,
+          multiplier: question.multiplier,
+        }
+      end
+
+      begin
+        Session.transaction do
+          session.save!
+          session.set_multi_courses_with_order(courses)
+        end
+      rescue
+        raise Errors::BaseError.new(message: "Error creating session", status: 400)
+      end
+
+      return get_course_based_session(courses, :trivia, session.id, duration), questions
     end
   end
 
   def check_session_for_valid_update(session)
-    init_helper_fields(session.user, session.trivia_set, session.courses)
+    init_helper_fields(session.user, session.trivia_set, session.multi_courses)
 
     # Check if it has been closed by the creator
     if is_closed
@@ -113,9 +161,7 @@ module TriviaHelper
   end
 
   def get_end_trivia_result(user, trivia, params_session_items = nil, params_session_id = nil)
-    # TODO: Support Trivia
     session = user.sessions.find_by(trivia_set: trivia)
-    questions = course.questions.order(created_at: :asc)
 
     if params_session_items.present?
       session_items = params_session_items
@@ -127,26 +173,20 @@ module TriviaHelper
       end
     end
 
-    session_items_with_answers = []
-
-    # Merge session items and correct answers to form an answers marking scheme array
-    questions.each_with_index do |question, index|
-      user_answer = []
-      if session_items[index]
-        user_answer = session_items[index]["user_answer"]
-      end
-
-      session_items_with_answers << {
-        question_id: question.id,
-        question_version: question.version,
-        multiplier: question.multiplier,
-        user_answer: user_answer,
-        correct_answer: question.answer
-      }
-    end
+    session_items_with_answers = flesh_out_session_items(session_items)
+    num_questions = session.session_items.length
 
     begin
       score, total = mark(session_items_with_answers)
+
+      # User's session items didn't get to paginate through the total number of questions
+      if session_items_with_answers.length < num_questions
+        # Recalculate the total possible score
+        total = 0
+        session_items.each do |item|
+          total += item["multiplier"]
+        end
+      end
     rescue
       raise Errors::BaseError.new(message: "Unable to calculate result")
     end
@@ -158,31 +198,44 @@ module TriviaHelper
 
       # Idempotency check to prevent double submissions
       session_key = idempotent_session_key(user.id, session.id)
-      result = Result.find_by(session_key: session_key) ||
-        Result.create!(
-          course: course,
-          user: user,
-          score: score,
-          total: total,
-          duration: duration,
-          num_questions: session_items_with_answers.size,
-          elapsed_time: elapsed_time,
-          session_type: :trivia,
-          session_key: session_key,
-          extra_id: session.extra_id,
-          session_items: session_items_with_answers
-        )
+      result = Result.find_by(session_key: session_key)
+
+      # Get the courses from the session
+      courses = session.multi_courses
+
+      if result.nil?
+        # Create the result if it doesn't already exist
+        Result.transaction do
+          result = Result.create!(
+            trivia_set: trivia,
+            user: user,
+            score: score,
+            total: total,
+            duration: duration,
+            num_questions: num_questions,
+            elapsed_time: elapsed_time,
+            session_type: :trivia,
+            session_key: session_key,
+            extra_id: session.extra_id,
+            session_items: session_items_with_answers
+          )
+
+          result.set_multi_courses_with_order(courses)
+        end
+      end
 
       # Delete the session after all is done
       session.destroy
 
-      # Register interest in the course's categories
-      register_interest(user, course.categories.pluck(:id))
+      courses.each do |course|
+        # Register interest in the course's categories
+        register_interest(user, course.categories.pluck(:id))
+      end
 
     elsif params_session_id.present?
       # If for some reason, the session no longer exists or has been destroyed
       # Use the id passed in the params to find the session's result
-      session_key = idempotent_session_key(current_user.id, params_session_id)
+      session_key = idempotent_session_key(user.id, params_session_id)
       begin
         result = Result.find_by!(session_key: session_key)
       rescue
@@ -194,6 +247,20 @@ module TriviaHelper
     end
 
     return result
+  end
+
+  def raise_ended_trivia_session_error(user, trivia)
+    # Calculate and return result in the data of the surfaced error
+    result = get_end_trivia_result(
+      user,
+      trivia,
+    ).serialized_result
+
+    raise Errors::ForbiddenError.new(
+      message: "Time up! Submitting session...",
+      action: :submit,
+      data: result
+    )
   end
 
   private
@@ -211,7 +278,7 @@ module TriviaHelper
   def rules_to_instructions_map
     {
       # Default Trivia Information
-      private: privacy_instruction,
+      invitation: invitation_instruction,
       expiration: expiration_instruction,
 
       # Restrictive rules
@@ -229,12 +296,12 @@ module TriviaHelper
 
   # region Instruction Mapping
 
-  def privacy_instruction
+  def invitation_instruction
     invited_text = "You have been invited by #{@trivia.creator.username} to take this session"
-    uninvited_text = "This session is private, you need a valid invitation to partake"
+    uninvited_text = "This session is invite-only, you need a valid invitation to partake"
 
-    if @trivia.private
-      has_valid_invitation ? invited_text : uninvited_text
+    if @trivia.invite_only?
+      @trivia.user_eligible?(@user) ? invited_text : uninvited_text
     else
       nil
     end
@@ -380,13 +447,6 @@ module TriviaHelper
   # endregion
 
   # region Validation Checks
-
-  # Check if the user was invited for the private Trivia
-  def has_valid_invitation
-    # Todo: Validate Invitation properly and pass the key through method parameters
-    # return validate(params[:invite_key])
-    return true
-  end
 
   def is_user_resuming
     return !@current_session.nil?

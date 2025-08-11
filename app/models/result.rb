@@ -34,9 +34,9 @@ class Result < ApplicationRecord
     ProfileResultSerializer.new(self).as_json
   end
 
+  # TODO: Applies to Test and Trivia results, work on it later
   def disqualified
-    # Todo: Update the disqualified logic to use a course list of disqualified results
-    self[:extra_id].present? && self[:extra_id].ends_with?('Disqualified')
+    false
   end
 
   def send_test_completion_email
@@ -47,6 +47,16 @@ class Result < ApplicationRecord
       course_id: self.course.id,
       result_id: self.id,
     ).test_results_email.deliver_later
+  end
+
+  def send_trivia_completion_email
+    ResultMailer.with(
+      email: self.user.email,
+      title: self.trivia_set.title,
+      score: "#{self.score}/#{self.total}",
+      trivia_id: self.trivia_set.id,
+      result_id: self.id,
+    ).trivia_results_email.deliver_later
   end
 
   # Manually set courses with order
