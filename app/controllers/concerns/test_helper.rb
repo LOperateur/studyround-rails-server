@@ -262,13 +262,11 @@ module TestHelper
     total_questions = course.questions.published_active_questions.count
     limit, offset, paginated_metadata = custom_paginate(total_questions, params)
 
-    # Set a random seed based on the session id to a float between 0 and 1
-    seed = Random.new(session_id.to_i).rand
-    Course.connection.execute("SELECT SETSEED(#{seed})")
-
-    # Randomly select questions
+    # Randomly select questions using the session_id as a seed
+    # This ensures that the same user gets the same set of questions
+    # when they resume the test.
     questions = course.questions.published_active_questions
-                      .order(Arel.sql("RANDOM()"))
+                      .order(Arel.sql("md5((#{Course.connection.quote(session_id)}::text || questions.id::text))"))
                       .limit(limit)
                       .offset(offset)
 
