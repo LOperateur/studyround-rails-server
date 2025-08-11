@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_02_08_202834) do
+ActiveRecord::Schema.define(version: 2025_08_09_194039) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -135,6 +135,7 @@ ActiveRecord::Schema.define(version: 2025_02_08_202834) do
     t.jsonb "question_tags"
     t.datetime "last_publish_date"
     t.integer "rating_count", default: 0
+    t.boolean "invite_only", default: false
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
   end
@@ -304,6 +305,19 @@ ActiveRecord::Schema.define(version: 2025_02_08_202834) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "test_invitations", force: :cascade do |t|
+    t.bigint "course_id", null: false
+    t.string "email", null: false
+    t.bigint "invited_by_id", null: false
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["course_id", "email"], name: "index_test_invitations_on_course_id_and_email", unique: true
+    t.index ["course_id"], name: "index_test_invitations_on_course_id"
+    t.index ["invited_by_id"], name: "index_test_invitations_on_invited_by_id"
+    t.index ["user_id"], name: "index_test_invitations_on_user_id"
+  end
+
   create_table "transactions", force: :cascade do |t|
     t.bigint "buyer_id"
     t.bigint "purchase_item_id"
@@ -324,6 +338,19 @@ ActiveRecord::Schema.define(version: 2025_02_08_202834) do
     t.index ["transaction_ref"], name: "index_transactions_on_transaction_ref", unique: true
   end
 
+  create_table "trivia_invitations", force: :cascade do |t|
+    t.bigint "trivia_set_id", null: false
+    t.string "email", null: false
+    t.bigint "invited_by_id", null: false
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invited_by_id"], name: "index_trivia_invitations_on_invited_by_id"
+    t.index ["trivia_set_id", "email"], name: "index_trivia_invitations_on_trivia_set_id_and_email", unique: true
+    t.index ["trivia_set_id"], name: "index_trivia_invitations_on_trivia_set_id"
+    t.index ["user_id"], name: "index_trivia_invitations_on_user_id"
+  end
+
   create_table "trivia_sets", force: :cascade do |t|
     t.string "title"
     t.text "subtitle"
@@ -333,10 +360,11 @@ ActiveRecord::Schema.define(version: 2025_02_08_202834) do
     t.jsonb "rules"
     t.jsonb "dq_results", default: []
     t.boolean "private"
-    t.integer "trivia_status"
+    t.integer "trivia_status", default: 1
     t.datetime "expiration"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "invite_only", default: false
     t.index ["creator_id"], name: "index_trivia_sets_on_creator_id"
   end
 
@@ -400,6 +428,12 @@ ActiveRecord::Schema.define(version: 2025_02_08_202834) do
   add_foreign_key "sessions", "courses"
   add_foreign_key "sessions", "trivia_sets"
   add_foreign_key "sessions", "users"
+  add_foreign_key "test_invitations", "courses"
+  add_foreign_key "test_invitations", "users"
+  add_foreign_key "test_invitations", "users", column: "invited_by_id"
   add_foreign_key "transactions", "users", column: "buyer_id"
+  add_foreign_key "trivia_invitations", "trivia_sets"
+  add_foreign_key "trivia_invitations", "users"
+  add_foreign_key "trivia_invitations", "users", column: "invited_by_id"
   add_foreign_key "trivia_sets", "users", column: "creator_id"
 end

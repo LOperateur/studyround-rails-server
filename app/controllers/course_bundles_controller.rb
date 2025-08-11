@@ -42,7 +42,7 @@ class CourseBundlesController < ApplicationController
       end
       render json: course_bundle, root: :data, serializer: CourseBundleSerializer, status: :created
     rescue
-      raise Errors::NotFoundError.new(message: "Error creating course bundle")
+      raise Errors::BaseError.new(message: "Error creating course bundle", status: 400)
     end
   end
 
@@ -78,6 +78,7 @@ class CourseBundlesController < ApplicationController
     end
   end
 
+  # Modifies the optional status of a course in a course bundle
   def modify
     course_bundle = CourseBundle.find(params[:course_bundle_id])
     course = Course.find(modify_course_bundle_params[:course])

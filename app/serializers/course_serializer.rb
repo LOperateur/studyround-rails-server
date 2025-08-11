@@ -1,7 +1,7 @@
 class CourseSerializer < ActiveModel::Serializer
   include CurrencyHelper
 
-  attributes :id, :title, :rating, :image_url, :currency, :price,
+  attributes :id, :title, :rating, :image_url, :invite_only, :currency, :price,
              :formatted_price, :sale_status, :version, :test, :placeholder_course
 
   belongs_to :creator, serializer: ProfileSerializer
