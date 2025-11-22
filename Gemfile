@@ -9,7 +9,7 @@ gem 'rails', '~> 5.2.4', '>= 5.2.4.3'
 gem 'nokogiri', '>= 1.11.0'
 gem 'nio4r', '>= 2.5.8'
 # Use postgresql as the database for Active Record
-gem 'pg', '>= 1.1', '< 2.0'
+gem 'pg', '~> 1.3.5'
 # Use Puma as the app server
 gem 'puma', '~> 3.11'
 # Use SCSS for stylesheets
