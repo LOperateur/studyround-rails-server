@@ -5,8 +5,11 @@ ruby '2.7.8'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.2.4', '>= 5.2.4.3'
+# Fix for Apple Silicon compatibility
+gem 'nokogiri', '>= 1.11.0'
+gem 'nio4r', '>= 2.5.8'
 # Use postgresql as the database for Active Record
-gem 'pg', '>= 0.18', '< 2.0'
+gem 'pg', '>= 1.1', '< 2.0'
 # Use Puma as the app server
 gem 'puma', '~> 3.11'
 # Use SCSS for stylesheets
@@ -53,7 +56,7 @@ gem 'sidekiq'
 gem 'rack-cors', :require => 'rack/cors'
 
 # Reduces boot times through caching; required in config/boot.rb
-gem 'bootsnap', '>= 1.1.0', require: false
+gem 'bootsnap', '>= 1.7.0', require: false
 
 # Generating Idempotent keys
 gem 'digest-murmurhash'
