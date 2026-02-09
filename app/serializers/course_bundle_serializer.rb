@@ -6,7 +6,8 @@ class CourseBundleSerializer < ActiveModel::Serializer
 
   def courses
     # Manually build the array of courses with their optional values
-    object.course_bundle_pairs.map do |pair|
+    # Sort by optional: false first, then true
+    object.course_bundle_pairs.sort_by { |pair| pair.optional ? 1 : 0 }.map do |pair|
       {
         id: pair.course.id,
         name: pair.course.title,
