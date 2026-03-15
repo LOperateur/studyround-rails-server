@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_08_09_194039) do
+ActiveRecord::Schema.define(version: 2026_03_08_142256) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -192,6 +192,20 @@ ActiveRecord::Schema.define(version: 2025_08_09_194039) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_identity"], name: "index_otps_on_user_identity", unique: true
+  end
+
+  create_table "performance_reports", force: :cascade do |t|
+    t.bigint "result_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "status", default: 1, null: false
+    t.text "report_content"
+    t.integer "prompt_tokens"
+    t.integer "completion_tokens"
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["result_id"], name: "index_performance_reports_on_result_id", unique: true
+    t.index ["user_id"], name: "index_performance_reports_on_user_id"
   end
 
   create_table "question_asset_references", force: :cascade do |t|
@@ -411,6 +425,8 @@ ActiveRecord::Schema.define(version: 2025_08_09_194039) do
   add_foreign_key "interests", "categories"
   add_foreign_key "interests", "users"
   add_foreign_key "notifications", "users"
+  add_foreign_key "performance_reports", "results"
+  add_foreign_key "performance_reports", "users"
   add_foreign_key "question_asset_references", "question_assets"
   add_foreign_key "question_asset_references", "questions"
   add_foreign_key "question_assets", "courses"

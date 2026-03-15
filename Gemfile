@@ -67,6 +67,9 @@ gem 'lograge'
 # For Rest API calls
 gem 'faraday'
 
+# OpenAI API client
+gem 'ruby-openai', '~> 6.0'
+
 group :development, :test do
   gem 'rspec-rails', '~> 4.0.2'
   gem 'factory_bot_rails'

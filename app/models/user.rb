@@ -21,6 +21,7 @@ class User < ApplicationRecord
   has_many :interests, dependent: :destroy
   has_many :categories, through: :interests
   has_many :results
+  has_many :performance_reports
   has_many :reviews
   has_many :sessions
   has_many :notifications
