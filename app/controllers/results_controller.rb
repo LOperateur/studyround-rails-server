@@ -111,6 +111,71 @@ class ResultsController < ApplicationController
     render json: paginated_results, root: :data, meta: paginated_meta(paginated_results)
   end
 
+  def generate_report
+    result = Result.find(params[:result_id])
+
+    if result.user != current_user
+      raise Errors::ForbiddenError.new(message: "You cannot generate a report for this result")
+    end
+
+    if result.session_type_study?
+      raise Errors::BaseError.new(message: "Reports are not available for study sessions", status: 400)
+    end
+
+    if result.session_items.blank?
+      raise Errors::BaseError.new(message: "Session data is no longer available for report generation", status: 400)
+    end
+
+    # Idempotency: return existing completed report
+    existing_report = result.performance_report
+    if existing_report&.status_completed?
+      render json: existing_report, root: :data, serializer: PerformanceReportSerializer, status: :ok
+      return
+    end
+
+    service = OpenaiReportService.new(result)
+    response = service.generate
+
+    if response[:error]
+      report = PerformanceReport.find_or_initialize_by(result: result)
+      report.assign_attributes(
+        user: current_user,
+        status: :failed,
+        error_message: response[:error],
+      )
+      report.save!
+      raise Errors::BaseError.new(message: "Failed to generate report: #{response[:error]}", status: 500)
+    end
+
+    report = PerformanceReport.find_or_initialize_by(result: result)
+    report.assign_attributes(
+      user: current_user,
+      status: :completed,
+      report_content: response[:report],
+      prompt_tokens: response[:prompt_tokens],
+      completion_tokens: response[:completion_tokens],
+      error_message: nil,
+    )
+    report.save!
+
+    render json: report, root: :data, serializer: PerformanceReportSerializer, status: :ok
+  end
+
+  def show_report
+    result = Result.find(params[:result_id])
+
+    if result.user != current_user
+      raise Errors::ForbiddenError.new(message: "You cannot view this report")
+    end
+
+    report = result.performance_report
+    if report.nil?
+      raise Errors::NotFoundError.new(message: "No report found for this result")
+    end
+
+    render json: report, root: :data, serializer: PerformanceReportSerializer, status: :ok
+  end
+
   def grouped
     latest_distinct_results_query = current_user.results.select('DISTINCT ON (results.course_id) results.id').order('results.course_id, results.created_at desc').to_sql
     count = current_user.results.distinct.count(:course_id) # Unable to do count with "Distinct on" query

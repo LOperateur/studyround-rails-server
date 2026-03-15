@@ -5,6 +5,7 @@ class Result < ApplicationRecord
 
   has_many :course_result_links, -> { order(order: :asc) }, dependent: :destroy
   has_many :multi_courses, through: :course_result_links, source: :course
+  has_one :performance_report, dependent: :destroy
 
 
   # Quick note

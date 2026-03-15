@@ -94,6 +94,8 @@ Rails.application.routes.draw do
   get 'results/grouped', to: "results#grouped"
   resources :results, only: [:show] do
     get '/session-items', to: "results#session_items"
+    post '/report', to: "results#generate_report"
+    get '/report', to: "results#show_report"
   end
 
   get '/tests/:course_id/submissions', to: "tests#test_submissions"
@@ -134,6 +136,7 @@ Rails.application.routes.draw do
 
   resources :guests, only: [:create] do
     post '/invite', to: "guests#invite"
+    post '/report', to: "guests#demo_report"
   end
 
   get '/admin/users', to: "admin#users"
