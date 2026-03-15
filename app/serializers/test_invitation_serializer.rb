@@ -8,11 +8,11 @@ class TestInvitationSerializer < ActiveModel::Serializer
   end
 
   def invite_honored
-    return false unless object.user.present?
+    user = object.user || User.find_by(email: object.email)
+    return false if !user.present?
 
     # Check if user has any sessions or results for this test
     course = object.course
-    user = object.user
 
     has_session = course.sessions.exists?(user: user)
     has_result = course.results.exists?(user: user)

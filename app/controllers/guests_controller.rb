@@ -1,5 +1,5 @@
 class GuestsController < ApplicationController
-  skip_before_action :authorize!, only: [:create, :invite]
+  skip_before_action :authorize!, only: [:create, :invite, :demo_report]
 
   wrap_parameters format: []
 
@@ -42,6 +42,45 @@ class GuestsController < ApplicationController
     ).demo_result_signup_email.deliver_later
 
     render json: guest, root: :data, status: :ok, meta: { message: "Emailed results to #{email}!" }
+  end
+
+  def demo_report
+    guest = Guest.find(params[:guest_id])
+
+    if guest.result.blank? || guest.result['session_items'].blank?
+      raise Errors::BaseError.new(message: "No result data available for report generation", status: 400)
+    end
+
+    # Idempotency: return existing report
+    if guest.result['report_content'].present?
+      render json: { data: { report_content: guest.result['report_content'] } }, status: :ok
+      return
+    end
+
+    # Build a temporary Result object from the guest's JSONB data
+    result_data = guest.result
+    temp_result = Result.new(
+      score: result_data['score'],
+      total: result_data['total'],
+      duration: result_data['duration'],
+      elapsed_time: result_data['elapsed_time'],
+      session_type: result_data['session_type'],
+      session_items: result_data['session_items'],
+      num_questions: result_data['num_questions'],
+    )
+
+    service = OpenaiReportService.new(temp_result)
+    response = service.generate
+
+    if response[:error]
+      raise Errors::BaseError.new(message: "Failed to generate report: #{response[:error]}", status: 500)
+    end
+
+    # Store the report in the guest's result JSONB
+    updated_result = guest.result.merge('report_content' => response[:report])
+    guest.update!(result: updated_result)
+
+    render json: { data: { report_content: response[:report] } }, status: :ok
   end
 
   private

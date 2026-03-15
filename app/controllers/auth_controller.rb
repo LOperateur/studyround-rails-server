@@ -241,11 +241,13 @@ class AuthController < ApplicationController
     token = params[:code]
 
     optional_guest = nil
+    redirect_url = nil
     begin
       auth_state = params[:state]
       if auth_state
         guest_id = JSON.parse(auth_state.to_s)["guest_id"]
         optional_guest = Guest.find(guest_id)
+        redirect_url = JSON.parse(auth_state.to_s)["redirect_url"]
       end
     rescue => e
       logger.error "Error parsing Google oauth state: #{e}"
@@ -290,7 +292,7 @@ class AuthController < ApplicationController
     email = profile_data["email"]
     user, sr_access_token, sr_refresh_token, first_time = google_oauth_user(profile_data, optional_guest)
 
-    redirect_to "#{ENV['HOST_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}"
+    redirect_to "#{ENV['AUTH_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}&redirect_url=#{redirect_url}"
   end
 
   def google_oauth_mobile
