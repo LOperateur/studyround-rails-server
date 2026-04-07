@@ -158,6 +158,8 @@ Rails.application.routes.draw do
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
 
+  resources :reviews, only: [:index], controller: 'global_reviews'
+
   get '/faqs', to: "faqs#index"
 
   post 'marketing_metrics/source', to: "marketing_metrics#source"
