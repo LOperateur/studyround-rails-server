@@ -122,8 +122,20 @@ class ResultsController < ApplicationController
       raise Errors::BaseError.new(message: "Reports are not available for study sessions", status: 400)
     end
 
-    if result.session_items.blank?
-      raise Errors::BaseError.new(message: "Session data is no longer available for report generation", status: 400)
+    if result.session_type_test?
+      test = result.course
+      # Restrict report access if reveal answers is false and the course isn't closed yet
+      if !test.instructions['reveal_answers'] && !test.course_status_closed?
+        raise Errors::ForbiddenError.new(message: "The creator of this course has restricted viewing reports until they close the test. Please check back later.")
+      end
+    end
+
+    if result.session_type_trivia?
+      trivia = result.trivia_set
+      # Restrict report access if reveal answers is false and the Trivia isn't closed yet
+      if !trivia.rules['reveal_answers'] && !trivia.trivia_status_closed?
+        raise Errors::ForbiddenError.new(message: "The creator of this Trivia has restricted viewing reports until they close the Trivia. Please check back later.")
+      end
     end
 
     # Idempotency: return existing completed report
@@ -131,6 +143,10 @@ class ResultsController < ApplicationController
     if existing_report&.status_completed?
       render json: existing_report, root: :data, serializer: PerformanceReportSerializer, status: :ok
       return
+    end
+
+    if result.session_items.blank?
+      raise Errors::BaseError.new(message: "Session data is no longer available for report generation", status: 400)
     end
 
     service = OpenaiReportService.new(result)
