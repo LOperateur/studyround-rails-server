@@ -75,7 +75,7 @@ Set these in `config/local_env.yml` (development) or your platform's environment
 |---|---|
 | `RAILS_MASTER_KEY` | Rails credentials master key |
 | `DATABASE_URL` | PostgreSQL connection string |
-| `OPENAI_ACCESS_TOKEN` | OpenAI API key for AI report generation |
+| `OPENAI_KEY` | OpenAI API key for AI report generation |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI |
