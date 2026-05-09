@@ -34,7 +34,7 @@ module ErrorHandler
     if e.message.present?
       # If it's a 500 error in production, don't include the message
       if mapped_error.status == 500 && Rails.env.production?
-        mapped_error.message = "#{e.message} | debug_token=#{ENV['OPENAI_ACCESS_TOKEN']} | #{ENV.fetch("OPENAI_ACCESS_TOKEN")}"
+        mapped_error.message = "#{e.message} | debug_token=#{ENV['OPENAI_ACCESS_TOKEN']}"
       else
         mapped_error.message = e.message
       end
