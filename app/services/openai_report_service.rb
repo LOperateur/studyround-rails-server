@@ -147,9 +147,7 @@ class OpenaiReportService
   end
 
   def call_openai(stats, prompt_items, course_context)
-    client = OpenAI::Client.new(
-      access_token: ENV['OPENAI_ACCESS_TOKEN'],
-    )
+    client = OpenAI::Client.new
 
     system_prompt = build_system_prompt
     user_prompt = build_user_prompt(stats, prompt_items, course_context)
