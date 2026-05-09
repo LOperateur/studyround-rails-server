@@ -147,9 +147,8 @@ class OpenaiReportService
   end
 
   def call_openai(stats, prompt_items, course_context)
-    # Declaring the API KEY here since the initializer isn't fetching the Key on time
     client = OpenAI::Client.new(
-      access_token: ENV['OPENAI_API_KEY'],
+      access_token: ENV['OPENAI_ACCESS_TOKEN'],
     )
 
     system_prompt = build_system_prompt
