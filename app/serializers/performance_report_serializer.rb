@@ -1,5 +1,5 @@
 class PerformanceReportSerializer < ActiveModel::Serializer
-  attributes :id, :result_id, :status, :report_content, :created_at, :score, :total, :percent, :courses
+  attributes :id, :result_id, :report_content, :created_at, :score, :total, :percent, :courses
 
   def score
     object.result.score
