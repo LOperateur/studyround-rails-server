@@ -68,7 +68,7 @@ gem 'lograge'
 gem 'faraday'
 
 # OpenAI API client
-gem 'ruby-openai', '~> 6.0'
+gem 'ruby-openai', '8.3.0'
 
 group :development, :test do
   gem 'rspec-rails', '~> 4.0.2'

@@ -162,6 +162,8 @@ Rails.application.routes.draw do
 
   get '/faqs', to: "faqs#index"
 
+  post '/openai-request', to: "openai_requests#create"
+
   post 'marketing_metrics/source', to: "marketing_metrics#source"
   # Route for root endpoint
   root to: "health_check#index", via: :all
