@@ -8,8 +8,8 @@ class OpenaiVisionService
 
   def call
     client = OpenAI::Client.new
-    response = client.chat(parameters: { model: MODEL, messages: [build_message] })
-    answer = response.dig("choices", 0, "message", "content")
+    response = client.responses.create(parameters: { model: MODEL, input: build_input })
+    answer = response.dig("output", 0, "content", 0, "text")
     { answer: answer }
   rescue Faraday::Error => e
     raise Errors::BaseError.new(message: "AI service unavailable", status: 502)
@@ -17,15 +17,13 @@ class OpenaiVisionService
 
   private
 
-  def build_message
-    { role: "user", content: @images.any? ? content_array : @message }
-  end
+  def build_input
+    return @message unless @images.any?
 
-  def content_array
-    parts = [{ type: "text", text: @message }]
+    content = [{ type: "input_text", text: @message }]
     @images.each do |url|
-      parts << { type: "image_url", image_url: { url: url, detail: "high" } }
+      content << { type: "input_image", image_url: url, detail: "high" }
     end
-    parts
+    [{ role: "user", content: content }]
   end
 end
