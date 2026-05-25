@@ -47,17 +47,30 @@ module StudyRound
         allow do
           # Allow origins ending in studyround.com including subdomains
           origins /\A(?:.*\.)?studyround\.com\z/
-          resource '*', :headers => :any, :methods => [:get, :post, :put, :patch, :delete, :options, :head]
+          resource '*',
+            :headers => :any,
+            :methods => [:get, :post, :put, :patch, :delete, :options, :head],
+            :credentials => true
         end
       end
     else
       config.middleware.insert_before 0, Rack::Cors do
         allow do
-          origins '*'
-          resource '*', :headers => :any, :methods => [:get, :post, :put, :patch, :delete, :options, :head]
+          # When using credentials (cookies), CORS forbids origin '*'.
+          # Reflect any origin (including localhost dev hosts) so credentialed
+          # requests work in development.
+          origins { |source, env| true }
+          resource '*',
+            :headers => :any,
+            :methods => [:get, :post, :put, :patch, :delete, :options, :head],
+            :credentials => true
         end
       end
     end
+
+    # Rails API-only mode does not load cookie middleware by default.
+    # We need it so we can issue/read auth cookies (access_token / refresh_token).
+    config.middleware.use ActionDispatch::Cookies
 
     config.autoload_paths += [Rails.root.join('app', 'models', 'validators').to_s]
   end

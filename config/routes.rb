@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   post '/auth/support/login', to: "auth#login_creator"
   post '/auth/reset', to: "auth#reset"
   post '/auth/refresh-token', to: "auth#refresh_token"
+  post '/auth/logout', to: "auth#logout"
   post '/otp/generate', to: "auth#generate_otp"
   post '/otp/validate', to: "auth#validate_otp"
 
