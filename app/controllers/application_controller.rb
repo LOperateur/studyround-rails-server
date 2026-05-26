@@ -1,6 +1,12 @@
 class ApplicationController < ActionController::API
+  include ActionController::Cookies
   include ErrorHandler
   include Paginable
+
+  # Cookie names used for auth. Kept here so controllers and helpers
+  # share a single source of truth.
+  ACCESS_TOKEN_COOKIE = :access_token
+  REFRESH_TOKEN_COOKIE = :refresh_token
 
   before_action :authorize!, except: [:route_not_found]
 
@@ -14,7 +20,12 @@ class ApplicationController < ActionController::API
 
   private
 
+  # Resolve the access token from (in order): the access_token cookie,
+  # then the Authorization: Bearer <token> header.
   def http_auth_header_token
+    cookie_token = cookies[ACCESS_TOKEN_COOKIE]
+    return cookie_token if cookie_token.present?
+
     if request.headers['Authorization'].present?
       request.headers['Authorization'].split(' ').last
     else
