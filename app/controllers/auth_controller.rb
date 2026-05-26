@@ -148,6 +148,7 @@ class AuthController < ApplicationController
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
+    set_auth_cookies(access_token, refresh_token)
 
     # Link any pending test/trivia invitations for this user's email
     link_pending_invitations(user)
@@ -200,6 +201,7 @@ class AuthController < ApplicationController
       if user && user.authenticate(login_params[:password])
         access_token = create_access_token(user)
         refresh_token = create_refresh_token(user)
+        set_auth_cookies(access_token, refresh_token)
 
         render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
       else
@@ -230,6 +232,7 @@ class AuthController < ApplicationController
     if user && user.authenticate(login_params[:password])
       access_token = create_access_token(user)
       refresh_token = create_refresh_token(user)
+      set_auth_cookies(access_token, refresh_token)
 
       render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token }) }
     else
@@ -291,6 +294,7 @@ class AuthController < ApplicationController
 
     email = profile_data["email"]
     user, sr_access_token, sr_refresh_token, first_time = google_oauth_user(profile_data, optional_guest)
+    set_auth_cookies(sr_access_token, sr_refresh_token)
 
     redirect_to "#{ENV['AUTH_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}&redirect_url=#{redirect_url}"
   end
@@ -314,6 +318,7 @@ class AuthController < ApplicationController
     logger.info profile_data
 
     user, access_token, refresh_token, first_time = google_oauth_user(profile_data)
+    set_auth_cookies(access_token, refresh_token)
 
     render json: { data: user.serialized_user.merge({ "access_token": access_token, "refresh_token": refresh_token, "first_time": first_time }) }
   end
@@ -356,6 +361,7 @@ class AuthController < ApplicationController
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user, true)
+    set_auth_cookies(access_token, refresh_token)
 
     # Delete the OTP record
     otp_object.delete
@@ -365,7 +371,8 @@ class AuthController < ApplicationController
   end
 
   def refresh_token
-    refresh_token = refresh_token_params[:refresh_token]
+    # Prefer the refresh_token cookie; fall back to body param for legacy clients.
+    refresh_token = cookies[REFRESH_TOKEN_COOKIE].presence || refresh_token_params[:refresh_token]
     decoded_refresh_token = JsonWebToken.decode(refresh_token)
 
     # First check the refresh token
@@ -384,6 +391,7 @@ class AuthController < ApplicationController
       raise Errors::ForbiddenError.new(message: "Unauthorized, refresh token invalid!") unless saved_refresh_token == refresh_token
 
       new_access_token = create_access_token(user)
+      set_access_token_cookie(new_access_token)
 
       render json: { data: { "access_token": new_access_token} }
 
@@ -392,7 +400,62 @@ class AuthController < ApplicationController
     end
   end
 
+  def logout
+    clear_auth_cookies
+
+    # Optionally invalidate the server-side refresh token if we can identify the user
+    decoded = JsonWebToken.decode(cookies[REFRESH_TOKEN_COOKIE].to_s)
+    if decoded && decoded[:user_id]
+      RefreshToken.where(user_id: decoded[:user_id]).delete_all
+    end
+
+    render json: { data: { message: "Logged out" } }, status: :ok
+  end
+
   private
+
+  # Default lifetimes match the JWTs we issue: access ~ 1 day, refresh ~ 1 year.
+  ACCESS_TOKEN_TTL = 1.day
+  REFRESH_TOKEN_TTL = 1.year
+
+  def set_auth_cookies(access_token, refresh_token)
+    set_access_token_cookie(access_token)
+    set_refresh_token_cookie(refresh_token)
+  end
+
+  def set_access_token_cookie(token)
+    cookies[ApplicationController::ACCESS_TOKEN_COOKIE] = auth_cookie_attributes.merge(
+      value: token,
+      expires: ACCESS_TOKEN_TTL.from_now,
+    )
+  end
+
+  def set_refresh_token_cookie(token)
+    cookies[ApplicationController::REFRESH_TOKEN_COOKIE] = auth_cookie_attributes.merge(
+      value: token,
+      expires: REFRESH_TOKEN_TTL.from_now,
+    )
+  end
+
+  def clear_auth_cookies
+    # Pass the same attributes used when setting, otherwise the browser
+    # will not match and clear the cookie.
+    cookies.delete(ApplicationController::ACCESS_TOKEN_COOKIE, auth_cookie_attributes)
+    cookies.delete(ApplicationController::REFRESH_TOKEN_COOKIE, auth_cookie_attributes)
+  end
+
+  # Shared attributes for all auth cookies. Tweak via env vars in deploys.
+  def auth_cookie_attributes
+    attrs = {
+      httponly: true,
+      secure: Rails.env.production? || Rails.env.staging? || request.ssl?,
+      same_site: :lax,
+      path: "/",
+    }
+    domain = ENV["AUTH_COOKIE_DOMAIN"]
+    attrs[:domain] = domain if domain.present?
+    attrs
+  end
 
   def create_access_token(user)
     JsonWebToken.encode(user_id: user.id)
