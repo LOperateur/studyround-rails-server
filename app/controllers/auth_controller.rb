@@ -252,7 +252,7 @@ class AuthController < ApplicationController
     
     host = uri.host
     return false if host.blank?
-    host == host.end_with?(ENV["AUTH_COOKIE_DOMAIN"])
+    host.end_with?(ENV["AUTH_COOKIE_DOMAIN"])
   rescue URI::InvalidURIError
     false
   end
@@ -266,10 +266,12 @@ class AuthController < ApplicationController
       auth_state = params[:state]
       if auth_state
         guest_id = JSON.parse(auth_state.to_s)["guest_id"]
-        optional_guest = Guest.find(guest_id)
+        if guest_id
+          optional_guest = Guest.find(guest_id)
+        end
         candidate_auth_url = JSON.parse(auth_state.to_s)["auth_url"]
-        auth_url = candidate_auth_url if safe_auth_url?(candidate_auth_url) else ENV['AUTH_URL']
-
+        is_safe_url = safe_auth_url?(candidate_auth_url)
+        auth_url = is_safe_url ? candidate_auth_url : ENV['AUTH_URL']
       end
     rescue => e
       logger.error "Error parsing Google oauth state: #{e}"
