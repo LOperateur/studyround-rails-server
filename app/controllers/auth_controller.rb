@@ -272,8 +272,6 @@ class AuthController < ApplicationController
         candidate_auth_url = JSON.parse(auth_state.to_s)["auth_url"]
         is_safe_url = safe_auth_url?(candidate_auth_url)
         auth_url = is_safe_url ? candidate_auth_url : ENV['AUTH_URL']
-
-
       end
     rescue => e
       logger.error "Error parsing Google oauth state: #{e}"
