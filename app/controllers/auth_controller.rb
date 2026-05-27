@@ -240,17 +240,36 @@ class AuthController < ApplicationController
     end
   end
 
+  def safe_auth_url?(url)
+    return false if url.blank?
+    uri = URI.parse(url)
+    # Scheme must be http(s); reject javascript:, data:, file:, etc.
+    return false unless %w[http https].include?(uri.scheme)
+    # In production, force https.
+    if Rails.env.production? || Rails.env.staging?
+      return false unless uri.scheme == "https"
+    end
+    
+    host = uri.host
+    return false if host.blank?
+    host == host.end_with?(ENV["AUTH_COOKIE_DOMAIN"])
+  rescue URI::InvalidURIError
+    false
+  end
+
   def google_oauth_web
     token = params[:code]
 
     optional_guest = nil
-    redirect_url = nil
+    auth_url = nil
     begin
       auth_state = params[:state]
       if auth_state
         guest_id = JSON.parse(auth_state.to_s)["guest_id"]
         optional_guest = Guest.find(guest_id)
-        redirect_url = JSON.parse(auth_state.to_s)["redirect_url"]
+        candidate_auth_url = JSON.parse(auth_state.to_s)["auth_url"]
+        auth_url = candidate_auth_url if safe_auth_url?(candidate_auth_url) else ENV['AUTH_URL']
+
       end
     rescue => e
       logger.error "Error parsing Google oauth state: #{e}"
@@ -296,7 +315,7 @@ class AuthController < ApplicationController
     user, sr_access_token, sr_refresh_token, first_time = google_oauth_user(profile_data, optional_guest)
     set_auth_cookies(sr_access_token, sr_refresh_token)
 
-    redirect_to "#{ENV['AUTH_URL']}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}&redirect_url=#{redirect_url}"
+    redirect_to "#{auth_url}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}"
   end
 
   def google_oauth_mobile
