@@ -261,7 +261,7 @@ class AuthController < ApplicationController
     token = params[:code]
 
     optional_guest = nil
-    auth_url = nil
+    auth_url = ENV['AUTH_URL']
     begin
       auth_state = params[:state]
       if auth_state
@@ -271,7 +271,7 @@ class AuthController < ApplicationController
         end
         candidate_auth_url = JSON.parse(auth_state.to_s)["auth_url"]
         is_safe_url = safe_auth_url?(candidate_auth_url)
-        auth_url = is_safe_url ? candidate_auth_url : ENV['AUTH_URL']
+        auth_url = is_safe_url ? candidate_auth_url : auth_url
 
 
       end
