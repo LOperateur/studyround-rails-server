@@ -317,6 +317,7 @@ class AuthController < ApplicationController
     user, sr_access_token, sr_refresh_token, first_time = google_oauth_user(profile_data, optional_guest)
     set_auth_cookies(sr_access_token, sr_refresh_token)
 
+    puts "auth_url: #{auth_url}"
     redirect_to "#{auth_url}/google-auth/callback?userid=#{user.id}&username=#{user.username}&email=#{email}&access_token=#{sr_access_token}&refresh_token=#{sr_refresh_token}&first_time=#{first_time}"
   end
 
