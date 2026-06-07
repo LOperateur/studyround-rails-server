@@ -334,6 +334,28 @@ class AdminController < ApplicationController
     render json: user, root: :data, status: :ok, meta: { message: "Creator status updated!" }
   end
 
+  def feature_course
+    course = Course.non_deleted_courses.find(feature_course_params[:course_id])
+
+    unless course.publish_status_published? && course.course_status_active? && !course.private?
+      raise Errors::BaseError.new(message: "Only published, active, public courses can be featured", status: 400)
+    end
+
+    # Adding an already-featured course just refreshes its featured date (bumping it up the list)
+    course.update!(featured_at: Time.now)
+
+    render json: course, root: :data, status: :ok, meta: { message: "Course added to featured list!" }
+  end
+
+  def unfeature_course
+    course = Course.non_deleted_courses.find(feature_course_params[:course_id])
+
+    # Idempotent: removing a course that isn't featured is a no-op
+    course.update!(featured_at: nil)
+
+    render json: course, root: :data, status: :ok, meta: { message: "Course removed from featured list!" }
+  end
+
   def dummy_course_toggle
     course = Course.find(dummy_course_toggle_params[:course_id])
 
@@ -425,5 +447,9 @@ class AdminController < ApplicationController
 
   def dummy_course_toggle_params
     params.permit(:course_id, :undo_dummy_status)
+  end
+
+  def feature_course_params
+    params.permit(:course_id)
   end
 end

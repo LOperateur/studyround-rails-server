@@ -116,7 +116,7 @@ class QuestionsController < ApplicationController
         raise Errors::ForbiddenError.new(message: "You have reached the maximum number of questions for this course")
       end
     else
-      # Do nothing
+      raise Errors::ForbiddenError.new(message: "You are not a creator. Please visit https://app.studyround.com to onboard as a creator.")
     end
 
     draft = create_draft(create_question_params)
