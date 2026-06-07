@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_03_08_142256) do
+ActiveRecord::Schema.define(version: 2026_06_07_175212) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -136,6 +136,7 @@ ActiveRecord::Schema.define(version: 2026_03_08_142256) do
     t.datetime "last_publish_date"
     t.integer "rating_count", default: 0
     t.boolean "invite_only", default: false
+    t.datetime "featured_at"
     t.index ["creator_id"], name: "index_courses_on_creator_id"
     t.index ["title"], name: "index_courses_on_title"
   end
