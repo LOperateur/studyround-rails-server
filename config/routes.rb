@@ -31,6 +31,7 @@ Rails.application.routes.draw do
   end
 
   get '/courses/categorised', to: "courses#categorised"
+  get '/courses/featured', to: "courses#featured_courses"
   get '/courses/top', to: "courses#top_courses"
   get '/courses/trending', to: "courses#trending_courses"
   get '/courses/recent', to: "courses#recent_courses"
@@ -155,6 +156,8 @@ Rails.application.routes.draw do
   patch '/admin/update-result', to: "admin#update_result"
   patch '/admin/update-creator-status', to: "admin#update_creator_status"
   patch '/admin/dummy-course-toggle', to: "admin#dummy_course_toggle"
+  post '/admin/feature-course', to: "admin#feature_course"
+  delete '/admin/feature-course', to: "admin#unfeature_course"
 
   post '/automation/assign-course', to: "automation#assign_course"
   post '/automation/create-course', to: "automation#create_course"
