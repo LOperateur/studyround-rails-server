@@ -40,6 +40,9 @@ class Course < ApplicationRecord
 
   scope :published_active_or_dummy_courses, -> { published_active_courses.or(dummy_courses) }
 
+  # Curated, admin-featured courses for the dashboard. Ordered by most recently featured first.
+  scope :featured_courses, -> { published_active_courses.where.not(featured_at: nil).order(featured_at: :desc) }
+
   scope :filtered_by_search, -> (search) { where('title ILIKE ?', "%#{search}%") }
 
   # This doesn't provide unique results, so we're using the other one. Using distinct also fails on some queries.

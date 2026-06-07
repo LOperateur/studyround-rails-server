@@ -4,7 +4,7 @@ class CoursesController < ApplicationController
   include CardTransactionHelper
 
   before_action :default_12_page_size, only: [:index, :per_category, :enrolled_courses, :search, :my_courses, :tests, :purchased_courses, :purchased_tests, :created_courses]
-  skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search, :dummy_courses]
+  skip_before_action :authorize!, only: [:index, :show, :categorised, :similar_courses, :top_courses, :trending_courses, :search, :dummy_courses, :featured_courses]
   before_action :check_creators_consent, only: [:create]
   before_action :load_creators_course, only: [:update, :publish, :destroy]
 
@@ -57,7 +57,7 @@ class CoursesController < ApplicationController
         raise Errors::ForbiddenError.new(message: "You have reached the maximum number of courses you can create")
       end
     else
-      # Do nothing
+      raise Errors::ForbiddenError.new(message: "You are not a creator. Please visit https://app.studyround.com to onboard as a creator.")
     end
 
     course_params = prepare_received_course_params(create_course_params)
@@ -382,6 +382,14 @@ class CoursesController < ApplicationController
   def dummy_courses
     # Get dummy courses for user feedback
     courses = Course.dummy_courses.order(created_at: :desc)
+
+    paginated_courses = paginate(courses, params)
+    render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
+  end
+
+  def featured_courses
+    # Curated courses for the dashboard, ordered by most recently featured
+    courses = Course.featured_courses
 
     paginated_courses = paginate(courses, params)
     render json: paginated_courses, root: :data, meta: paginated_meta(paginated_courses)
